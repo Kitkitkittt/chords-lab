@@ -1,0 +1,61 @@
+export const meta = {
+  slug: "intervals",
+  title: "Intervals and Inversion",
+  moduleSlug: "intervals-chords",
+  level: "beginner",
+  estimatedMinutes: 10,
+  outcomes: [
+    "Measure generic interval number by letter names",
+    "Describe interval quality by exact pitch size",
+    "Separate melodic and harmonic intervals",
+    "Recognize simple interval inversion"
+  ],
+  prerequisites: ["accidentals-steps", "scales-keys"],
+  citations: [
+    {
+      label: "Teoria intervals",
+      url: "https://www.teoria.com/en/tutorials/intervals/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    },
+    {
+      label: "MusicTheory.net lessons",
+      url: "https://www.musictheory.net/lessons",
+      licenseNote: "Copyrighted source used only for syllabus comparison."
+    },
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; cited for interval coverage."
+    }
+  ]
+};
+
+## Intervals measure distance
+
+An interval is the distance between two notes. First count the letter names for the generic size: C to E is a third because C, D, E spans three letters.
+
+<AudioExample label="C up to E" notes={["C4", "E4"]} />
+
+## Quality gives the exact size
+
+Interval quality adds precision. C to E is a major third. C to Eb is a minor third. The letter distance is the same, but the half-step size changes.
+
+<NotationFigure title="Major third and minor third" notation="C4/q, E4, C4, Eb4" />
+
+## Melodic and harmonic intervals
+
+A melodic interval is heard one note after the other. A harmonic interval is heard at the same time.
+
+<AudioExample label="Harmonic major third" notes={["C4", "E4"]} mode="chord" />
+
+## Inversion flips the notes
+
+When the lower note moves above the higher note, the interval is inverted. C up to E is a third. E up to C is a sixth.
+
+<MicroCheck
+  id="interval-generic-third"
+  prompt="What is the generic interval from C to E?"
+  options={["Third", "Fourth", "Fifth"]}
+  answer="Third"
+  explanation="Count the letters C, D, and E. That makes a third."
+/>

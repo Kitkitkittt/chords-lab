@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.playwright-cli/
+*.tsbuildinfo
+*.log
+.DS_Store

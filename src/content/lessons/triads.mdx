@@ -1,0 +1,61 @@
+export const meta = {
+  slug: "triads",
+  title: "Triads and Basic Chord Symbols",
+  moduleSlug: "intervals-chords",
+  level: "beginner",
+  estimatedMinutes: 10,
+  outcomes: [
+    "Define root, third, and fifth",
+    "Compare major, minor, diminished, and augmented triads",
+    "Recognize root position and inversion",
+    "Read basic chord symbols"
+  ],
+  prerequisites: ["intervals"],
+  citations: [
+    {
+      label: "Teoria chords",
+      url: "https://www.teoria.com/en/tutorials/chords/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    },
+    {
+      label: "MusicTheory.net lessons",
+      url: "https://www.musictheory.net/lessons",
+      licenseNote: "Copyrighted source used only for syllabus comparison."
+    },
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; cited for triad coverage."
+    }
+  ]
+};
+
+## A triad stacks three chord tones
+
+A triad is a three-note chord built from a root, a third, and a fifth. The root names the chord. The third and fifth show its quality.
+
+<NotationFigure title="C major triad" notation="C4/q, E4, G4, C5" />
+
+<AudioExample label="C major triad" notes={["C4", "E4", "G4"]} mode="chord" />
+
+## Four beginner triad qualities
+
+Major triads sound like a major third plus a perfect fifth from the root. Minor triads lower the third. Diminished triads lower the third and fifth. Augmented triads raise the fifth.
+
+<KeyboardFigure label="C major chord tones" active={["C", "E", "G"]} />
+
+## Inversions move the bass
+
+Root position has the root as the lowest note. First inversion places the third in the bass. Second inversion places the fifth in the bass.
+
+<Callout title="Chord symbols are compact labels" tone="harmony">
+  C means C major in many lead-sheet contexts. Cm means C minor. Cdim and Caug add the altered fifth quality to the label.
+</Callout>
+
+<MicroCheck
+  id="triad-chord-tones"
+  prompt="Which notes form a C major triad?"
+  options={["C E G", "C D E", "C F G"]}
+  answer="C E G"
+  explanation="A C major triad uses root C, third E, and fifth G."
+/>

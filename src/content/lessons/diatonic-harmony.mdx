@@ -1,0 +1,49 @@
+export const meta = {
+  slug: "diatonic-harmony",
+  title: "Diatonic Harmony",
+  moduleSlug: "diatonic-harmony",
+  level: "beginner",
+  estimatedMinutes: 11,
+  outcomes: [
+    "Build triads on scale degrees",
+    "Read basic Roman numerals in major keys",
+    "Hear tonic, predominant, and dominant as simple roles"
+  ],
+  prerequisites: ["scale-fluency", "sevenths-inversions"],
+  citations: [
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    },
+    {
+      label: "MusicTheory.net lessons",
+      url: "https://www.musictheory.net/lessons",
+      licenseNote: "Copyrighted source used only for topic sequencing."
+    }
+  ]
+};
+
+## Diatonic means inside the key
+
+In C major, a diatonic triad uses notes from C D E F G A B. Build a triad on each scale degree by skipping through that same collection.
+
+<Callout title="Roman numerals show place and quality" tone="harmony">
+  Uppercase numerals often mark major chords. Lowercase numerals often mark minor chords. In C major, I is C major and ii is D minor.
+</Callout>
+
+## Three beginner functions
+
+Tonic chords feel like home. Dominant chords point back toward home. Predominant chords often prepare the dominant. These are listening labels, not rules that every song must obey.
+
+<AudioExample label="I IV V I in C" notes={["C4", "F4", "G4", "C5"]} />
+
+<p><a href="/practice/chords">Practice Roman numerals</a></p>
+
+<MicroCheck
+  id="diatonic-ii-c"
+  prompt="In C major, which Roman numeral fits D minor?"
+  options={["I", "ii", "V"]}
+  answer="ii"
+  explanation="D is scale degree 2 in C major, and the diatonic triad there is minor."
+/>

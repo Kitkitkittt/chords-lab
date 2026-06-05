@@ -1,0 +1,41 @@
+export const meta = {
+  slug: "seventh-chords-keys",
+  title: "Seventh Chords in Keys",
+  moduleSlug: "sevenths-in-keys",
+  level: "beginner",
+  estimatedMinutes: 10,
+  outcomes: [
+    "Build diatonic seventh chords",
+    "Relate seventh-chord quality to scale degree",
+    "Use seventh chords in generated harmony practice"
+  ],
+  prerequisites: ["sevenths-inversions", "diatonic-harmony"],
+  citations: [
+    {
+      label: "Teoria chords",
+      url: "https://www.teoria.com/en/tutorials/chords/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only."
+    },
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    }
+  ]
+};
+
+## Seventh chords extend the diatonic stack
+
+Build a seventh chord by adding one more skip above a triad. In C major, G B D F creates V7, a dominant seventh chord.
+
+<KeyboardFigure label="G7 in C major" active={["G", "B", "D", "F"]} />
+
+<p><a href="/practice/chords/setup">Open chord setup</a></p>
+
+<MicroCheck
+  id="seventh-keys-check"
+  prompt="Which chord is V7 in C major?"
+  options={["G B D F", "C E G B", "D F A C"]}
+  answer="G B D F"
+  explanation="The fifth scale degree in C is G, and adding the seventh gives F natural."
+/>

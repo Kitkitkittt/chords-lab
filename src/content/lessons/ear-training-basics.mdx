@@ -1,0 +1,45 @@
+export const meta = {
+  slug: "ear-training-basics",
+  title: "Ear Training Basics",
+  moduleSlug: "ear-training",
+  level: "beginner",
+  estimatedMinutes: 8,
+  outcomes: [
+    "Start ear practice from replayable examples",
+    "Compare interval, chord, scale, and rhythm prompts",
+    "Use labels after hearing, not before hearing"
+  ],
+  prerequisites: ["intervals", "triads", "scale-fluency"],
+  citations: [
+    {
+      label: "Teoria exercises",
+      url: "https://www.teoria.com/en/exercises/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original prompts here."
+    },
+    {
+      label: "Ableton Learning Music",
+      url: "https://learningmusic.ableton.com/",
+      licenseNote: "Copyrighted source used only for interaction framing."
+    }
+  ]
+};
+
+## Listening practice should stay replayable
+
+For beginners, the goal is not speed. Play the prompt, name what you notice, replay it, and then choose the label. Short loops make the memory load smaller.
+
+<AudioExample label="Perfect fifth" notes={["C4", "G4"]} />
+
+## Use one contrast at a time
+
+Compare major against minor, or perfect fifth against octave. Too many choices can turn listening into guessing. The practice module keeps prompts short and visible.
+
+<p><a href="/practice/ear">Open ear practice</a></p>
+
+<MicroCheck
+  id="ear-first-action"
+  prompt="What should happen before answering a listening prompt?"
+  options={["Play the sound", "Start a timer", "Hide the labels"]}
+  answer="Play the sound"
+  explanation="Audio prompts in Chords Lab require a user action before sound starts."
+/>

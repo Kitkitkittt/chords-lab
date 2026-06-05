@@ -1,0 +1,55 @@
+export const meta = {
+  slug: "accidentals-steps",
+  title: "Accidentals and Steps",
+  moduleSlug: "pitch-systems",
+  level: "beginner",
+  estimatedMinutes: 8,
+  outcomes: [
+    "Define half step and whole step",
+    "Use sharp, flat, and natural as pitch changes",
+    "Recognize common enharmonic spellings"
+  ],
+  prerequisites: ["sound-pitch", "staff-keyboard"],
+  citations: [
+    {
+      label: "MusicTheory.net lessons",
+      url: "https://www.musictheory.net/lessons",
+      licenseNote: "Copyrighted source used only for syllabus comparison."
+    },
+    {
+      label: "Teoria reading music",
+      url: "https://www.teoria.com/en/tutorials/reading/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    }
+  ]
+};
+
+## Half steps and whole steps
+
+A half step is the distance from one piano key to the very next key, black or white. A whole step is two half steps.
+
+<KeyboardFigure label="Chromatic keyboard area" active={["C", "C#", "D", "D#", "E"]} />
+
+## Accidentals alter a note
+
+A sharp raises a note by a half step. A flat lowers a note by a half step. A natural cancels a previous sharp or flat in the current context.
+
+<NotationFigure title="Accidentals change written pitch" notation="C4/q, C#4, D4, Eb4" />
+
+<AudioExample label="C to C sharp" notes={["C4", "C#4"]} />
+
+## Enharmonic spellings
+
+Two names can point to the same piano key. C# and Db are common enharmonic partners. The spelling matters because music notation also tracks letter movement and harmonic meaning.
+
+<Callout title="Spelling is information" tone="melody">
+  If two notes sound alike on the keyboard, do not assume they mean the same thing in notation. The letter name can explain the musical job.
+</Callout>
+
+<MicroCheck
+  id="accidental-half-step"
+  prompt="On a piano, what is the distance from C to the key C#?"
+  options={["A half step", "A whole step", "An octave"]}
+  answer="A half step"
+  explanation="C# is the next key above C, so the distance is one half step."
+/>

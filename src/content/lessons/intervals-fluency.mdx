@@ -1,0 +1,41 @@
+export const meta = {
+  slug: "intervals-fluency",
+  title: "Intervals Fluency",
+  moduleSlug: "intervals-fluency",
+  level: "beginner",
+  estimatedMinutes: 9,
+  outcomes: [
+    "Name intervals by size and quality",
+    "Compare melodic and harmonic intervals",
+    "Use inversion as a checking tool"
+  ],
+  prerequisites: ["intervals"],
+  citations: [
+    {
+      label: "Teoria intervals",
+      url: "https://www.teoria.com/en/tutorials/intervals/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    },
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    }
+  ]
+};
+
+## Fluency means two checks
+
+First count letter names for the interval number. Then compare the exact pitch distance for quality. Keeping those steps separate prevents guessing by keyboard shape alone.
+
+<AudioExample label="Major third then perfect fifth" notes={["C4", "E4", "C4", "G4"]} />
+
+<p><a href="/practice/intervals/setup">Open interval setup</a></p>
+
+<MicroCheck
+  id="interval-fluency-check"
+  prompt="What is the first interval check?"
+  options={["Count letter names", "Choose a tempo", "Add a cadence"]}
+  answer="Count letter names"
+  explanation="The letter count gives the interval number before quality is checked."
+/>

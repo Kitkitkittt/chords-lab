@@ -1,0 +1,41 @@
+export const meta = {
+  slug: "cadences-phrases",
+  title: "Cadences and Phrases",
+  moduleSlug: "cadences",
+  level: "beginner",
+  estimatedMinutes: 9,
+  outcomes: [
+    "Hear cadences as phrase punctuation",
+    "Compare authentic, plagal, half, and deceptive endings",
+    "Connect cadences to Roman numerals"
+  ],
+  prerequisites: ["diatonic-harmony"],
+  citations: [
+    {
+      label: "MusicTheory.net lessons",
+      url: "https://www.musictheory.net/lessons",
+      licenseNote: "Copyrighted source used only for syllabus comparison."
+    },
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    }
+  ]
+};
+
+## Cadences act like punctuation
+
+A cadence is a recognizable phrase ending. V to I often sounds settled. IV to I can sound gentler. A phrase that stops on V feels unfinished.
+
+<AudioExample label="V to I outline" notes={["G4", "C5"]} />
+
+<p><a href="/practice/harmony/setup">Open harmony setup</a></p>
+
+<MicroCheck
+  id="cadence-phrases-check"
+  prompt="Which cadence feels most like V to I?"
+  options={["Authentic", "Half", "Deceptive"]}
+  answer="Authentic"
+  explanation="An authentic cadence uses dominant moving to tonic."
+/>

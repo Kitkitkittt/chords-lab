@@ -1,0 +1,52 @@
+export const meta = {
+  slug: "sevenths-inversions",
+  title: "Triads, Sevenths, and Inversions",
+  moduleSlug: "expanded-chords",
+  level: "beginner",
+  estimatedMinutes: 10,
+  outcomes: [
+    "Read root position and inverted chord stacks",
+    "Add a seventh above a triad",
+    "Relate chord symbols to concrete chord tones"
+  ],
+  prerequisites: ["triads"],
+  citations: [
+    {
+      label: "Teoria chords",
+      url: "https://www.teoria.com/en/tutorials/chords/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only."
+    },
+    {
+      label: "MusicTheory.net lessons",
+      url: "https://www.musictheory.net/lessons",
+      licenseNote: "Copyrighted source used only for syllabus comparison."
+    },
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    }
+  ]
+};
+
+## The bass changes the chord's posture
+
+An inversion keeps the same chord tones but changes which tone sits lowest. C E G is C major in root position. E G C is still C major, but the third is now in the bass.
+
+<NotationFigure title="C major first inversion" notation="E4/q, G4, C5" timeSignature="3/4" />
+
+## Seventh chords add one more stacked third
+
+A seventh chord places one more chord tone above the fifth. G7 contains G B D F: a G major triad plus F natural.
+
+<KeyboardFigure label="G7 chord tones" active={["G", "B", "D", "F"]} />
+
+<p><a href="/practice/chords">Open chord practice</a></p>
+
+<MicroCheck
+  id="seventh-g7-tones"
+  prompt="Which note completes G B D as G7?"
+  options={["F", "F#", "E"]}
+  answer="F"
+  explanation="G7 uses F natural as the seventh above G."
+/>

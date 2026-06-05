@@ -1,0 +1,59 @@
+export const meta = {
+  slug: "sound-pitch",
+  title: "Sound, Pitch, and Octaves",
+  moduleSlug: "foundations",
+  level: "beginner",
+  estimatedMinutes: 6,
+  outcomes: [
+    "Separate steady sound from named pitch",
+    "Name the seven natural note letters",
+    "Recognize that octave numbers identify register"
+  ],
+  prerequisites: [],
+  citations: [
+    {
+      label: "Teoria scales",
+      url: "https://www.teoria.com/en/tutorials/scales/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    },
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; cited for fundamentals coverage."
+    }
+  ]
+};
+
+## What pitch names do
+
+Music theory starts by giving repeatable names to sound. A pitch is a sound you can place higher or lower than another sound. In this course, pitch names use seven letters:
+
+**A B C D E F G**
+
+After G, the letters loop back to A. The loop is useful because the next C sounds closely related to the C before it, only higher or lower.
+
+<AudioExample label="Same note name, two registers" notes={["C4", "C5"]} />
+
+## Octaves keep the loop organized
+
+An octave is the span from one note letter to the next version of the same letter. The octave number tells you the register. C4 and C5 share the letter C, but C5 is higher.
+
+<NotationFigure title="C moves to the next C" notation="C4/h, C5/h" />
+
+<Callout title="First anchor" tone="melody">
+  When a label has a letter and a number, read the letter first and the register second. C4 means the note C in octave 4.
+</Callout>
+
+## Natural notes
+
+The white keys on a piano show the seven natural note letters. They are not evenly shaped on the keyboard, but the letter order stays steady.
+
+<KeyboardFigure label="Natural pitch letters" active={["C", "D", "E", "F", "G", "A", "B"]} />
+
+<MicroCheck
+  id="sound-pitch-octave"
+  prompt="Which pair uses the same note letter in two registers?"
+  options={["C4 and C5", "C4 and D4", "F4 and G4"]}
+  answer="C4 and C5"
+  explanation="C4 and C5 share the letter C. The octave number changes the register."
+/>

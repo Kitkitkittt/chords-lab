@@ -1,0 +1,74 @@
+export const meta = {
+  slug: "rhythm-meter",
+  title: "Rhythm, Beat, and Meter",
+  moduleSlug: "rhythm",
+  level: "beginner",
+  estimatedMinutes: 8,
+  outcomes: [
+    "Distinguish beat from rhythm",
+    "Read measures as beat containers",
+    "Recognize note values, rests, dots, ties, and triplets as duration tools"
+  ],
+  prerequisites: [],
+  citations: [
+    {
+      label: "MusicTheory.net lessons",
+      url: "https://www.musictheory.net/lessons",
+      licenseNote: "Copyrighted source used only for syllabus comparison."
+    },
+    {
+      label: "Ableton Learning Music",
+      url: "https://learningmusic.ableton.com/",
+      licenseNote: "Copyrighted source used only for play-first inspiration."
+    },
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; cited for meter and rhythmic values."
+    }
+  ]
+};
+
+## Beat is the steady layer
+
+The beat is the pulse you can tap. Rhythm is the pattern of sound and silence that happens against that pulse. A rhythm can be busy while the beat stays even.
+
+<AudioExample label="Four steady beats" notes={["C4", "C4", "C4", "C4"]} />
+
+## Measures group the pulse
+
+A measure is a small container for beats. A time signature tells you how the beat is grouped. In 4/4, four quarter-note beats fill one measure.
+
+<NotationFigure title="One measure of four quarter notes" notation="C4/q, C4, C4, C4" />
+
+## Duration marks
+
+Notes show sound duration. Rests show silence duration. Dots lengthen a value. Ties connect written notes into one held sound. Triplets divide a beat into three even parts.
+
+Use this small map when the symbols start to blur:
+
+- **Note value:** how long a written sound lasts.
+- **Rest:** a measured silence that still counts inside the beat.
+- **Dot:** an added half of the note or rest value before it.
+- **Tie:** two written notes connected into one sustained sound.
+- **Triplet:** three equal parts placed where the beat would normally divide into two.
+
+<Callout title="Rhythm reading tip" tone="rhythm">
+  Count the container before naming every symbol. Knowing the measure size makes each duration easier to place.
+</Callout>
+
+<MicroCheck
+  id="rhythm-beat-check"
+  prompt="Which statement is most accurate?"
+  options={["Beat is the steady pulse", "Beat is always the melody", "Beat only means loud notes"]}
+  answer="Beat is the steady pulse"
+  explanation="The beat is the steady pulse; rhythms can change around it."
+/>
+
+<MicroCheck
+  id="rhythm-duration-tools"
+  prompt="Which symbol connects two written notes into one held sound?"
+  options={["Tie", "Rest", "Triplet"]}
+  answer="Tie"
+  explanation="A tie connects written notes so they sound as one sustained note."
+/>

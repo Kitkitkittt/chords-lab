@@ -1,0 +1,55 @@
+export const meta = {
+  slug: "staff-keyboard",
+  title: "Staff, Clefs, and Keyboard Map",
+  moduleSlug: "foundations",
+  level: "beginner",
+  estimatedMinutes: 8,
+  outcomes: [
+    "Read the staff as five lines plus four spaces",
+    "Explain why clefs are needed",
+    "Connect staff notes to a keyboard view"
+  ],
+  prerequisites: ["sound-pitch"],
+  citations: [
+    {
+      label: "MusicTheory.net lessons",
+      url: "https://www.musictheory.net/lessons",
+      licenseNote: "Copyrighted source used only for syllabus comparison."
+    },
+    {
+      label: "Teoria reading music",
+      url: "https://www.teoria.com/en/tutorials/reading/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    }
+  ]
+};
+
+## The staff is a pitch grid
+
+A staff has five lines and four spaces. Notes placed higher on the staff usually sound higher. Notes placed lower usually sound lower.
+
+<NotationFigure title="Four rising notes on a treble staff" notation="C4/q, D4, E4, F4" />
+
+## Clefs give the grid a starting point
+
+A clef tells you which pitch area the staff is showing. Treble clef is common for higher notes. Bass clef is common for lower notes. The symbol changes how a line or space is named.
+
+<NotationFigure title="A lower register in bass clef" notation="C3/q, D3, E3, F3" clef="bass" />
+
+<Callout title="Do not memorize every note at once" tone="melody">
+  Use a few anchors first. Middle C, the treble spaces, and the bass landmarks will make the staff less crowded.
+</Callout>
+
+## Ledger lines extend the staff
+
+When a note moves beyond the five-line staff, short ledger lines continue the same pattern. They are not a new system. They are extra steps.
+
+<KeyboardFigure label="Middle C and nearby keyboard notes" active={["C", "D", "E", "F", "G"]} />
+
+<MicroCheck
+  id="staff-clef-purpose"
+  prompt="What does a clef do?"
+  options={["It anchors pitch names on the staff", "It changes the tempo", "It makes notes louder"]}
+  answer="It anchors pitch names on the staff"
+  explanation="A clef tells the reader how staff positions map to pitch names."
+/>
