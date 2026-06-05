@@ -37,4 +37,24 @@ describe("ReviewPage", () => {
       "staff-click-1"
     );
   });
+
+  it("offers an Easy/Hard confidence rating after a correct answer", async () => {
+    const user = userEvent.setup();
+    renderReviewPage();
+
+    // The first review prompt's correct answer is its first expected token.
+    // Answer correctly by selecting the staff position note C4.
+    const choices = screen.getByLabelText("Answer choices");
+    await user.click(within(choices).getByRole("button", { name: "C4" }));
+    const checkButton = screen.getByRole("button", { name: /check answer/i });
+    await waitFor(() => expect(checkButton).not.toBeDisabled());
+    await user.click(checkButton);
+
+    const result = screen.getByRole("status");
+    expect(within(result).getByText(/How did that feel\?/i)).toBeInTheDocument();
+    expect(
+      within(result).getByRole("button", { name: "Easy" })
+    ).toBeInTheDocument();
+    await user.click(within(result).getByRole("button", { name: "Easy" }));
+  });
 });

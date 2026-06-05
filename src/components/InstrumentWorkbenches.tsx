@@ -9,7 +9,7 @@ import type {
 import {
   fretboardPositions,
   pitchClass,
-  voiceDegreeMap
+  voiceDegreeLadder
 } from "../lib/instruments";
 
 const pianoOctaves = [3, 4, 5];
@@ -140,7 +140,12 @@ export function FretboardWorkbench({
           </div>
         </>
       ) : null}
-      <div className="fretboard-grid" aria-label={`${title} fretboard`}>
+      <div
+        className="fretboard-grid"
+        aria-label={`${title} fretboard`}
+        role="group"
+        tabIndex={0}
+      >
         <div className="fretboard-grid__frets" aria-hidden="true">
           <span />
           {Array.from({ length: tuning.fretCount + 1 }, (_, fret) => (
@@ -217,11 +222,23 @@ export function DrumPadWorkbench({
 type VoiceWorkbenchProps = {
   activeNotes: string[];
   onPlay: () => void;
+  /** Optional movable-do key context; defaults to C major. */
+  tonic?: string;
+  mode?: "major" | "minor";
 };
 
-export function VoiceRangeWorkbench({ activeNotes, onPlay }: VoiceWorkbenchProps) {
+export function VoiceRangeWorkbench({
+  activeNotes,
+  onPlay,
+  tonic = "C",
+  mode = "major"
+}: VoiceWorkbenchProps) {
   const activeSet = new Set(activeNotes);
-  const [selected, setSelected] = useState("C4");
+  const ladder = useMemo(
+    () => voiceDegreeLadder(tonic, mode),
+    [tonic, mode]
+  );
+  const [selected, setSelected] = useState(ladder[0]?.note ?? "C4");
 
   return (
     <section className="instrument-board" aria-labelledby="voice-range-title">
@@ -233,7 +250,7 @@ export function VoiceRangeWorkbench({ activeNotes, onPlay }: VoiceWorkbenchProps
         </div>
       </div>
       <div className="voice-degree-ladder" aria-label="Voice solfege ladder">
-        {voiceDegreeMap.map((item) => (
+        {ladder.map((item) => (
           <button
             key={`${item.degree}-${item.note}`}
             type="button"

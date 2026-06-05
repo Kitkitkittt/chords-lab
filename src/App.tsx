@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { courseModules } from "./data/course";
+import { AboutPage } from "./pages/AboutPage";
 import { ContentReviewPage } from "./pages/ContentReviewPage";
 import { GlossaryPage } from "./pages/GlossaryPage";
 import { HomePage } from "./pages/HomePage";
@@ -18,6 +19,7 @@ import { ReviewPage } from "./pages/ReviewPage";
 import { SongLabPage } from "./pages/SongLabPage";
 import { SongSketchesPage } from "./pages/SongSketchesPage";
 import { SourcesPage } from "./pages/SourcesPage";
+import { ToolsPage } from "./pages/ToolsPage";
 
 export function App() {
   const firstModule = courseModules[0];
@@ -46,8 +48,12 @@ export function App() {
         <Route path="review" element={<ReviewPage />} />
         <Route path="lab/song" element={<SongLabPage />} />
         <Route path="lab/song/sketches" element={<SongSketchesPage />} />
+        <Route path="tools" element={<Navigate to="/tools/circle" replace />} />
+        <Route path="tools/circle" element={<ToolsPage />} />
+        <Route path="tools/progression" element={<ToolsPage />} />
         <Route path="glossary" element={<GlossaryPage />} />
         <Route path="sources" element={<SourcesPage />} />
+        <Route path="about" element={<AboutPage />} />
         <Route path="progress" element={<ProgressPage />} />
         <Route path="progress/export" element={<ProgressExportPage />} />
         <Route path="plan" element={<ProjectPage />} />

@@ -22,6 +22,8 @@ All learner state is stored in browser localStorage.
 - `src/lib/` - shared audio playback, instrument helpers, storage,
   export/import helpers, adaptive review, music helpers, prompt templates, and
   pure practice scoring.
+- `src/lib/theory.ts` - the canonical, pure music-theory engine (see
+  `docs/THEORY_ENGINE.md`).
 - `src/pages/` - route-level screens.
 - `src/state/` - local progress context.
 - `src/styles/` - design tokens and global layout styles.
@@ -116,8 +118,39 @@ Components should call `playSequence`, `playChord`, `playRhythm`,
 This keeps long Song Lab loops and short lesson examples from being cut off by
 local guessed timeouts.
 
-## Instrument Model
+## Theory Engine
 
+`src/lib/theory.ts` is the canonical, pure music-theory layer. It derives
+music-theory facts from `tonal` (Key, RomanNumeral, Progression, Mode, Voicing,
+VoiceLeading, Chord.degrees) so results are correct for every key and for both
+major and minor modes, rather than hardcoded for a few keys. It adopts teoria's
+pedagogical conventions: conventional interval names (`M3`, `P5`), movable-do
+solfege, scale-degree detection, and frequency-to-note with cents.
+
+`music.ts`, `theoryContext.ts`, `practiceGenerators.ts`, `instruments.ts`, and
+`interactionTools.ts` all delegate their theory facts to this engine. See
+`docs/THEORY_ENGINE.md` for the full module reference.
+
+## Learning System
+
+`src/lib/skills.ts` defines a typed skill taxonomy and connects lessons,
+prompts, and adaptive review. `src/lib/learningPath.ts` rolls up local
+`skillMastery` into per-skill mastery, derives soft recommendations, interleaves
+review across due skills, and computes parallel learning tracks. The Home page
+renders "Suggested focus" cards and a "Learning tracks" section; the Progress
+page renders "Skills by area". The practice result panel offers an optional
+Easy/Hard confidence rating that nudges review ease without counting a new
+attempt. See `docs/SKILL_GRAPH.md` and `docs/LEARNING_TRACKS.md`.
+
+## Theory Tools
+
+`src/pages/ToolsPage.tsx` hosts the interactive tools at `/tools/circle` and
+`/tools/progression`: `CircleOfFifths`, `ChordProgressionPlayground`,
+`VoicingDiagram`, and a fretboard scale-box explorer that reuses
+`FretboardWorkbench`. All tool audio is user-triggered through the shared audio
+engine. `CircleOfFifths` is also registered as a lesson component.
+
+## Instrument Model
 `src/lib/instruments.ts` defines instrument profiles for piano, guitar,
 bass, drums, voice, and ukulele. It centralizes chord-tone labels, scale-degree
 labels, standard tunings, fretboard positions, starter chord shapes, bass

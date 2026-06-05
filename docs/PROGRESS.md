@@ -1,15 +1,122 @@
 # Chords Lab Progress
 
-Last updated: 2026-06-01
+Last updated: 2026-06-05
 
-## Current Phase
+## Production-Readiness Pass (2026-06-05)
 
-V7 UX flow and interaction expansion is implemented in code. The app now has a
-shared audio layer, launchpad and mission-map home entry points, global feedback
-toasts, a spatial course map, generated lesson checkpoints, two-correct review
-clearing, instrument lab routes, direct staff/rhythm/piano/harmony/analysis
-workbenches, adaptive skill review fields, full local progress export/import,
-Song Lab theory-sync, and an educator content-review route.
+Made the app resilient and shareable for real use.
+
+- Added a top-level `ErrorBoundary` (wraps the app in `main.tsx`) that catches
+  render crashes and shows a calm recovery screen with reload/home actions
+  instead of a blank page. Local progress is never touched.
+- Enriched `index.html` with Open Graph, Twitter card, and iOS/Android PWA meta
+  (`apple-mobile-web-app-*`, `apple-touch-icon`, `color-scheme`) for installable,
+  shareable behavior.
+- Polished the 404 page with both "Go home" and "Course map" actions.
+- Tests: added `ErrorBoundary.test.tsx`. Full suite stays green (88 unit/
+  component tests; 20 Playwright tests across desktop and mobile).
+
+## Feature Pass: Tool-to-Creation & Track-Aware Review (2026-06-05)
+
+- The Chord Progression Playground now has an "Open in Song Lab" action. It
+  navigates to `/lab/song` with the current key, mode, and Roman numerals as
+  router state; Song Lab seeds a fresh eight-bar sketch from that progression.
+  This connects the new theory tools to the creation surface.
+- The Review session now honors an active learning track: when one is set, that
+  track's module prompts are surfaced ahead of general fallback prompts (still
+  soft, nothing excluded).
+- Tests: `ToolsPage.test.tsx` (Open-in-Song-Lab action), `SongLabPage.test.tsx`
+  (seeded-from-progression sketch). Storage and routes remain
+  backward-compatible (router state is optional and validated).
+
+## Wire-up & Polish Pass (2026-06-05)
+
+Closed integration gaps left after the interactive learning pass.
+
+- Review now interleaves the due-skill review queue round-robin across skills
+  (`interleaveReviewQueue`) before module fallback prompts, for better
+  retention.
+- The optional Easy/Hard confidence rating is now offered in the Review session
+  too (previously Practice only); lesson checkpoints stay deliberately minimal.
+- `/tools/circle` and `/tools/progression` are now distinct: `ToolsPage` shows
+  in-page tabs driven by the route (Circle & keys vs Progressions) instead of
+  one long stack.
+- Learning tracks are now selectable: `ProgressState.settings.activeTrackId`
+  (additive, normalized against known track ids) plus a `setActiveTrack` action
+  and a "Set as focus / Clear focus" control on each Home track card. When a
+  track is active, `recommendSkills` promotes that track's skills.
+- Tests: extended `ReviewPage.test.tsx` (confidence rating), `ToolsPage.test.tsx`
+  (route-driven tabs), `skills.test.ts` (track bias), and
+  `progressStorage.test.ts` (active-track normalization); added a Playwright
+  tools route + axe smoke.
+
+## Interactive Learning Optimization (2026-06-05)
+
+A five-phase pass that deepened the interactive learning experience on top of
+the derived theory engine.
+
+- Phase 1 (surface engine): chord-stacker now shows quality and cardinality via
+  `describeChordStack`; Song Lab gained a key/mode selector (24 keys + minor)
+  threaded through `theoryContextForSongSketch`; the voice workbench solfege
+  ladder follows the active key.
+- Phase 2 (skill graph): added `src/lib/skills.ts` (typed skill taxonomy linking
+  lessons -> skills -> prompts) and `src/lib/learningPath.ts` (mastery rollups,
+  soft recommendations, interleaved review, overall mastery). Home shows
+  "Suggested focus" cards; Progress shows "Skills by area"; the practice result
+  panel offers an optional Easy/Hard confidence rating that nudges review ease.
+  `LessonMeta` gained an optional additive `skills` field.
+- Phase 3 (interactive tools): added `/tools/circle` and `/tools/progression`
+  routes via a new `ToolsPage`, with a `CircleOfFifths` widget, a
+  `ChordProgressionPlayground` (key + Roman numerals + playback + voice
+  leading), a `VoicingDiagram`, and a fretboard scale-box explorer. Added a
+  "Tools" nav entry.
+- Phase 4 (curriculum depth): added a cadence-identification practice family and
+  a harmonic-function detail; expanded the scales module to all seven modes;
+  registered `CircleOfFifths` as a lesson component and embedded it in the
+  scales-keys lesson.
+- Phase 5 (learning tracks): derived parallel learning tracks (Reading & Pitch,
+  Harmony & Songwriting, Ear & Rhythm) from the skill graph and surfaced them on
+  Home with per-track mastery and a next step.
+- Docs: added `docs/SKILL_GRAPH.md` and `docs/LEARNING_TRACKS.md`; updated
+  README, ARCHITECTURE, and INTERACTIVE_ROADMAP. The opt-in microphone tuner is
+  recorded as a roadmap item only and is not built; the no-microphone stance is
+  unchanged for now.
+- Tests: added `src/lib/skills.test.ts` and `src/pages/ToolsPage.test.tsx`;
+  storage stays backward-compatible (additive `SongSketch.key/mode` and
+  `LessonMeta.skills`, normalized with defaults).
+
+## Theory Engine Upgrade (2026-06-05)
+
+Goal: deepen Tonal usage and adopt teoria's pedagogical conventions so theory
+facts are derived and correct for every key.
+
+- Added `src/lib/theory.ts`, a pure engine using Tonal's `Key`, `RomanNumeral`,
+  `Progression`, `Mode`, `Chord`, `Voicing`, `VoiceLeading`, and `Midi` modules.
+- Switched interval names from Tonal's machine form (`3M`) to the conventional
+  pedagogical form (`M3`, "major third"), matching teoria and most theory texts.
+- Replaced the hand-built 26-entry enharmonic table with `Note.enharmonic` /
+  `Note.simplify` and chroma-based keyboard mapping.
+- Replaced the C/G/F-only Roman-numeral table in `theoryContext.ts` with
+  `keyContext`-derived chords. Song Lab theory-sync now supports minor keys and
+  figured-bass inversion tokens (for example `I6`).
+- Generalized scale, harmony, and key-signature practice generation to all 24
+  keys; harmony chords are now derived from their Roman numerals so spelling can
+  never drift.
+- Derived instrument chord-tone, scale-degree, bass-target, and key-aware
+  solfege helpers from the engine.
+- Added a voice-leading practice family (`Voicing.sequence` +
+  `VoiceLeading.topNoteDiff`) behind the existing Voice-Leading lesson.
+- Added a key-aware movable-do solfege layer and a frequency-to-note (with
+  cents) helper.
+- Added chord quality/cardinality labels to the chord-stack detector via
+  `describeChordStack`.
+- Fixed a latent bug where interval prompts compared Tonal's `5P` answer against
+  verbose choices like "perfect fifth" and could never match.
+- Documentation: added `docs/THEORY_ENGINE.md`; updated `README.md`,
+  `docs/ARCHITECTURE.md`, `docs/PLAN.md`, `docs/INTERACTIVE_ROADMAP.md`, and
+  `src/data/sources.ts`.
+- Tests: added `src/lib/theory.test.ts` (15 cases) and extended
+  `interactionTools` and `music` specs; full suite passes.
 
 ## Completed
 
@@ -116,9 +223,9 @@ npm run e2e
 
 Latest automated coverage:
 
-- 27 unit/component/content test files passed.
-- 52 unit/component/content tests passed.
-- 18 Playwright tests passed across desktop and mobile projects.
+- Unit/component/content test files pass (now including `theory.test.ts`).
+- 68 unit/component/content tests passed.
+- Playwright tests pass across desktop and mobile projects.
 - Browser e2e covers the V7 launchpad, generated practice, review, Song Lab,
   progress export/import route, content review route, accessibility scan, and
   offline app shell.

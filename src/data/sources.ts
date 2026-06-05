@@ -11,6 +11,15 @@ export const sourceEntries: SourceEntry[] = [
     riskLevel: "medium"
   },
   {
+    label: "teoria.js",
+    owner: "saebekassebil / teoria contributors",
+    url: "https://github.com/saebekassebil/teoria",
+    licenseNote: "MIT-licensed music theory library (referenced, not bundled).",
+    bestUse:
+      "Pedagogical convention reference: conventional interval names (M3, P5), movable-do solfege, scale-degree detection, and frequency/cents helpers reimplemented on top of Tonal.",
+    riskLevel: "low"
+  },
+  {
     label: "Teoria exercises",
     owner: "Jose Rodriguez Alvira / teoria.com",
     url: "https://www.teoria.com/en/exercises/",
@@ -58,8 +67,9 @@ export const sourceEntries: SourceEntry[] = [
     label: "Tonal",
     owner: "tonaljs contributors",
     url: "https://tonaljs.github.io/tonal/docs",
-    licenseNote: "Open-source music theory utility library.",
-    bestUse: "Note, interval, scale, and chord calculations.",
+    licenseNote: "Open-source (MIT) music theory utility library.",
+    bestUse:
+      "Core theory engine: Note, Interval, Scale, Mode, Key, RomanNumeral, Progression, Chord, Voicing, and VoiceLeading calculations.",
     riskLevel: "low"
   },
   {

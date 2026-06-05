@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ProgressBar } from "../components/ProgressBar";
 import { lessons, lessonsBySlug } from "../data/course";
 import { practiceModules, getPracticePrompts } from "../data/practice";
+import { overallMastery, skillProgressList } from "../lib/learningPath";
 import { useProgress } from "../state/progress";
 
 export function ProgressPage() {
@@ -18,6 +19,8 @@ export function ProgressPage() {
   const bookmarkedLessons = progress.bookmarkedLessonSlugs
     .map((slug) => lessonsBySlug.get(slug))
     .filter(Boolean);
+  const skillAreas = skillProgressList(progress);
+  const masteryPercent = Math.round(overallMastery(progress) * 100);
   const attemptedChecks = Object.values(progress.checkResults).reduce(
     (sum, result) => sum + result.attempted,
     0
@@ -136,6 +139,27 @@ export function ProgressPage() {
               </li>
             );
           })}
+        </ol>
+      </section>
+
+      <section className="lesson-progress-list" aria-labelledby="skill-areas">
+        <h2 id="skill-areas">Skills by area</h2>
+        <p>Overall mastery: {masteryPercent}% across {skillAreas.length} skills.</p>
+        <ol>
+          {skillAreas.map((item) => (
+            <li key={item.skill.id}>
+              <Link to={`/practice/${item.skill.moduleId}/setup`}>
+                <span>{item.skill.title}</span>
+                <strong>
+                  {item.level}
+                  {item.attempted > 0
+                    ? ` · ${item.correct}/${item.attempted}`
+                    : " · not started"}
+                  {item.due ? " · review due" : ""}
+                </strong>
+              </Link>
+            </li>
+          ))}
         </ol>
       </section>
 

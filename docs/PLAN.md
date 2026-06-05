@@ -1,6 +1,6 @@
 # Chords Lab Plan
 
-Last updated: 2026-06-01
+Last updated: 2026-06-05
 
 ## Product Goal
 
@@ -189,12 +189,17 @@ Stack:
 - Vite PWA plugin for manifest and service worker.
 - VexFlow for notation.
 - Tone.js for audio.
-- Tonal for music theory helpers.
+- Tonal for the derived music-theory engine (`src/lib/theory.ts`): notes,
+  intervals, scales, modes, keys, Roman numerals, progressions, chords,
+  voicings, and voice leading. See `docs/THEORY_ENGINE.md`.
 - Fontsource for self-hosted typography.
 - Vitest, Testing Library, Playwright, and axe for verification.
 
 Data model:
 
+- A pure music-theory engine (`src/lib/theory.ts`) derives scales, keys, Roman
+  numerals, progressions, chord inversions, solfege, and voice leading from
+  Tonal for all keys.
 - `LessonMeta` describes slug, title, module, level, estimated minutes,
   outcomes, prerequisites, and citations.
 - `ProgressState` stores completed lessons, bookmarks, last lesson, check

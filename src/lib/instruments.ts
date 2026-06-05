@@ -1,4 +1,5 @@
 import { Chord, Note, Scale } from "tonal";
+import { chordInversion, solfegeForKey } from "./theory";
 import type {
   ChordShape,
   DegreeHighlight,
@@ -265,9 +266,10 @@ export function chordShapeFor(
 }
 
 export function bassTargetsFor(symbol: string): string[] {
+  // Root, fifth, root (up an octave), fifth — a common beginner bass shape.
   const notes = Chord.get(symbol).notes;
   const root = notes[0] ?? "C";
-  const fifth = notes[2] ?? notes[1] ?? root;
+  const fifth = chordInversion(symbol, 2)[0] ?? notes[2] ?? notes[1] ?? root;
 
   return [`${root}2`, `${fifth}2`, `${root}3`, `${fifth}2`];
 }
@@ -293,16 +295,50 @@ export const drumGroovePresets: Record<string, boolean[][]> = {
   ]
 };
 
-export const voiceDegreeMap = [
-  { solfege: "do", degree: "1", note: "C4" },
-  { solfege: "re", degree: "2", note: "D4" },
-  { solfege: "mi", degree: "3", note: "E4" },
-  { solfege: "fa", degree: "4", note: "F4" },
-  { solfege: "sol", degree: "5", note: "G4" },
-  { solfege: "la", degree: "6", note: "A4" },
-  { solfege: "ti", degree: "7", note: "B4" },
-  { solfege: "do", degree: "8", note: "C5" }
-];
+export type VoiceDegreeStep = {
+  solfege: string;
+  degree: string;
+  note: string;
+};
+
+/**
+ * Movable-do solfege ladder for a key (one octave plus the upper tonic).
+ * Derived from the theory engine so it works for any tonic/mode instead of the
+ * old static C-major-only table.
+ */
+export function voiceDegreeLadder(
+  tonic = "C",
+  mode: "major" | "minor" = "major",
+  startOctave = 4
+): VoiceDegreeStep[] {
+  const steps = solfegeForKey(tonic, mode);
+  const ladder: VoiceDegreeStep[] = steps.map((step, index) => ({
+    solfege: step.solfege,
+    degree: `${step.degree}`,
+    note: `${step.note}${startOctave + (index > 0 && isWrapped(steps, index) ? 1 : 0)}`
+  }));
+
+  // Append the upper tonic (degree 8) one octave above the first.
+  ladder.push({
+    solfege: steps[0]?.solfege ?? "do",
+    degree: "8",
+    note: `${steps[0]?.note ?? tonic}${startOctave + 1}`
+  });
+
+  return ladder;
+}
+
+/** True once the scale letter wraps past the starting note's register. */
+function isWrapped(
+  steps: { note: string }[],
+  index: number
+): boolean {
+  const startChroma = Note.chroma(steps[0]?.note ?? "C") ?? 0;
+  const current = Note.chroma(steps[index]?.note ?? "C") ?? 0;
+  return current < startChroma;
+}
+
+export const voiceDegreeMap: VoiceDegreeStep[] = voiceDegreeLadder("C", "major");
 
 export function explainSongSketch(sketch: SongSketch): string {
   const firstChord = sketch.tracks.chords[0] ?? "I";

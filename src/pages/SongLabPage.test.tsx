@@ -17,6 +17,31 @@ function renderSongLabPage() {
   );
 }
 
+function renderSongLabWithSeed() {
+  localStorage.clear();
+
+  return render(
+    <MemoryRouter
+      initialEntries={[
+        {
+          pathname: "/lab/song",
+          state: {
+            seedProgression: {
+              key: "G",
+              mode: "major",
+              numerals: ["I", "V", "vi", "IV"]
+            }
+          }
+        }
+      ]}
+    >
+      <ProgressProvider>
+        <SongLabPage />
+      </ProgressProvider>
+    </MemoryRouter>
+  );
+}
+
 describe("SongLabPage", () => {
   it("renders pattern blocks without autoplay", async () => {
     const user = userEvent.setup();
@@ -58,4 +83,15 @@ describe("SongLabPage", () => {
     await user.click(screen.getByRole("button", { name: /Explain loop/i }));
     expect(screen.getByText(/The loop starts/)).toBeInTheDocument();
   }, 10000);
+
+  it("seeds a sketch from a progression passed via router state", () => {
+    renderSongLabWithSeed();
+
+    // The key selector reflects the seeded key.
+    expect(screen.getByRole("combobox", { name: "Key" })).toHaveValue("G");
+    // The first chord bar starts on the seeded tonic numeral.
+    expect(screen.getByText("Chord start I")).toBeInTheDocument();
+    // The theory panel resolves I in G to the G chord.
+    expect(screen.getByText(/G in G/)).toBeInTheDocument();
+  });
 });

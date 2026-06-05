@@ -1,4 +1,4 @@
-import { Chord, Interval, Note, Scale } from "tonal";
+import { Chord, Interval, Note } from "tonal";
 import { chordPattern, rhythmPattern, sequencePattern } from "./audioEngine";
 import {
   bassTargetsFor,
@@ -6,6 +6,12 @@ import {
   chordToneHighlights,
   scaleDegreeHighlights
 } from "./instruments";
+import {
+  formatInterval,
+  progressionChords,
+  scaleNotesForTopic,
+  voiceLeadProgression
+} from "./theory";
 import type {
   PracticeDifficulty,
   PracticePrompt,
@@ -82,6 +88,18 @@ function takeBySeed<T>(items: T[], seed: string, index: number): T {
   return items[seededIndex(seed, index, items.length)];
 }
 
+/** Deterministic Fisher-Yates shuffle so prompt choices are stable per seed. */
+function shuffleBySeed<T>(items: T[], seed: string, index: number): T[] {
+  const result = [...items];
+
+  for (let position = result.length - 1; position > 0; position -= 1) {
+    const swap = seededIndex(`${seed}:shuffle:${index}`, position, position + 1);
+    [result[position], result[swap]] = [result[swap], result[position]];
+  }
+
+  return result;
+}
+
 function noteName(note: string): string {
   return Note.pitchClass(note) || note.replace(/[0-9]/g, "");
 }
@@ -105,23 +123,12 @@ function withOctave(notes: string[], startOctave = 4): string[] {
 }
 
 function scaleNotes(key: string, topic: string): string[] {
-  const normalizedTopic =
-    topic === "minor" ? "natural minor" : topic === "modes" ? "dorian" : topic;
-  const requested = Scale.get(`${key} ${normalizedTopic}`).notes;
-
-  if (requested.length > 0) {
-    return requested;
-  }
-
-  if (topic === "pentatonic") {
-    return Scale.get(`${key} major pentatonic`).notes;
-  }
-
   if (topic === "chromatic") {
     return chromaticChoices;
   }
 
-  return Scale.get(`${key} major`).notes;
+  const notes = scaleNotesForTopic(key, topic);
+  return notes.length > 0 ? notes : chromaticChoices;
 }
 
 function sourceLabelsFor(moduleId: string): string[] {
@@ -319,7 +326,8 @@ function generateIntervalPrompt(
   ];
   const pair = takeBySeed(pairs, config.seed, index);
   const interval = Interval.distance(pair[0], pair[1]);
-  const name = Interval.get(interval).name || interval;
+  const name = formatInterval(interval, { verbose: true });
+  const shortName = formatInterval(interval);
 
   return enrichPrompt(
     {
@@ -339,7 +347,7 @@ function generateIntervalPrompt(
         "octave"
       ],
       answer: [name],
-      explanation: `${noteName(pair[0])} to ${noteName(pair[1])} is ${name}.`,
+      explanation: `${noteName(pair[0])} to ${noteName(pair[1])} is a ${name} (${shortName}).`,
       keyboardNotes: pair,
       audioNotes: pair,
       playbackPattern: sequencePattern("Interval prompt", pair),
@@ -398,59 +406,155 @@ function generateChordPrompt(
   );
 }
 
-function generateHarmonyPrompt(
+function generateVoiceLeadingPrompt(
   config: PracticeSessionConfig,
   index: number
 ): PracticePrompt {
   const progressions = [
+    { key: "C", numerals: ["ii", "V", "I"], name: "ii-V-I" },
+    { key: "C", numerals: ["I", "vi", "IV", "V"], name: "I-vi-IV-V" },
+    { key: "G", numerals: ["I", "IV", "V", "I"], name: "I-IV-V-I" },
+    { key: "F", numerals: ["I", "V", "vi", "IV"], name: "I-V-vi-IV" }
+  ];
+  const choice = takeBySeed(progressions, config.seed, index);
+  const chords = progressionChords(choice.numerals, choice.key);
+  const steps = voiceLeadProgression(chords);
+  const voicedAnswer = steps.map((step) => step.voicing.join(" "));
+
+  return enrichPrompt(
+    {
+      id: "voice-leading-order",
+      moduleId: "harmony",
+      kind: "ordered",
+      inputMode: "harmony-board",
+      question: `Order the smooth voicings for ${choice.name} in ${choice.key}.`,
+      choices: shuffleBySeed(voicedAnswer, config.seed, index),
+      answer: voicedAnswer,
+      explanation: `Smooth voice leading keeps common tones and moves other voices the shortest distance: ${voicedAnswer.join(" \u2192 ")}.`,
+      keyboardNotes: steps.flatMap((step) => step.voicing),
+      audioNotes: steps.flatMap((step) => step.voicing),
+      playbackPattern: sequencePattern(
+        `${choice.name} voice leading`,
+        steps.flatMap((step) => step.voicing)
+      ),
+      renderSpec: {
+        type: "harmony",
+        key: choice.key,
+        numerals: choice.numerals,
+        slots: chords
+      }
+    },
+    config,
+    index,
+    ["voice-leading", "progressions"]
+  );
+}
+
+function generateCadencePrompt(
+  config: PracticeSessionConfig,
+  index: number
+): PracticePrompt {
+  const cadences = [
     {
       key: "C",
-      labels: ["I", "IV", "V", "I"],
-      chords: ["C", "F", "G", "C"],
-      name: "authentic return"
+      numerals: ["IV", "V", "I"],
+      name: "authentic cadence",
+      detail: "V resolving to I gives a strong, finished arrival.",
+      func: "dominant to tonic"
     },
     {
       key: "C",
-      labels: ["I", "vi", "IV", "V"],
-      chords: ["C", "Am", "F", "G"],
-      name: "common loop"
+      numerals: ["IV", "I"],
+      name: "plagal cadence",
+      detail: "IV moving to I is the gentle 'amen' ending.",
+      func: "subdominant to tonic"
+    },
+    {
+      key: "C",
+      numerals: ["ii", "V"],
+      name: "half cadence",
+      detail: "Pausing on V sounds unfinished and expects more.",
+      func: "ends on the dominant"
+    },
+    {
+      key: "C",
+      numerals: ["V", "vi"],
+      name: "deceptive cadence",
+      detail: "V resolving to vi surprises the ear instead of landing on I.",
+      func: "dominant to submediant"
     },
     {
       key: "G",
-      labels: ["I", "V", "vi", "IV"],
-      chords: ["G", "D", "Em", "C"],
-      name: "pop loop"
+      numerals: ["V", "I"],
+      name: "authentic cadence",
+      detail: "V to I in G major closes the phrase.",
+      func: "dominant to tonic"
     },
     {
       key: "F",
-      labels: ["ii", "V", "I"],
-      chords: ["Gm", "C", "F"],
-      name: "predominant to tonic"
-    },
+      numerals: ["IV", "I"],
+      name: "plagal cadence",
+      detail: "IV to I in F major softens the ending.",
+      func: "subdominant to tonic"
+    }
+  ];
+  const choice = takeBySeed(cadences, config.seed, index);
+  const chords = progressionChords(choice.numerals, choice.key);
+  const audioNotes = chords.flatMap((symbol) => withOctave(Chord.get(symbol).notes));
+
+  return enrichPrompt(
     {
-      key: "C",
-      labels: ["I", "V", "vi"],
-      chords: ["C", "G", "Am"],
-      name: "deceptive cadence setup"
+      id: "cadence-id",
+      moduleId: "harmony",
+      kind: "single",
+      inputMode: "listening",
+      question: `Play the progression, then name the cadence (${chords.join(" ")} in ${choice.key}).`,
+      choices: [
+        "authentic cadence",
+        "plagal cadence",
+        "half cadence",
+        "deceptive cadence"
+      ],
+      answer: [choice.name],
+      explanation: `${chords.join(" ")} is a ${choice.name}: ${choice.detail} (${choice.func}).`,
+      keyboardNotes: audioNotes,
+      audioNotes,
+      playbackPattern: sequencePattern(`${choice.name}`, audioNotes),
+      renderSpec: { type: "audio", notes: audioNotes, mode: "sequence" }
     },
-    {
-      key: "C",
-      labels: ["I", "IV", "I"],
-      chords: ["C", "F", "C"],
-      name: "plagal motion"
-    },
-    {
-      key: "D",
-      labels: ["I", "vi", "ii", "V"],
-      chords: ["D", "Bm", "Em", "A"],
-      name: "circle preparation"
-    },
-    {
-      key: "A",
-      labels: ["I", "V", "vi", "IV"],
-      chords: ["A", "E", "F#m", "D"],
-      name: "transposed pop loop"
-    },
+    config,
+    index,
+    ["roman-numerals", "cadences"]
+  );
+}
+
+function generateHarmonyPrompt(
+  config: PracticeSessionConfig,
+  index: number
+): PracticePrompt {
+  if (config.topic === "voice leading") {
+    return generateVoiceLeadingPrompt(config, index);
+  }
+
+  if (config.topic === "cadences") {
+    return generateCadencePrompt(config, index);
+  }
+
+  const progressions: {
+    key: string;
+    labels: string[];
+    name: string;
+    /** Only set for analysis prompts whose labels are not Roman numerals. */
+    chords?: string[];
+  }[] = [
+    { key: "C", labels: ["I", "IV", "V", "I"], name: "authentic return" },
+    { key: "C", labels: ["I", "vi", "IV", "V"], name: "common loop" },
+    { key: "G", labels: ["I", "V", "vi", "IV"], name: "pop loop" },
+    { key: "F", labels: ["ii", "V", "I"], name: "predominant to tonic" },
+    { key: "C", labels: ["I", "V", "vi"], name: "deceptive cadence setup" },
+    { key: "C", labels: ["I", "IV", "I"], name: "plagal motion" },
+    { key: "D", labels: ["I", "vi", "ii", "V"], name: "circle preparation" },
+    { key: "A", labels: ["I", "V", "vi", "IV"], name: "transposed pop loop" },
     {
       key: "C",
       labels: ["phrase", "cadence", "period"],
@@ -468,6 +572,11 @@ function generateHarmonyPrompt(
   const isAnalysis = progression.labels.some((label) =>
     ["phrase", "cadence", "period", "verse", "chorus", "bridge"].includes(label)
   );
+  // Derive concrete chords from the Roman numerals for harmonic progressions so
+  // the chord spelling can never drift from its numeral. Analysis prompts keep
+  // their explicit illustrative chords.
+  const chords =
+    progression.chords ?? progressionChords(progression.labels, progression.key);
 
   return enrichPrompt(
     {
@@ -480,8 +589,8 @@ function generateHarmonyPrompt(
         ? ["verse", "phrase", "chorus", "cadence", "bridge", "period"]
         : ["I", "ii", "iii", "IV", "V", "vi", "vii°"],
       answer: progression.labels,
-      explanation: `${progression.chords.join(" ")} maps to ${progression.labels.join(" ")} in ${progression.key}.`,
-      keyboardNotes: progression.chords.flatMap((symbol) => Chord.get(symbol).notes),
+      explanation: `${chords.join(" ")} maps to ${progression.labels.join(" ")} in ${progression.key}.`,
+      keyboardNotes: chords.flatMap((symbol) => Chord.get(symbol).notes),
       renderSpec: isAnalysis
         ? {
             type: "analysis",
@@ -929,14 +1038,17 @@ export function practiceTopicsForModule(moduleId: GeneratedPracticeModuleId): st
       "harmonic minor",
       "melodic minor",
       "dorian",
+      "phrygian",
+      "lydian",
       "mixolydian",
+      "locrian",
       "major pentatonic",
       "whole tone",
       "chromatic"
     ],
     intervals: ["mixed", "generic", "quality", "inversion", "ear"],
     chords: ["mixed", "triads", "seventh chords", "inversions", "voicings"],
-    harmony: ["mixed", "roman numerals", "cadences", "circle progressions"],
+    harmony: ["mixed", "roman numerals", "cadences", "circle progressions", "voice leading"],
     rhythm: ["mixed", "rests", "dots", "ties", "tuplets", "syncopation"],
     ear: ["mixed", "intervals", "chords", "scales", "cadences", "rhythm"],
     instruments: [

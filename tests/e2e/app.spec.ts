@@ -43,7 +43,7 @@ test("index practice hub supports multiple interactive modules", async ({
     "aria-selected",
     "true"
   );
-  await page.getByRole("button", { name: "F" }).click();
+  await page.getByRole("button", { name: "F", exact: true }).click();
   await expect(page.locator(".lab-status")).toContainText("Bb4");
 
   await page.getByRole("tab", { name: /staff challenge/i }).click();
@@ -177,6 +177,26 @@ test("instrument lab opens full-band workbenches", async ({ page }) => {
     page.getByRole("heading", { name: "Voice", exact: true })
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "do 1 C4" })).toBeVisible();
+});
+
+test("theory tools routes switch between circle and progression tools", async ({
+  page
+}) => {
+  await page.goto("/tools/circle");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Interactive theory tools/i })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Circle of fifths/i })
+  ).toBeVisible();
+
+  const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
+  expect(accessibilityScanResults.violations).toEqual([]);
+
+  await page.goto("/tools/progression");
+  await expect(
+    page.getByRole("heading", { name: /Chord progression playground/i })
+  ).toBeVisible();
 });
 
 test("practice setup starts a generated harmony session", async ({ page }) => {

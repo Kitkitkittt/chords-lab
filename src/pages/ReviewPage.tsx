@@ -12,6 +12,8 @@ import {
 import { usePracticeSession } from "../hooks/usePracticeSession";
 import { playFeedbackTone } from "../lib/audioEngine";
 import { getDueSkillIds } from "../lib/adaptiveReview";
+import { interleaveReviewQueue } from "../lib/learningPath";
+import { skillsForTrack, type SkillTrackId } from "../lib/skills";
 import type { PracticePrompt } from "../lib/practiceEngine";
 import { useProgress } from "../state/progress";
 import type { ProgressState } from "../types/course";
@@ -105,16 +107,38 @@ function reviewPromptsFromProgress(progress: ProgressState) {
       "ear"
     ].includes(prompt.moduleId);
   });
+  // When a learning track is active, surface its module prompts first so review
+  // gently follows the learner's chosen focus (still soft, no exclusion).
+  const activeTrackId = progress.settings.activeTrackId;
+  const trackModuleIds = activeTrackId
+    ? new Set(skillsForTrack(activeTrackId as SkillTrackId).map((skill) => skill.moduleId))
+    : undefined;
+  const trackPrompts = trackModuleIds
+    ? fallbackPrompts.filter((prompt) => trackModuleIds.has(prompt.moduleId))
+    : [];
+  // Interleave the due-skill review queue round-robin across skills (better
+  // retention than draining one skill at a time), then fill with any remaining
+  // missed prompts, then module fallback prompts.
+  const interleavedPromptIds = interleaveReviewQueue(progress.skillMastery);
+  const interleavedPrompts = interleavedPromptIds
+    .map((promptId) => practicePromptsById.get(promptId))
+    .filter(isPracticePrompt);
   const dueSkillPrompts = getDueSkillIds(progress.skillMastery).flatMap(
     (skill) =>
       fallbackPrompts.filter((prompt) => prompt.skillTargets?.includes(skill))
   );
 
-  return uniquePrompts([...dueSkillPrompts, ...queuedPrompts, ...fallbackPrompts]);
+  return uniquePrompts([
+    ...interleavedPrompts,
+    ...dueSkillPrompts,
+    ...queuedPrompts,
+    ...trackPrompts,
+    ...fallbackPrompts
+  ]);
 }
 
 export function ReviewPage() {
-  const { progress, recordPracticeResult } = useProgress();
+  const { progress, recordPracticeResult, recordSkillConfidence } = useProgress();
   const [sessionPromptIds] = useState(() =>
     reviewPromptsFromProgress(progress).map((prompt) => prompt.id)
   );
@@ -257,6 +281,12 @@ export function ReviewPage() {
               prompt={session.prompt}
               onRetry={session.retry}
               onNext={session.next}
+              onRateConfidence={(confidence) =>
+                recordSkillConfidence(
+                  session.prompt?.skillTargets ?? [],
+                  confidence
+                )
+              }
             />
           </div>
         ) : (

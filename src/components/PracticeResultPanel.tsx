@@ -8,13 +8,15 @@ type PracticeResultPanelProps = {
   prompt: PracticePrompt;
   onRetry: () => void;
   onNext: () => void;
+  onRateConfidence?: (confidence: "easy" | "hard") => void;
 };
 
 export function PracticeResultPanel({
   feedback,
   prompt,
   onRetry,
-  onNext
+  onNext,
+  onRateConfidence
 }: PracticeResultPanelProps) {
   const isIdle = feedback.status === "idle";
   const Icon = feedback.status === "correct" ? CheckCircle2 : XCircle;
@@ -66,6 +68,29 @@ export function PracticeResultPanel({
         </>
       )}
       <div className="practice-result-panel__actions">
+        {feedback.status === "correct" && onRateConfidence ? (
+          <div
+            className="practice-confidence"
+            role="group"
+            aria-label="How did that feel?"
+          >
+            <span>How did that feel?</span>
+            <button
+              className="button button--quiet"
+              type="button"
+              onClick={() => onRateConfidence("hard")}
+            >
+              Hard
+            </button>
+            <button
+              className="button button--quiet"
+              type="button"
+              onClick={() => onRateConfidence("easy")}
+            >
+              Easy
+            </button>
+          </div>
+        ) : null}
         <button
           className="button button--quiet"
           type="button"

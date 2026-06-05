@@ -76,7 +76,7 @@ describe("progress storage", () => {
         }
       ],
       sync: { enabled: false, provider: "none" },
-      settings: { audioEnabled: false, reducedMotion: true }
+      settings: { audioEnabled: false, reducedMotion: true, activeTrackId: "harmony-songwriting" }
     });
 
     expect(normalized.completedLessonSlugs).toEqual(["sound-pitch"]);
@@ -110,7 +110,8 @@ describe("progress storage", () => {
     expect(normalized.sync).toEqual({ enabled: false, provider: "none" });
     expect(normalized.settings).toEqual({
       audioEnabled: false,
-      reducedMotion: true
+      reducedMotion: true,
+      activeTrackId: "harmony-songwriting"
     });
   });
 
@@ -125,5 +126,18 @@ describe("progress storage", () => {
     expect(readProgressState(localStorage).completedLessonSlugs).toEqual([
       "sound-pitch"
     ]);
+  });
+
+  it("drops an unknown active learning track id", () => {
+    const normalized = normalizeProgressState({
+      schemaVersion: 1,
+      settings: {
+        audioEnabled: true,
+        reducedMotion: false,
+        activeTrackId: "not-a-track"
+      }
+    });
+
+    expect(normalized.settings.activeTrackId).toBeUndefined();
   });
 });

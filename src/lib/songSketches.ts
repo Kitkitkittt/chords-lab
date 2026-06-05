@@ -2,6 +2,16 @@ import type { SongSketch } from "../types/course";
 import { songLabTrackTypes } from "./instruments";
 
 export const songChordChoices = ["I", "vi", "IV", "V", "ii", "V7", "I6", "iii"];
+export const songKeyChoices = [
+  "C",
+  "G",
+  "D",
+  "A",
+  "E",
+  "F",
+  "Bb",
+  "Eb"
+];
 export const songBassChoices = ["C2", "A2", "F2", "G2", "D2", "E2", "B1", "C3"];
 export const songMelodyChoices = ["E4", "G4", "A4", "C5", "D5", "B4", "F4", "E5"];
 export const songVoiceChoices = ["C4", "D4", "E4", "G4", "A4", "C5", "rest"];
@@ -14,6 +24,8 @@ export function createDefaultSongSketch(title = "Untitled loop"): SongSketch {
     title,
     bpm: 92,
     meter: "4/4",
+    key: "C",
+    mode: "major",
     form: ["A", "A", "B", "A", "A", "B", "C", "A"],
     tracks: {
       drums: [
@@ -69,6 +81,8 @@ export function exportSongSketches(sketches: SongSketch[]): string {
 export function normalizeSongSketch(sketch: SongSketch): SongSketch {
   return {
     ...sketch,
+    key: sketch.key ?? "C",
+    mode: sketch.mode === "minor" ? "minor" : "major",
     tracks: {
       drums: sketch.tracks.drums,
       bass: sketch.tracks.bass,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateTapTempo,
+  describeChordStack,
   detectChordStack,
   quantizeBeatPosition
 } from "./interactionTools";
@@ -12,6 +13,22 @@ describe("tap-first interaction tools", () => {
     expect(detectChordStack(["B", "D", "F"])).toContain("Bdim");
     expect(detectChordStack(["C", "E", "G#"])).toContain("Caug");
     expect(detectChordStack(["G", "B", "D", "F"])).toContain("G7");
+  });
+
+  it("describes chord-stack quality and cardinality", () => {
+    expect(describeChordStack(["C", "E", "G"])).toMatchObject({
+      symbol: "CM",
+      quality: "major",
+      cardinality: "triad"
+    });
+    expect(describeChordStack(["G", "B", "D", "F"])).toMatchObject({
+      quality: "dominant seventh",
+      cardinality: "tetrad"
+    });
+    expect(describeChordStack(["C"])).toMatchObject({
+      symbol: null,
+      quality: null
+    });
   });
 
   it("calculates stable BPM from tap intervals", () => {

@@ -31,7 +31,9 @@ describe("music helpers", () => {
       "F",
       "G"
     ]);
-    expect(intervalName("C4", "E4")).toBe("3M");
+    expect(intervalName("C4", "E4")).toBe("M3");
+    expect(intervalName("C4", "G4")).toBe("P5");
+    expect(intervalName("C4", "E4", { verbose: true })).toBe("major third");
     expect(triadNotes("C")).toEqual(["C", "E", "G"]);
     expect(keyboardPitchClasses()).toHaveLength(12);
     expect(normalizePitchClassForKeyboard("Bb4")).toBe("A#");

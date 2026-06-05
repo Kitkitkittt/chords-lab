@@ -94,3 +94,29 @@ export function getAdaptiveReviewSummary(progress: ProgressState) {
     missedPromptCount
   };
 }
+
+/**
+ * Apply a learner confidence rating to a skill without counting a new attempt.
+ * Easy nudges ease up (longer interval); hard nudges ease down. This is the
+ * gentle, optional, Anki-style signal used by the practice result panel.
+ */
+export function applyConfidenceToSkillState(
+  previous: AdaptiveSkillState | undefined,
+  confidence: "easy" | "hard",
+  ratedAt = new Date()
+): AdaptiveSkillState {
+  const current = previous ?? createDefaultAdaptiveSkillState();
+  const delta = confidence === "easy" ? 0.06 : -0.06;
+  const ease = Math.min(maxEase, Math.max(minEase, current.ease + delta));
+  const wasCorrect = current.lastResult !== "incorrect";
+  const intervalDays = wasCorrect
+    ? Math.max(1, Math.round((current.intervalDays || 1) * ease))
+    : current.intervalDays;
+
+  return {
+    ...current,
+    ease,
+    intervalDays,
+    dueAt: wasCorrect ? addDays(ratedAt, intervalDays) : current.dueAt
+  };
+}

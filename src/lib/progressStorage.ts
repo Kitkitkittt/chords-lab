@@ -1,7 +1,10 @@
 import type { ProgressState } from "../types/course";
 import { songLabTrackTypes } from "./instruments";
+import { skillTrackIds } from "./skills";
 
 export const PROGRESS_STORAGE_KEY = "chordslab.progress.v1";
+
+const KNOWN_TRACK_IDS: string[] = skillTrackIds;
 
 export const defaultProgressState: ProgressState = {
   schemaVersion: 1,
@@ -276,7 +279,12 @@ export function normalizeProgressState(value: unknown): ProgressState {
       reducedMotion:
         typeof input.settings?.reducedMotion === "boolean"
           ? input.settings.reducedMotion
-          : false
+          : false,
+      activeTrackId: KNOWN_TRACK_IDS.includes(
+        input.settings?.activeTrackId as string
+      )
+        ? input.settings?.activeTrackId
+        : undefined
     }
   };
 }

@@ -1,6 +1,6 @@
 import { Circle, Download, Music3, Pause, Play, Save, Square } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { KeyboardFigure } from "../components/LessonComponents";
 import {
   audioPlaybackLabel,
@@ -13,6 +13,7 @@ import {
   exportSongSketches,
   songBassChoices,
   songChordChoices,
+  songKeyChoices,
   songMelodyChoices,
   songVoiceChoices,
   updateSongSketch
@@ -26,13 +27,58 @@ function cycleValue(values: string[], value: string): string {
   return values[(values.indexOf(value) + 1) % values.length];
 }
 
+type SeedProgression = {
+  key: string;
+  mode: "major" | "minor";
+  numerals: string[];
+};
+
+function isSeedProgression(value: unknown): value is SeedProgression {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const seed = value as Record<string, unknown>;
+  return (
+    typeof seed.key === "string" &&
+    (seed.mode === "major" || seed.mode === "minor") &&
+    Array.isArray(seed.numerals) &&
+    seed.numerals.every((item) => typeof item === "string") &&
+    seed.numerals.length > 0
+  );
+}
+
+/** Build a fresh sketch whose 8 chord bars are filled from a seeded progression. */
+function sketchFromSeed(seed: SeedProgression): SongSketch {
+  const base = createDefaultSongSketch("Playground loop");
+  const barCount = base.tracks.chords.length;
+  const chords = Array.from(
+    { length: barCount },
+    (_, index) => seed.numerals[index % seed.numerals.length]
+  );
+
+  return updateSongSketch(base, {
+    key: seed.key,
+    mode: seed.mode,
+    tracks: { ...base.tracks, chords }
+  });
+}
+
 export function SongLabPage() {
   const {
     progress,
     saveSongSketch
   } = useProgress();
-  const [sketch, setSketch] = useState<SongSketch>(
-    () => progress.savedSongSketches[0] ?? createDefaultSongSketch("Eight-bar loop")
+  const location = useLocation();
+  const seed = isSeedProgression(
+    (location.state as { seedProgression?: unknown } | null)?.seedProgression
+  )
+    ? ((location.state as { seedProgression: SeedProgression }).seedProgression)
+    : undefined;
+  const [sketch, setSketch] = useState<SongSketch>(() =>
+    seed
+      ? sketchFromSeed(seed)
+      : progress.savedSongSketches[0] ?? createDefaultSongSketch("Eight-bar loop")
   );
   const [status, setStatus] = useState<
     AudioPlaybackState | "saved" | "exported"
@@ -205,6 +251,36 @@ export function SongLabPage() {
                   updateSketch({ bpm: Number(event.currentTarget.value) })
                 }
               />
+            </label>
+            <label>
+              Key
+              <select
+                value={sketch.key ?? "C"}
+                onChange={(event) =>
+                  updateSketch({ key: event.currentTarget.value })
+                }
+              >
+                {songKeyChoices.map((choice) => (
+                  <option key={choice} value={choice}>
+                    {choice}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Mode
+              <select
+                value={sketch.mode ?? "major"}
+                onChange={(event) =>
+                  updateSketch({
+                    mode:
+                      event.currentTarget.value === "minor" ? "minor" : "major"
+                  })
+                }
+              >
+                <option value="major">major</option>
+                <option value="minor">minor</option>
+              </select>
             </label>
           </section>
 

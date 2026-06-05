@@ -3,18 +3,20 @@ import {
   ListChecks,
   Play,
   Sparkles,
+  Target,
   Music
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { courseModules, getFirstIncompleteLesson, lessons, lessonsBySlug } from "../data/course";
 import { practiceModules } from "../data/practice";
 import { getAdaptiveReviewSummary } from "../lib/adaptiveReview";
+import { recommendSkills, trackProgressList } from "../lib/learningPath";
 import { useProgress } from "../state/progress";
 import { HomeInteractiveLab } from "../components/HomeInteractiveLab";
 import { ProgressBar } from "../components/ProgressBar";
 
 export function HomePage() {
-  const { completedCount, progress } = useProgress();
+  const { completedCount, progress, setActiveTrack } = useProgress();
   const resumeLesson =
     (progress.lastLessonSlug && lessonsBySlug.get(progress.lastLessonSlug)) ||
     getFirstIncompleteLesson(progress.completedLessonSlugs);
@@ -28,6 +30,14 @@ export function HomePage() {
     (module) => module.id === recentPracticeModuleId
   ) ?? practiceModules[0];
   const reviewSummary = getAdaptiveReviewSummary(progress);
+  const skillRecommendations = recommendSkills(
+    progress,
+    3,
+    new Date(),
+    progress.settings.activeTrackId
+  );
+  const tracks = trackProgressList(progress);
+  const activeTrackId = progress.settings.activeTrackId;
   const isFirstVisit =
     progress.completedLessonSlugs.length === 0 && !progress.lastLessonSlug;
 
@@ -93,6 +103,83 @@ export function HomePage() {
           </strong>
           <small>{progress.savedSongSketches.length} saved locally</small>
         </Link>
+      </section>
+
+      {skillRecommendations.length > 0 ? (
+        <section className="skill-recommendations" aria-label="Suggested focus">
+          <div className="skill-recommendations__header">
+            <Target size={19} aria-hidden="true" />
+            <h2>Suggested focus</h2>
+            <p>Soft suggestions from your local progress. Nothing is locked.</p>
+          </div>
+          <div className="skill-recommendations__grid">
+            {skillRecommendations.map((recommendation) => (
+              <Link
+                key={recommendation.skill.id}
+                className="skill-recommendation-card"
+                to={`/practice/${recommendation.skill.moduleId}/setup`}
+              >
+                <strong>{recommendation.skill.title}</strong>
+                <small>{recommendation.detail}</small>
+                <span className="skill-recommendation-card__cta">
+                  Practice <ArrowRight size={15} aria-hidden="true" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="learning-tracks" aria-label="Learning tracks">
+        <div className="learning-tracks__header">
+          <h2>Learning tracks</h2>
+          <p>Pursue these in parallel. Set one as your focus to steer suggestions.</p>
+        </div>
+        <div className="learning-tracks__grid">
+          {tracks.map((track) => {
+            const isActive = activeTrackId === track.track.id;
+
+            return (
+              <article
+                key={track.track.id}
+                className={
+                  isActive
+                    ? "learning-track-card is-active"
+                    : "learning-track-card"
+                }
+              >
+                <h3>{track.track.title}</h3>
+                <p>{track.track.summary}</p>
+                <ProgressBar
+                  value={Math.round(track.mastery * 100)}
+                  max={100}
+                  label={`${track.track.title} mastery`}
+                />
+                {track.nextSkill ? (
+                  <Link
+                    className="learning-track-card__next"
+                    to={`/practice/${track.nextSkill.moduleId}/setup`}
+                  >
+                    {track.hasReviewDue ? "Review" : "Next"}: {track.nextSkill.title}
+                    <ArrowRight size={15} aria-hidden="true" />
+                  </Link>
+                ) : (
+                  <span className="learning-track-card__done">Track mastered</span>
+                )}
+                <button
+                  type="button"
+                  className="button button--quiet learning-track-card__focus"
+                  aria-pressed={isActive}
+                  onClick={() =>
+                    setActiveTrack(isActive ? undefined : track.track.id)
+                  }
+                >
+                  {isActive ? "Clear focus" : "Set as focus"}
+                </button>
+              </article>
+            );
+          })}
+        </div>
       </section>
 
       <section className="workspace-band" aria-label="Current progress">

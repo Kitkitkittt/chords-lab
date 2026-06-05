@@ -1,4 +1,5 @@
 import { Chord, Note } from "tonal";
+import { chordSummary } from "./theory";
 
 function pitchClass(note: string): string {
   return Note.pitchClass(note) || note.replace(/[0-9]/g, "");
@@ -18,6 +19,46 @@ export function detectChordStack(notes: string[]): string {
       : "";
 
   return matches[0] ? `${matches[0]}${inversionHint}` : "Unlabeled color";
+}
+
+export type ChordStackDescription = {
+  /** Same string as `detectChordStack`, including any inversion hint. */
+  label: string;
+  /** Detected chord symbol without inversion hint, or null when unlabeled. */
+  symbol: string | null;
+  /** Teoria-style quality/type label, e.g. "major", "dominant seventh". */
+  quality: string | null;
+  /** "triad" | "tetrad" | ... or null when no chord is detected. */
+  cardinality: string | null;
+};
+
+/**
+ * Richer chord-stack detection that adds a teoria-style quality and
+ * cardinality label on top of the detected symbol. Useful for explaining what
+ * a learner just stacked, not only naming it.
+ */
+export function describeChordStack(notes: string[]): ChordStackDescription {
+  const label = detectChordStack(notes);
+  const symbolMatch = label.match(/^([^\s]+?)(?: over .*)?$/);
+  const symbol =
+    label === "Keep stacking" ||
+    label === "No chord yet" ||
+    label === "Unlabeled color"
+      ? null
+      : symbolMatch?.[1] ?? null;
+
+  if (!symbol) {
+    return { label, symbol: null, quality: null, cardinality: null };
+  }
+
+  const summary = chordSummary(symbol);
+
+  return {
+    label,
+    symbol,
+    quality: summary.empty ? null : summary.quality,
+    cardinality: summary.empty ? null : summary.cardinality
+  };
 }
 
 export function calculateTapTempo(tapTimes: number[]): number | undefined {

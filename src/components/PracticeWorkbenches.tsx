@@ -16,7 +16,7 @@ import type { AudioPlaybackState } from "../lib/audioEngine";
 import { instrumentsById } from "../lib/instruments";
 import {
   calculateTapTempo,
-  detectChordStack,
+  describeChordStack,
   quantizeBeatPosition
 } from "../lib/interactionTools";
 import type { PracticePrompt, PracticeRenderSpec } from "../lib/practiceEngine";
@@ -310,9 +310,14 @@ function PianoRollWorkbench({
       ? new Set(prompt.renderSpec.notes)
       : new Set(prompt.answer);
   const selectedOffScale = selected.filter((note) => !targetNotes.has(note));
-  const chordLabel =
+  const chordDescription =
     mode === "chord" || prompt.kind === "chord-builder"
-      ? detectChordStack(selected)
+      ? describeChordStack(selected)
+      : undefined;
+  const chordLabel = chordDescription?.label;
+  const chordQuality =
+    chordDescription && chordDescription.quality && chordDescription.cardinality
+      ? `${chordDescription.quality} ${chordDescription.cardinality}`
       : undefined;
 
   return (
@@ -383,6 +388,7 @@ function PianoRollWorkbench({
       <div className="workbench-readout" aria-live="polite">
         {selected.length > 0 ? selected.join(" ") : "No notes selected yet."}
         {chordLabel ? <span>Detected: {chordLabel}</span> : null}
+        {chordQuality ? <span>Quality: {chordQuality}</span> : null}
         {selectedOffScale.length > 0 && autoCorrect ? (
           <span>Off scale: {selectedOffScale.join(" ")}</span>
         ) : null}

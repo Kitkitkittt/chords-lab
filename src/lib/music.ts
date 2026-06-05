@@ -1,60 +1,63 @@
-import { Chord, Interval, Note, Scale } from "tonal";
-
-const keyboardEnharmonics: Record<string, string> = {
-  "B#": "C",
-  "C#": "C#",
-  Db: "C#",
-  "C##": "D",
-  "D#": "D#",
-  Eb: "D#",
-  "D##": "E",
-  Fb: "E",
-  "E#": "F",
-  "F#": "F#",
-  Gb: "F#",
-  "F##": "G",
-  "G#": "G#",
-  Ab: "G#",
-  "G##": "A",
-  "A#": "A#",
-  Bb: "A#",
-  "A##": "B",
-  Cb: "B"
-};
+/**
+ * Beginner-facing music helpers.
+ *
+ * This module now delegates to the canonical theory engine in `./theory`.
+ * It keeps its original public surface (the names other modules import) so the
+ * rest of the app does not need to change, while the underlying logic is
+ * derived from tonal instead of hand-built lookup tables.
+ */
+import {
+  chordNotes,
+  enharmonicOf,
+  intervalBetween,
+  keyboardNoteForPlayback,
+  keyboardPitchClass,
+  keyboardPitchClasses as keyboardPitchClassesFromEngine,
+  majorScaleNotes as majorScaleNotesFromEngine,
+  naturalMinorScaleNotes as naturalMinorScaleNotesFromEngine,
+  nearestNoteFromFrequency,
+  noteFrequency as noteFrequencyFromEngine,
+  simplifyNote
+} from "./theory";
 
 export function noteFrequency(noteName: string): number | null {
-  const frequency = Note.freq(noteName);
-  return typeof frequency === "number" ? Math.round(frequency * 100) / 100 : null;
+  return noteFrequencyFromEngine(noteName);
 }
 
 export function majorScaleNotes(tonic: string): string[] {
-  return Scale.get(`${tonic} major`).notes;
+  return majorScaleNotesFromEngine(tonic);
 }
 
 export function naturalMinorScaleNotes(tonic: string): string[] {
-  return Scale.get(`${tonic} minor`).notes;
+  return naturalMinorScaleNotesFromEngine(tonic);
 }
 
-export function intervalName(from: string, to: string): string {
-  const interval = Interval.distance(from, to);
-  const data = Interval.get(interval);
-  return data.name || interval;
+/**
+ * Conventional interval name between two notes, e.g. `M3`, `P5`.
+ * Pass `{ verbose: true }` for "major third".
+ */
+export function intervalName(
+  from: string,
+  to: string,
+  options: { verbose?: boolean } = {}
+): string {
+  return intervalBetween(from, to, options);
 }
 
 export function triadNotes(symbol: string): string[] {
-  return Chord.get(symbol).notes;
+  return chordNotes(symbol);
 }
 
 export function keyboardPitchClasses(): string[] {
-  return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  return keyboardPitchClassesFromEngine();
 }
 
 export function normalizePitchClassForKeyboard(noteName: string): string {
-  const pitchClass = noteName.replace(/[0-9]/g, "");
-  return keyboardEnharmonics[pitchClass] ?? pitchClass;
+  return keyboardPitchClass(noteName);
 }
 
 export function normalizeNoteForPlayback(noteName: string): string {
-  const octave = noteName.match(/[0-9]+$/)?.[0] ?? "";
-  return `${normalizePitchClassForKeyboard(noteName)}${octave}`;
+  return keyboardNoteForPlayback(noteName);
 }
+
+export { enharmonicOf, nearestNoteFromFrequency, simplifyNote };

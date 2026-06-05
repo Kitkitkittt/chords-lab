@@ -77,7 +77,7 @@ export function PracticePage() {
     AudioPlaybackState
   >("idle");
   const [isAudioRevealed, setIsAudioRevealed] = useState(false);
-  const { progress, recordPracticeResult, recordPracticeSession } = useProgress();
+  const { progress, recordPracticeResult, recordPracticeSession, recordSkillConfidence } = useProgress();
   const activeModuleId = isPracticeModuleId(params.moduleId)
     ? params.moduleId
     : "pitch";
@@ -410,6 +410,12 @@ export function PracticePage() {
                 prompt={session.prompt}
                 onRetry={session.retry}
                 onNext={session.next}
+                onRateConfidence={(confidence) =>
+                  recordSkillConfidence(
+                    session.prompt.skillTargets ?? [],
+                    confidence
+                  )
+                }
               />
             </div>
           ) : (

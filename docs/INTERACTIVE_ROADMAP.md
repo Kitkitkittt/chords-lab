@@ -1,6 +1,6 @@
 # Interactive Roadmap
 
-Last updated: 2026-06-01
+Last updated: 2026-06-05
 
 ## Direction
 
@@ -97,8 +97,9 @@ imports the full local progress object with preview.
    - Add seventh chords after triads are stable.
    - Add chord-symbol reading and spelling feedback.
    - Status: triads, inversions, sevenths, piano-roll selection, chord-stack
-     detection, and basic Roman numeral prompts are implemented; cadence depth
-     remains next.
+     detection with quality/cardinality labels, and basic Roman numeral prompts
+     are implemented; inversions are now derived from `Chord.degrees` for any
+     chord. Cadence depth remains next.
 
 4. Rhythm module
    - Add beat-grid pattern builder.
@@ -162,9 +163,35 @@ imports the full local progress object with preview.
 
 ## Implementation Order
 
+Done:
+
+- A derived theory engine (`src/lib/theory.ts`) now generalizes scales, keys,
+  Roman numerals, progressions, inversions, solfege, and voice leading to all
+  keys. See `docs/THEORY_ENGINE.md`.
+- A voice-leading practice family backs the Voice-Leading lesson.
+- A skill graph (`src/lib/skills.ts`) links lessons -> skills -> prompts ->
+  review, powering soft recommendations and interleaved review. See
+  `docs/SKILL_GRAPH.md`.
+- Parallel learning tracks surfaced on Home. See `docs/LEARNING_TRACKS.md`.
+- Interactive theory tools at `/tools/circle` and `/tools/progression`: circle
+  of fifths, chord progression playground, voicing diagram, and a fretboard
+  scale-box explorer.
+- Cadence-identification and harmonic-function practice; full modal coverage in
+  the scales module.
+- Optional Easy/Hard confidence rating after correct answers (Practice and
+  Review).
+- Review interleaves due-skill prompts round-robin for better retention.
+- Selectable active learning track stored in local progress, biasing Home
+  suggestions.
+
+Next:
+
 1. Add more concrete prompt factories behind each generated template category.
 2. Deepen instrument-specific chord-shape, scale-box, bassline, and groove tasks.
-3. Add deeper cadence, progression, phrase, and harmonic-function checks.
+3. Add track-scoped review sessions and per-track milestones.
 4. Add educator-reviewed lesson/example revisions.
-5. Add optional MIDI adapter only after privacy and reliability UX are explicit.
+5. Optional opt-in microphone tuner (pitch match with cents feedback) using the
+   engine's `nearestNoteFromFrequency`. This would change the current
+   no-microphone stance, so it is deferred behind explicit consent, an
+   off-by-default setting, and local-only processing. Not built yet.
 6. Add optional cloud sync only after account/privacy design is explicit.

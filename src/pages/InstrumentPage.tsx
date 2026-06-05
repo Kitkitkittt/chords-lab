@@ -138,6 +138,8 @@ export function InstrumentPage() {
       <VoiceRangeWorkbench
         activeNotes={["C4", "D4", "E4", "G4"]}
         onPlay={playCurrent}
+        tonic={tonic}
+        mode={scaleType.includes("minor") ? "minor" : "major"}
       />
     );
   }

@@ -95,6 +95,16 @@ Implemented:
 - Optional cloud preparation through disabled sync metadata and a local progress
   repository interface.
 - Local progress provider and storage normalization.
+- A derived music-theory engine (`src/lib/theory.ts`) built on Tonal that
+  generalizes scales, keys, Roman numerals, progressions, inversions, solfege,
+  and voice leading to all keys.
+- A skill graph (`src/lib/skills.ts`) and learning path
+  (`src/lib/learningPath.ts`) that link lessons to skills to prompts, drive
+  Home "Suggested focus" cards, per-skill mastery on Progress, interleaved
+  review, an optional Easy/Hard confidence rating, and parallel learning tracks.
+- Interactive theory tools at `/tools/circle` and `/tools/progression`: circle
+  of fifths, chord progression playground, voicing diagram, and a fretboard
+  scale-box explorer.
 - PWA manifest and generated service worker.
 - Unit, component, content, and Playwright e2e tests.
 
@@ -236,6 +246,8 @@ Lesson metadata includes:
 | `/review` | Mixed local review session. |
 | `/lab/song` | Song Lab pattern builder. |
 | `/lab/song/sketches` | Saved Song Lab sketches, export, and import. |
+| `/tools/circle` | Interactive theory tools (circle of fifths). |
+| `/tools/progression` | Interactive theory tools (chord progression playground). |
 | `/glossary` | Searchable glossary. |
 | `/sources` | Source bibliography and usage notes. |
 | `/progress` | Local progress, bookmarks, mastery, and settings. |
@@ -258,7 +270,8 @@ Music and media:
 
 - Tone.js for user-triggered Web Audio playback.
 - VexFlow for rendered notation.
-- Tonal for music theory helpers.
+- Tonal for the music theory engine (notes, intervals, scales, modes, keys,
+  Roman numerals, progressions, chords, voicings, and voice leading).
 
 Interface:
 
@@ -374,11 +387,15 @@ Key files:
 - `src/lib/adaptiveReview.ts` contains local adaptive review scheduling.
 - `src/lib/progressExport.ts` contains full progress export/import helpers.
 - `src/lib/songSketches.ts` contains Song Lab sketch helpers.
-- `src/lib/music.ts` contains music helper functions.
+- `src/lib/music.ts` contains beginner-facing helpers that delegate to the
+  theory engine.
+- `src/lib/theory.ts` is the canonical music-theory engine built on Tonal; see
+  `docs/THEORY_ENGINE.md`.
 - `src/lib/progressStorage.ts` reads, writes, and normalizes local progress.
 - `src/state/progress.tsx` exposes progress actions through React context.
 - `src/components/lessonComponentMap.ts` maps MDX lesson components.
 - `docs/ARCHITECTURE.md` describes the rendering, progress, and testing model.
+- `docs/THEORY_ENGINE.md` documents the theory engine and its tonal usage.
 
 ## Local Progress And Privacy
 
@@ -473,12 +490,14 @@ material.
 
 Current reference and implementation sources include:
 
-- Teoria.
+- Teoria (teoria.com tutorials) for topic sequencing and terminology.
+- teoria.js for pedagogical conventions (conventional interval names, solfege,
+  scale-degree detection) reimplemented on top of Tonal.
 - MusicTheory.net.
 - Open Music Theory.
 - Ableton Learning Music.
 - VexFlow.
-- Tonal.
+- Tonal (the music-theory engine).
 - Tone.js.
 
 Do not copy source lesson prose, exercise wording, screenshots, diagrams, or
@@ -511,6 +530,9 @@ See:
 - [`docs/PROGRESS.md`](docs/PROGRESS.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - [`docs/INTERACTIVE_ROADMAP.md`](docs/INTERACTIVE_ROADMAP.md)
+- [`docs/THEORY_ENGINE.md`](docs/THEORY_ENGINE.md)
+- [`docs/SKILL_GRAPH.md`](docs/SKILL_GRAPH.md)
+- [`docs/LEARNING_TRACKS.md`](docs/LEARNING_TRACKS.md)
 
 ## Troubleshooting
 

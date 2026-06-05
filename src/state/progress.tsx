@@ -8,7 +8,10 @@ import {
   useState
 } from "react";
 import type { ReactNode } from "react";
-import { updateAdaptiveSkillState } from "../lib/adaptiveReview";
+import {
+  applyConfidenceToSkillState,
+  updateAdaptiveSkillState
+} from "../lib/adaptiveReview";
 import {
   fallbackProgress,
   localProgressRepository
@@ -36,12 +39,17 @@ type ProgressContextValue = {
     skillTargets?: string[]
   ) => void;
   recordPracticeSession: (session: PracticeSessionHistory) => void;
+  recordSkillConfidence: (
+    skillTargets: string[],
+    confidence: "easy" | "hard"
+  ) => void;
   saveSongSketch: (sketch: SongSketch) => void;
   deleteSongSketch: (sketchId: string) => void;
   importSongSketches: (sketches: SongSketch[]) => void;
   importProgress: (nextProgress: ProgressState) => void;
   setAudioEnabled: (enabled: boolean) => void;
   setReducedMotion: (enabled: boolean) => void;
+  setActiveTrack: (trackId: string | undefined) => void;
   resetProgress: () => void;
 };
 
@@ -234,6 +242,35 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const recordSkillConfidence = useCallback(
+    (skillTargets: string[], confidence: "easy" | "hard") => {
+      if (skillTargets.length === 0) {
+        return;
+      }
+
+      setProgress((current) => {
+        const ratedAt = new Date();
+        const nextSkillMastery = skillTargets.reduce((mastery, skill) => {
+          const existing = mastery[skill];
+
+          // Confidence only nudges ease/interval; it never changes attempt
+          // counts. Skip skills with no prior attempt.
+          if (!existing) {
+            return mastery;
+          }
+
+          return {
+            ...mastery,
+            [skill]: applyConfidenceToSkillState(existing, confidence, ratedAt)
+          };
+        }, current.skillMastery);
+
+        return { ...current, skillMastery: nextSkillMastery };
+      });
+    },
+    []
+  );
+
   const recordPracticeSession = useCallback((session: PracticeSessionHistory) => {
     setProgress((current) => ({
       ...current,
@@ -301,6 +338,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const setActiveTrack = useCallback((trackId: string | undefined) => {
+    setProgress((current) => ({
+      ...current,
+      settings: { ...current.settings, activeTrackId: trackId }
+    }));
+  }, []);
+
   const resetProgress = useCallback(() => {
     setProgress(fallbackProgress());
   }, []);
@@ -317,12 +361,14 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       recordCheckResult,
       recordPracticeResult,
       recordPracticeSession,
+      recordSkillConfidence,
       saveSongSketch,
       deleteSongSketch,
       importSongSketches,
       importProgress,
       setAudioEnabled,
       setReducedMotion,
+      setActiveTrack,
       resetProgress
     }),
     [
@@ -335,12 +381,14 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       recordCheckResult,
       recordPracticeResult,
       recordPracticeSession,
+      recordSkillConfidence,
       saveSongSketch,
       deleteSongSketch,
       importSongSketches,
       importProgress,
       setAudioEnabled,
       setReducedMotion,
+      setActiveTrack,
       resetProgress
     ]
   );

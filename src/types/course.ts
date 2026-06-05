@@ -15,6 +15,8 @@ export type LessonMeta = {
   outcomes: string[];
   prerequisites: string[];
   citations: Citation[];
+  /** Canonical skill ids this lesson teaches (optional, additive). */
+  skills?: string[];
 };
 
 export type Lesson = LessonMeta & {
@@ -170,6 +172,10 @@ export type SongSketch = {
   title: string;
   bpm: number;
   meter: string;
+  /** Tonic for the sketch, e.g. "C". Defaults to "C" when absent. */
+  key?: string;
+  /** Major or minor key context. Defaults to "major" when absent. */
+  mode?: "major" | "minor";
   form: string[];
   tracks: {
     drums: boolean[][];
@@ -213,6 +219,8 @@ export type ProgressState = {
   settings: {
     audioEnabled: boolean;
     reducedMotion: boolean;
+    /** Optional active learning track id (additive). */
+    activeTrackId?: string;
   };
 };
 
