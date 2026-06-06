@@ -2,6 +2,28 @@
 
 Last updated: 2026-06-05
 
+# Chords Lab Progress
+
+Last updated: 2026-06-05
+
+## Launch Polish Pass (2026-06-05)
+
+Rounded the app out for real-world use.
+
+- Generated real PNG app icons (192, 512, and a dedicated 512 maskable with a
+  full-bleed brand background) from the SVG via `scripts/generate-icons.mjs`
+  (sharp, dev-only). Updated the PWA manifest to reference them with correct
+  `purpose` values and the `apple-touch-icon`.
+- Added an `/about` page covering the local-first privacy model (no accounts,
+  no tracking, offline, storage key, no microphone), credits, and links to
+  progress export and sources. Added an "About" nav entry.
+- Added a calm, dismissible first-run welcome tour (`WelcomeTour`) shown once
+  per browser via its own `chordslab.tour.v1` key (separate from progress), with
+  reduced-motion support.
+- Tests: added `AboutPage.test.tsx`, `WelcomeTour.test.tsx`, and a Playwright
+  tour test; existing e2e pre-seeds the tour-seen flag so flows are unaffected.
+  Suite: 92 unit/component tests, 22 Playwright tests (desktop + mobile).
+
 ## Production-Readiness Pass (2026-06-05)
 
 Made the app resilient and shareable for real use.

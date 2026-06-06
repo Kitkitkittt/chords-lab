@@ -250,6 +250,7 @@ Lesson metadata includes:
 | `/tools/progression` | Interactive theory tools (chord progression playground). |
 | `/glossary` | Searchable glossary. |
 | `/sources` | Source bibliography and usage notes. |
+| `/about` | About and privacy (local-first model, credits). |
 | `/progress` | Local progress, bookmarks, mastery, and settings. |
 | `/progress/export` | Full local progress export/import with preview. |
 | `/plan` | In-app project plan and status. |

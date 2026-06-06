@@ -6,6 +6,7 @@ import {
   Dumbbell,
   Guitar,
   GraduationCap,
+  Info,
   Library,
   Music2,
   Music3,
@@ -16,6 +17,7 @@ import { lessons } from "../data/course";
 import { useProgress } from "../state/progress";
 import type { AppMode } from "../types/course";
 import { ProgressBar } from "./ProgressBar";
+import { WelcomeTour } from "./WelcomeTour";
 
 const navItems = [
   { to: "/", label: "Home", icon: Music2 },
@@ -27,6 +29,7 @@ const navItems = [
   { to: "/tools/circle", label: "Tools", icon: Compass },
   { to: "/glossary", label: "Glossary", icon: BookOpen },
   { to: "/sources", label: "Sources", icon: Library },
+  { to: "/about", label: "About", icon: Info },
   { to: "/progress", label: "Progress", icon: CircleHelp },
   { to: "/plan", label: "Plan", icon: ClipboardList }
 ];
@@ -112,6 +115,7 @@ export function AppLayout() {
           device.
         </p>
       </footer>
+      <WelcomeTour />
     </div>
   );
 }

@@ -1,6 +1,18 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+// Most tests assume a returning learner. Pre-seed the first-run tour flag so its
+// modal does not block interactions. The dedicated tour test clears it.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try {
+      window.localStorage.setItem("chordslab.tour.v1", "seen");
+    } catch {
+      // ignore
+    }
+  });
+});
+
 test("home, lesson completion, progress persistence, and accessibility", async ({
   page
 }) => {
@@ -29,6 +41,23 @@ test("home, lesson completion, progress persistence, and accessibility", async (
 
   await page.reload();
   await expect(page.getByText("Micro-check score: 1 correct")).toBeVisible();
+});
+
+test("first-run welcome tour shows once and dismisses", async ({ page, context }) => {
+  // Clear the seeded flag so the tour appears for this test only.
+  await context.addInitScript(() => {
+    try {
+      window.localStorage.removeItem("chordslab.tour.v1");
+    } catch {
+      // ignore
+    }
+  });
+
+  await page.goto("/");
+  const dialog = page.getByRole("dialog", { name: /calm way to learn/i });
+  await expect(dialog).toBeVisible();
+  await page.getByRole("button", { name: /Start learning/i }).click();
+  await expect(dialog).toBeHidden();
 });
 
 test("index practice hub supports multiple interactive modules", async ({

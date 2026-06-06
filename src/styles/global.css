@@ -3902,3 +3902,161 @@ html[data-reduced-motion="true"] *::after {
     grid-template-columns: 1fr;
   }
 }
+
+/* About & privacy page */
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.about-card {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  padding: var(--space-2);
+  border: 1px solid rgba(57, 81, 193, 0.14);
+  border-radius: var(--radius-lg);
+  background: var(--surface-container-lowest);
+  box-shadow: var(--shadow-soft);
+}
+
+.about-card svg {
+  color: var(--primary);
+}
+
+.about-card h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.about-card p {
+  margin: 0;
+  color: var(--on-surface-variant);
+}
+
+.about-prose {
+  display: grid;
+  gap: 0.75rem;
+  max-inline-size: var(--max-width, 60rem);
+}
+
+.about-prose code {
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-container);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9em;
+}
+
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-block-start: var(--space-1);
+}
+
+@media (max-width: 720px) {
+  .about-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* First-run welcome tour */
+.welcome-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: var(--space-2);
+  background: rgba(25, 28, 29, 0.45);
+  backdrop-filter: blur(8px);
+}
+
+.welcome-tour__card {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  max-inline-size: 34rem;
+  inline-size: 100%;
+  max-block-size: 90vh;
+  overflow-y: auto;
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  background: var(--surface-container-lowest);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: welcome-tour-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes welcome-tour-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.welcome-tour__card h2 {
+  margin: 0;
+}
+
+.welcome-tour__close {
+  position: absolute;
+  inset-block-start: 0.8rem;
+  inset-inline-end: 0.8rem;
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--surface-container);
+  cursor: pointer;
+  color: var(--on-surface-variant);
+}
+
+.welcome-tour__steps {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.welcome-tour__steps li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.2rem 0.7rem;
+  align-items: start;
+}
+
+.welcome-tour__steps svg {
+  grid-row: span 2;
+  color: var(--primary);
+  margin-block-start: 0.15rem;
+}
+
+.welcome-tour__steps strong {
+  display: block;
+}
+
+.welcome-tour__steps span {
+  color: var(--on-surface-variant);
+}
+
+.welcome-tour__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-block-start: var(--space-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-tour__card {
+    animation: none;
+  }
+}
