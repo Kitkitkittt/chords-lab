@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { InstrumentPage } from "./InstrumentPage";
 import { InstrumentsPage } from "./InstrumentsPage";
+import { ProgressProvider } from "../state/progress";
 
 describe("instrument pages", () => {
   it("renders the full-band instrument index", () => {
@@ -31,10 +32,12 @@ describe("instrument pages", () => {
     ]) {
       const { unmount } = render(
         <MemoryRouter initialEntries={[route]}>
-          <Routes>
-            <Route path="/instruments/:instrumentId" element={<InstrumentPage />} />
-            <Route path="/instruments" element={<InstrumentsPage />} />
-          </Routes>
+          <ProgressProvider>
+            <Routes>
+              <Route path="/instruments/:instrumentId" element={<InstrumentPage />} />
+              <Route path="/instruments" element={<InstrumentsPage />} />
+            </Routes>
+          </ProgressProvider>
         </MemoryRouter>
       );
 

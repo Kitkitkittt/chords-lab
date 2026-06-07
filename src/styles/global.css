@@ -813,6 +813,13 @@ code {
   color: var(--on-surface);
   cursor: pointer;
   font-weight: 800;
+  transition: transform 80ms ease, background 120ms ease;
+  touch-action: none;
+}
+
+.interactive-piano button:active,
+.drum-pad-grid button:active {
+  transform: scale(0.94);
 }
 
 .interactive-piano button.is-black {
@@ -888,7 +895,8 @@ code {
 
 .fretboard-grid__frets span,
 .fretboard-grid__string strong,
-.fretboard-grid__string span {
+.fretboard-grid__string span,
+.fretboard-grid__string .fretboard-cell {
   display: grid;
   place-items: center;
   min-block-size: 2.3rem;
@@ -906,18 +914,36 @@ code {
   color: var(--on-surface);
 }
 
-.fretboard-grid__string span {
+.fretboard-grid__string span,
+.fretboard-grid__string .fretboard-cell {
   background: var(--surface-container-low);
   color: var(--on-surface-variant);
   font-size: 0.78rem;
 }
 
-.fretboard-grid__string span.is-active {
+.fretboard-grid__string .fretboard-cell {
+  border: 0;
+  cursor: pointer;
+  transition: transform 80ms ease, background 120ms ease;
+}
+
+.fretboard-grid__string .fretboard-cell:hover,
+.fretboard-grid__string .fretboard-cell:focus-visible {
+  background: var(--surface-container-high);
+}
+
+.fretboard-grid__string .fretboard-cell:active {
+  transform: scale(0.92);
+}
+
+.fretboard-grid__string span.is-active,
+.fretboard-grid__string .fretboard-cell.is-active {
   background: var(--primary-container);
   color: var(--primary);
 }
 
-.fretboard-grid__string span.is-root {
+.fretboard-grid__string span.is-root,
+.fretboard-grid__string .fretboard-cell.is-root {
   background: var(--secondary-container);
   color: var(--secondary);
 }
@@ -3853,6 +3879,40 @@ html[data-reduced-motion="true"] *::after {
   }
 }
 
+/* Instrument controls: piano octave range + chord-shape play */
+.piano-range-control,
+.chord-shape-play {
+  display: flex;
+  gap: 0.4rem;
+  margin-block-end: var(--space-1);
+}
+
+.piano-range-control button,
+.chord-shape-play button {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.piano-range-control button[aria-pressed="true"] {
+  background: var(--primary-container);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Free-play chord readout on instrument pages */
+.free-play-readout {
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-container);
+  color: var(--on-surface);
+  font-weight: 600;
+  min-block-size: 2.5rem;
+}
+
 /* Error boundary recovery screen */
 .error-boundary {
   display: grid;
@@ -4267,5 +4327,17 @@ html[data-reduced-motion="true"] *::after {
   .welcome-tour__card,
   .more-menu__panel {
     animation: none;
+  }
+
+  .interactive-piano button,
+  .drum-pad-grid button,
+  .fretboard-grid__string .fretboard-cell {
+    transition: none;
+  }
+
+  .interactive-piano button:active,
+  .drum-pad-grid button:active,
+  .fretboard-grid__string .fretboard-cell:active {
+    transform: none;
   }
 }

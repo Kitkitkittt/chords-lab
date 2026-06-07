@@ -11,8 +11,21 @@ import {
   pitchClass,
   voiceDegreeLadder
 } from "../lib/instruments";
+import {
+  liveVoiceForInstrument,
+  playChord,
+  playSequence,
+  triggerNote,
+  triggerNoteAttack,
+  triggerNoteRelease,
+  type LiveVoiceId
+} from "../lib/audioEngine";
 
-const pianoOctaves = [3, 4, 5];
+const OCTAVE_RANGES: Record<string, number[]> = {
+  low: [2, 3],
+  mid: [3, 4, 5],
+  high: [4, 5, 6]
+};
 const pianoPitchClasses = [
   "C",
   "C#",
@@ -38,6 +51,7 @@ type PianoWorkbenchProps = {
   bassNote?: string;
   onToggle?: (note: string) => void;
   selectedNotes?: string[];
+  audioEnabled?: boolean;
 };
 
 export function InteractivePianoWorkbench({
@@ -45,9 +59,20 @@ export function InteractivePianoWorkbench({
   highlights,
   bassNote,
   onToggle,
-  selectedNotes = []
+  selectedNotes = [],
+  audioEnabled = true
 }: PianoWorkbenchProps) {
   const selectedSet = new Set(selectedNotes.map(pitchClass));
+  const [range, setRange] = useState<keyof typeof OCTAVE_RANGES>("mid");
+  const octaves = OCTAVE_RANGES[range];
+
+  function press(note: string) {
+    void triggerNoteAttack(note, { voiceId: "keys", audioEnabled });
+  }
+
+  function release(note: string) {
+    triggerNoteRelease(note, { voiceId: "keys" });
+  }
 
   return (
     <section className="instrument-board" aria-labelledby="piano-board-title">
@@ -55,11 +80,23 @@ export function InteractivePianoWorkbench({
         <Piano size={18} aria-hidden="true" />
         <div>
           <h2 id="piano-board-title">{label}</h2>
-          <p>Chord tones, degrees, octaves, and inversion bass are visible together.</p>
+          <p>Press keys to hear them. Chord tones, degrees, and inversion bass stay visible.</p>
         </div>
       </div>
+      <div className="piano-range-control" role="group" aria-label="Octave range">
+        {(["low", "mid", "high"] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={range === option}
+            onClick={() => setRange(option)}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
       <div className="interactive-piano" aria-label={label}>
-        {pianoOctaves.map((octave) => (
+        {octaves.map((octave) => (
           <div key={octave} className="interactive-piano__octave">
             <span>Oct {octave}</span>
             {pianoPitchClasses.map((note) => {
@@ -80,7 +117,22 @@ export function InteractivePianoWorkbench({
                     .filter(Boolean)
                     .join(" ")}
                   aria-pressed={isSelected}
-                  onClick={() => onToggle?.(fullNote)}
+                  aria-label={`${note}${octave}`}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    press(fullNote);
+                    onToggle?.(fullNote);
+                  }}
+                  onPointerUp={() => release(fullNote)}
+                  onPointerLeave={() => release(fullNote)}
+                  onPointerCancel={() => release(fullNote)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      void triggerNote(fullNote, { voiceId: "keys", audioEnabled });
+                      onToggle?.(fullNote);
+                    }
+                  }}
                 >
                   <strong>{note}</strong>
                   <span>{highlight?.degree ?? (isBass ? "bass" : "")}</span>
@@ -100,6 +152,9 @@ type FretboardWorkbenchProps = {
   tuning: FretboardTuning;
   activeNotes: string[];
   chordShape?: ChordShape;
+  audioEnabled?: boolean;
+  /** When set, pressing a fret reports the pitch class (for practice answers). */
+  onSelectNote?: (pitchClass: string) => void;
 };
 
 export function FretboardWorkbench({
@@ -107,12 +162,23 @@ export function FretboardWorkbench({
   title,
   tuning,
   activeNotes,
-  chordShape
+  chordShape,
+  audioEnabled = true,
+  onSelectNote
 }: FretboardWorkbenchProps) {
   const positions = useMemo(
     () => fretboardPositions(tuning, activeNotes, chordShape?.root),
     [activeNotes, chordShape?.root, tuning]
   );
+  const voiceId: LiveVoiceId = liveVoiceForInstrument(instrumentId);
+
+  function playFret(openNote: string, fret: number) {
+    // The displayed pitch class lacks an octave; derive a sounding note from
+    // the open-string octave plus the fret offset for a realistic register.
+    const octave = Number(openNote.match(/\d+$/)?.[0] ?? "3");
+    const baseOctave = octave + Math.floor(fret / 12);
+    return { voiceId, baseOctave };
+  }
 
   return (
     <section className="instrument-board" aria-labelledby={`${instrumentId}-fretboard-title`}>
@@ -120,7 +186,7 @@ export function FretboardWorkbench({
         <Guitar size={18} aria-hidden="true" />
         <div>
           <h2 id={`${instrumentId}-fretboard-title`}>{title}</h2>
-          <p>Roots, chord tones, open strings, muted strings, and fret targets share one map.</p>
+          <p>Press a fret to hear it. Roots, chord tones, and open strings share one map.</p>
         </div>
       </div>
       {chordShape ? (
@@ -138,13 +204,40 @@ export function FretboardWorkbench({
               </span>
             ))}
           </div>
+          <div className="chord-shape-play" role="group" aria-label="Play chord shape">
+            <button
+              type="button"
+              className="button button--quiet"
+              onClick={() =>
+                void playChord(
+                  `${chordShape.symbol} block`,
+                  activeNotes.map((note) => `${note}3`),
+                  { audioEnabled }
+                )
+              }
+            >
+              Block
+            </button>
+            <button
+              type="button"
+              className="button button--quiet"
+              onClick={() =>
+                void playSequence(
+                  `${chordShape.symbol} strum`,
+                  activeNotes.map((note) => `${note}3`),
+                  { audioEnabled }
+                )
+              }
+            >
+              Strum
+            </button>
+          </div>
         </>
       ) : null}
       <div
         className="fretboard-grid"
         aria-label={`${title} fretboard`}
         role="group"
-        tabIndex={0}
       >
         <div className="fretboard-grid__frets" aria-hidden="true">
           <span />
@@ -152,24 +245,51 @@ export function FretboardWorkbench({
             <span key={fret}>{fret}</span>
           ))}
         </div>
-        {positions.map((stringPositions) => (
-          <div key={stringPositions[0]?.stringName} className="fretboard-grid__string">
-            <strong>{stringPositions[0]?.stringName.replace(/[0-9]/g, "")}</strong>
-            {stringPositions.map((position) => (
-              <span
-                key={`${position.stringName}-${position.fret}`}
-                className={[
-                  position.isActive ? "is-active" : "",
-                  position.isRoot ? "is-root" : ""
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                {position.note}
-              </span>
-            ))}
-          </div>
-        ))}
+        {positions.map((stringPositions) => {
+          const openNote = stringPositions[0]?.stringName ?? "E3";
+
+          return (
+            <div key={openNote} className="fretboard-grid__string">
+              <strong>{openNote.replace(/[0-9]/g, "")}</strong>
+              {stringPositions.map((position) => {
+                const { baseOctave } = playFret(openNote, position.fret);
+                const soundingNote = `${position.note}${baseOctave}`;
+
+                return (
+                  <button
+                    key={`${position.stringName}-${position.fret}`}
+                    type="button"
+                    className={[
+                      "fretboard-cell",
+                      position.isActive ? "is-active" : "",
+                      position.isRoot ? "is-root" : ""
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    aria-label={`${position.note} on ${openNote.replace(/[0-9]/g, "")} string, fret ${position.fret}`}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      void triggerNoteAttack(soundingNote, { voiceId, audioEnabled });
+                      onSelectNote?.(position.note);
+                    }}
+                    onPointerUp={() => triggerNoteRelease(soundingNote, { voiceId })}
+                    onPointerLeave={() => triggerNoteRelease(soundingNote, { voiceId })}
+                    onPointerCancel={() => triggerNoteRelease(soundingNote, { voiceId })}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        void triggerNote(soundingNote, { voiceId, audioEnabled });
+                        onSelectNote?.(position.note);
+                      }
+                    }}
+                  >
+                    {position.note}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -179,14 +299,17 @@ type DrumPadWorkbenchProps = {
   pattern: boolean[][];
   onToggle: (row: number, step: number) => void;
   playbackCursor?: number;
+  audioEnabled?: boolean;
 };
 
 const drumRows = ["kick", "snare", "hat", "clap"];
+const drumVoices: LiveVoiceId[] = ["kick", "snare", "hat", "clap"];
 
 export function DrumPadWorkbench({
   pattern,
   onToggle,
-  playbackCursor = -1
+  playbackCursor = -1,
+  audioEnabled = true
 }: DrumPadWorkbenchProps) {
   return (
     <section className="instrument-board" aria-labelledby="drum-pad-title">
@@ -194,7 +317,7 @@ export function DrumPadWorkbench({
         <Drum size={18} aria-hidden="true" />
         <div>
           <h2 id="drum-pad-title">Drum pads</h2>
-          <p>Build a groove by toggling instrument rows across four beat slots.</p>
+          <p>Tap a pad to hear it and toggle it across four beat slots.</p>
         </div>
       </div>
       <div className="drum-pad-grid" aria-label="Drum groove editor">
@@ -207,7 +330,14 @@ export function DrumPadWorkbench({
                 type="button"
                 className={playbackCursor === stepIndex ? "is-playing" : ""}
                 aria-pressed={isActive}
-                onClick={() => onToggle(rowIndex, stepIndex)}
+                aria-label={`${drumRows[rowIndex]} beat ${stepIndex + 1}`}
+                onClick={() => {
+                  void triggerNote("C2", {
+                    voiceId: drumVoices[rowIndex] ?? "kick",
+                    audioEnabled
+                  });
+                  onToggle(rowIndex, stepIndex);
+                }}
               >
                 {stepIndex + 1}
               </button>
@@ -225,13 +355,15 @@ type VoiceWorkbenchProps = {
   /** Optional movable-do key context; defaults to C major. */
   tonic?: string;
   mode?: "major" | "minor";
+  audioEnabled?: boolean;
 };
 
 export function VoiceRangeWorkbench({
   activeNotes,
   onPlay,
   tonic = "C",
-  mode = "major"
+  mode = "major",
+  audioEnabled = true
 }: VoiceWorkbenchProps) {
   const activeSet = new Set(activeNotes);
   const ladder = useMemo(
@@ -246,7 +378,7 @@ export function VoiceRangeWorkbench({
         <Mic2 size={18} aria-hidden="true" />
         <div>
           <h2 id="voice-range-title">Voice guide</h2>
-          <p>Use reference tones and solfege labels without microphone scoring.</p>
+          <p>Tap a step to hear its reference tone and solfege. No microphone is used.</p>
         </div>
       </div>
       <div className="voice-degree-ladder" aria-label="Voice solfege ladder">
@@ -255,7 +387,21 @@ export function VoiceRangeWorkbench({
             key={`${item.degree}-${item.note}`}
             type="button"
             aria-pressed={selected === item.note || activeSet.has(item.note)}
-            onClick={() => setSelected(item.note)}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              setSelected(item.note);
+              void triggerNoteAttack(item.note, { voiceId: "voice", audioEnabled });
+            }}
+            onPointerUp={() => triggerNoteRelease(item.note, { voiceId: "voice" })}
+            onPointerLeave={() => triggerNoteRelease(item.note, { voiceId: "voice" })}
+            onPointerCancel={() => triggerNoteRelease(item.note, { voiceId: "voice" })}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setSelected(item.note);
+                void triggerNote(item.note, { voiceId: "voice", audioEnabled });
+              }
+            }}
           >
             <strong>{item.solfege}</strong>
             <span>{item.degree}</span>

@@ -426,3 +426,271 @@ export function playSongSketch(
 ): Promise<AudioPlaybackState> {
   return playPattern(songSketchPattern(sketch), options);
 }
+
+// --------------------------------------------------------------------------
+// Live instrument voices (tap-to-sound, press-and-hold sustain)
+// --------------------------------------------------------------------------
+
+/** Logical timbres used by the playable on-screen instruments. */
+export type LiveVoiceId =
+  | "keys"
+  | "pluck"
+  | "bass"
+  | "voice"
+  | "kick"
+  | "snare"
+  | "hat"
+  | "clap";
+
+type LiveVoice = {
+  triggerAttack?: (note: string, time?: number, velocity?: number) => void;
+  triggerRelease?: (note?: string, time?: number) => void;
+  triggerAttackRelease: (
+    note: string,
+    duration: number | string,
+    time?: number,
+    velocity?: number
+  ) => void;
+  releaseAll?: () => void;
+  dispose: () => void;
+};
+
+type ToneModule = typeof import("tone");
+
+let liveTone: ToneModule | undefined;
+const liveVoices = new Map<LiveVoiceId, LiveVoice>();
+/** Tracks which notes are currently held per voice for clean release. */
+const heldNotes = new Map<LiveVoiceId, Set<string>>();
+
+/** Map an on-screen instrument to its pitched live voice. */
+export function liveVoiceForInstrument(instrumentId?: InstrumentId): LiveVoiceId {
+  switch (instrumentId) {
+    case "guitar":
+    case "ukulele":
+      return "pluck";
+    case "bass":
+      return "bass";
+    case "voice":
+      return "voice";
+    default:
+      return "keys";
+  }
+}
+
+function createVoice(Tone: ToneModule, voiceId: LiveVoiceId): LiveVoice {
+  switch (voiceId) {
+    case "pluck":
+      return new Tone.PluckSynth().toDestination() as unknown as LiveVoice;
+    case "bass":
+      return new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.02, decay: 0.2, sustain: 0.6, release: 0.6 }
+      }).toDestination() as unknown as LiveVoice;
+    case "voice":
+      return new Tone.PolySynth(Tone.AMSynth).toDestination() as unknown as LiveVoice;
+    case "kick":
+      return new Tone.MembraneSynth().toDestination() as unknown as LiveVoice;
+    case "snare":
+    case "clap":
+      return new Tone.NoiseSynth({
+        noise: { type: voiceId === "snare" ? "white" : "pink" },
+        envelope: { attack: 0.001, decay: 0.18, sustain: 0 }
+      }).toDestination() as unknown as LiveVoice;
+    case "hat":
+      return new Tone.NoiseSynth({
+        noise: { type: "white" },
+        envelope: { attack: 0.001, decay: 0.05, sustain: 0 }
+      }).toDestination() as unknown as LiveVoice;
+    case "keys":
+    default:
+      return new Tone.PolySynth(Tone.Synth).toDestination() as unknown as LiveVoice;
+  }
+}
+
+const PERCUSSION_VOICES: LiveVoiceId[] = ["kick", "snare", "hat", "clap"];
+const PERCUSSION_NOTE: Record<string, string> = {
+  kick: "C2",
+  snare: "8n",
+  hat: "16n",
+  clap: "8n"
+};
+
+async function ensureVoice(voiceId: LiveVoiceId): Promise<LiveVoice | undefined> {
+  try {
+    if (!liveTone) {
+      liveTone = await import("tone");
+    }
+
+    await liveTone.start();
+    audioUnlockStatus = "unlocked";
+
+    let voice = liveVoices.get(voiceId);
+
+    if (!voice) {
+      voice = createVoice(liveTone, voiceId);
+      liveVoices.set(voiceId, voice);
+      heldNotes.set(voiceId, new Set());
+    }
+
+    return voice;
+  } catch {
+    audioUnlockStatus = "blocked";
+    return undefined;
+  }
+}
+
+function isPercussion(voiceId: LiveVoiceId): boolean {
+  return PERCUSSION_VOICES.includes(voiceId);
+}
+
+/** Begin a sustained note for press-and-hold playing. */
+export async function triggerNoteAttack(
+  note: string,
+  options: { voiceId?: LiveVoiceId; audioEnabled?: boolean; velocity?: number } = {}
+): Promise<void> {
+  if (options.audioEnabled === false) {
+    return;
+  }
+
+  const voiceId = options.voiceId ?? "keys";
+
+  // Percussion has no sustain; fall back to a one-shot hit.
+  if (isPercussion(voiceId)) {
+    await triggerNote(note, options);
+    return;
+  }
+
+  const voice = await ensureVoice(voiceId);
+
+  if (!voice) {
+    return;
+  }
+
+  const playable = normalizeNoteForPlayback(note);
+
+  if (voice.triggerAttack) {
+    voice.triggerAttack(playable, undefined, options.velocity ?? 0.8);
+    heldNotes.get(voiceId)?.add(playable);
+  } else {
+    // Voices without attack/release (e.g. PluckSynth) play a one-shot.
+    voice.triggerAttackRelease(playable, 0.6, undefined, options.velocity ?? 0.8);
+  }
+}
+
+/** Release a sustained note started by `triggerNoteAttack`. */
+export function triggerNoteRelease(
+  note: string,
+  options: { voiceId?: LiveVoiceId } = {}
+): void {
+  const voiceId = options.voiceId ?? "keys";
+  const voice = liveVoices.get(voiceId);
+
+  if (!voice || !voice.triggerRelease) {
+    return;
+  }
+
+  const playable = normalizeNoteForPlayback(note);
+  voice.triggerRelease(playable);
+  heldNotes.get(voiceId)?.delete(playable);
+}
+
+/** One-shot note (keyboard activation, drum hits). */
+export async function triggerNote(
+  note: string,
+  options: {
+    voiceId?: LiveVoiceId;
+    audioEnabled?: boolean;
+    velocity?: number;
+    durationMs?: number;
+  } = {}
+): Promise<void> {
+  if (options.audioEnabled === false) {
+    return;
+  }
+
+  const voiceId = options.voiceId ?? "keys";
+  const voice = await ensureVoice(voiceId);
+
+  if (!voice) {
+    return;
+  }
+
+  const velocity = options.velocity ?? 0.85;
+
+  if (isPercussion(voiceId)) {
+    const value = PERCUSSION_NOTE[voiceId] ?? "8n";
+    voice.triggerAttackRelease(value, "16n", undefined, velocity);
+    return;
+  }
+
+  const duration = options.durationMs ? options.durationMs / 1000 : 0.5;
+  voice.triggerAttackRelease(
+    normalizeNoteForPlayback(note),
+    Math.max(0.05, duration),
+    undefined,
+    velocity
+  );
+}
+
+/** Release all held live notes (call on unmount or route change). */
+export function releaseAllLiveNotes(): void {
+  for (const [voiceId, voice] of liveVoices) {
+    voice.releaseAll?.();
+    heldNotes.get(voiceId)?.clear();
+  }
+}
+
+/** Dispose every live voice (full teardown). */
+export function disposeLiveVoices(): void {
+  for (const voice of liveVoices.values()) {
+    voice.releaseAll?.();
+    voice.dispose();
+  }
+
+  liveVoices.clear();
+  heldNotes.clear();
+}
+
+/**
+ * Play a full drum-kit pattern (kick/snare/hat/clap rows) with per-step timing
+ * and an optional cursor callback. Uses the live percussion voices so every row
+ * is heard, not just the kick.
+ */
+export async function playDrumKit(
+  rows: boolean[][],
+  options: {
+    audioEnabled?: boolean;
+    bpm?: number;
+    onStep?: (step: number) => void;
+    onDone?: () => void;
+  } = {}
+): Promise<void> {
+  if (options.audioEnabled === false) {
+    return;
+  }
+
+  const stepCount = rows[0]?.length ?? 4;
+  const stepMs = 60000 / Math.max(40, options.bpm ?? 96) / 2; // eighth-note grid
+  const voices: LiveVoiceId[] = ["kick", "snare", "hat", "clap"];
+
+  // Pre-warm the voices so the first hit is not delayed.
+  await Promise.all(voices.map((voiceId) => ensureVoice(voiceId)));
+
+  for (let step = 0; step < stepCount; step += 1) {
+    window.setTimeout(() => {
+      options.onStep?.(step);
+      rows.forEach((row, rowIndex) => {
+        if (row[step]) {
+          void triggerNote("C2", {
+            voiceId: voices[rowIndex] ?? "kick",
+            audioEnabled: options.audioEnabled
+          });
+        }
+      });
+
+      if (step === stepCount - 1) {
+        window.setTimeout(() => options.onDone?.(), stepMs);
+      }
+    }, step * stepMs);
+  }
+}

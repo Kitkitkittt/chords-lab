@@ -79,4 +79,20 @@ describe("practice generators", () => {
       totalBeats: 4
     });
   });
+
+  it("generates play-on-instrument chord prompts scored by tapped notes", () => {
+    const [prompt] = generatePracticePrompts(
+      createPracticeSessionConfig("instruments", {
+        topic: "play chords",
+        promptCount: 1,
+        seed: "build-test"
+      })
+    );
+
+    expect(prompt.kind).toBe("chord-builder");
+    expect(["instrument-board", "fretboard"]).toContain(prompt.inputMode);
+    expect(prompt.answer.length).toBeGreaterThanOrEqual(3);
+    expect(prompt.answer.every((note) => !/\d/.test(note))).toBe(true);
+    expect(prompt.renderSpec?.type).toBe("instrument");
+  });
 });

@@ -6,6 +6,64 @@ Last updated: 2026-06-05
 
 Last updated: 2026-06-07
 
+## Interactive Instruments - Phase C & D: Expression & Connections (2026-06-07)
+
+Added expressive controls and connected instruments to the rest of the app.
+
+- Piano gained a low/mid/high octave-range control so learners can play in a
+  register that suits the material.
+- Guitar/ukulele chord shapes gained Block (strum-as-chord) and Strum
+  (arpeggiated sequence) play buttons.
+- Press/hit transitions on keys, frets, and pads, all gated by
+  `prefers-reduced-motion`.
+- The piano free-play panel now has "Send to Song Lab": the detected chord
+  seeds a new Song Lab sketch (literal chord symbols pass through
+  `theoryContextForChord`), extending the existing tool-to-creation pattern.
+- Verified: typecheck, lint, full unit suite, build, and Playwright e2e all
+  green.
+
+## Interactive Instruments - Phase B: Instrument-as-Practice (2026-06-07)
+
+Made the instrument itself an answer surface and added free-play analysis.
+
+- The generated `/practice/instruments` flow can now be answered by playing the
+  real instrument: piano key taps and fretboard fret taps feed the prompt
+  answer (piano notes are normalized to pitch classes). Wired through
+  `InstrumentPromptWorkbench` via the piano `onToggle` and a new fretboard
+  `onSelectNote` callback; the prompt is disabled after submission.
+- New "play chords" instrument topic (`generateInstrumentBuildPrompt`): prompts
+  like "Play the notes of C on the piano" are scored as chord-builder answers
+  against the chord's pitch classes, deepening applied theory on the instrument.
+- Free-play chord detector on the piano instrument page: tapped notes are shown
+  with the detected chord name via `describeChordStack`, with a clear control.
+- Tests: extended `practiceGenerators.test.ts` (play-on-instrument prompts).
+  Suite: 102 unit/component tests, 24 Playwright tests.
+
+## Interactive Instruments - Phase A: Playable Audio (2026-06-07)
+
+Turned the read-only instrument maps into genuinely playable instruments.
+
+- Audio engine gained a live-voice layer (`src/lib/audioEngine.ts`):
+  `triggerNoteAttack`/`triggerNoteRelease` (press-and-hold sustain),
+  `triggerNote` (one-shot for keyboard activation and drum hits),
+  `releaseAllLiveNotes`/`disposeLiveVoices` for cleanup, `playDrumKit` (all rows),
+  and `liveVoiceForInstrument`. Distinct lazily-created Tone.js timbres: keys
+  (Synth), pluck (PluckSynth) for guitar/uke, bass (triangle PolySynth), voice
+  (AMSynth), and kick/snare/hat/clap percussion (Membrane/Noise synths). Voices
+  are cached and reused across taps.
+- Piano keys now sound on pointer-down and sustain until release; Enter/Space
+  plays a one-shot. Keys are labeled and keyboard operable.
+- Fretboard cells became real buttons that play the fretted note (octave derived
+  from the open string + fret), fixing the prior non-interactive scroll region.
+- Drum pads preview their own voice on tap; the instrument "Play" now sequences
+  all four rows with a moving cursor (was kick-only).
+- Voice ladder steps play their reference pitch on tap.
+- `InstrumentPage` threads the `audioEnabled` setting and releases live voices on
+  unmount. Press states and reduced-motion handled in CSS.
+- Tests: `InstrumentWorkbenches.test.tsx` (timbre mapping + press wiring for all
+  four instruments); wrapped `InstrumentsPage` route test in `ProgressProvider`.
+  Suite: 101 unit/component tests, 24 Playwright tests.
+
 ## Navigation Redesign (2026-06-07)
 
 Replaced the cramped 12-item flat nav with a clear, responsive hierarchy.

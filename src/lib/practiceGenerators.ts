@@ -826,10 +826,67 @@ function generateEarPrompt(
   );
 }
 
+function generateInstrumentBuildPrompt(
+  config: PracticeSessionConfig,
+  index: number
+): PracticePrompt {
+  // "Play this chord/scale on the instrument": the learner taps the actual keys
+  // or frets and is scored against the chord's pitch classes.
+  const builds = [
+    { instrumentId: "piano" as const, symbol: "C", kind: "chord" as const },
+    { instrumentId: "piano" as const, symbol: "G", kind: "chord" as const },
+    { instrumentId: "piano" as const, symbol: "Am", kind: "chord" as const },
+    { instrumentId: "guitar" as const, symbol: "C", kind: "chord" as const },
+    { instrumentId: "guitar" as const, symbol: "G", kind: "chord" as const },
+    { instrumentId: "ukulele" as const, symbol: "F", kind: "chord" as const },
+    { instrumentId: "piano" as const, symbol: "Dm", kind: "chord" as const },
+    { instrumentId: "piano" as const, symbol: "E", kind: "chord" as const }
+  ];
+  const build = takeBySeed(builds, config.seed, index);
+  const notes = Chord.get(build.symbol).notes;
+  const profile = build.instrumentId;
+
+  return enrichPrompt(
+    {
+      id: `instrument-build-${build.instrumentId}`,
+      moduleId: "instruments",
+      kind: "chord-builder",
+      inputMode: profile === "piano" ? "instrument-board" : "fretboard",
+      question: `Play the notes of ${build.symbol} on the ${profile}.`,
+      choices: chromaticChoices,
+      answer: notes,
+      explanation: `${build.symbol} is spelled ${notes.join(" ")}. Tap each chord tone on the ${profile}.`,
+      keyboardNotes: notesWithSafeOctaves(notes),
+      audioNotes: notesWithSafeOctaves(notes),
+      playbackPattern: chordPattern(`${build.symbol} chord`, notesWithSafeOctaves(notes)),
+      renderSpec: {
+        type: "instrument",
+        instrumentId: build.instrumentId,
+        highlightedNotes: notes,
+        chordShape:
+          profile === "guitar" || profile === "ukulele"
+            ? chordShapeFor(profile, build.symbol)
+            : undefined,
+        degreeLabels: profile === "piano" ? chordToneHighlights(build.symbol) : undefined,
+        playbackPattern: chordPattern(
+          `${build.symbol} chord`,
+          notesWithSafeOctaves(notes)
+        )
+      }
+    },
+    config,
+    index,
+    ["instrument-application", "chord-symbol"]
+  );
+}
+
 function generateInstrumentPrompt(
   config: PracticeSessionConfig,
   index: number
 ): PracticePrompt {
+  if (config.topic === "play chords") {
+    return generateInstrumentBuildPrompt(config, index);
+  }
   const prompts = [
     {
       id: "instrument-piano-chord",
@@ -1053,6 +1110,7 @@ export function practiceTopicsForModule(moduleId: GeneratedPracticeModuleId): st
     ear: ["mixed", "intervals", "chords", "scales", "cadences", "rhythm"],
     instruments: [
       "mixed",
+      "play chords",
       "piano",
       "guitar",
       "bass",

@@ -1,6 +1,6 @@
 import { ArrowLeft, Music3, Play } from "lucide-react";
-import { useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   DrumPadWorkbench,
   FretboardWorkbench,
@@ -10,8 +10,9 @@ import {
 import {
   audioPlaybackLabel,
   playChord,
-  playRhythm,
+  playDrumKit,
   playSequence,
+  releaseAllLiveNotes,
   stopAudioPlayback
 } from "../lib/audioEngine";
 import type { AudioPlaybackState } from "../lib/audioEngine";
@@ -24,6 +25,8 @@ import {
   isInstrumentId,
   scaleDegreeHighlights
 } from "../lib/instruments";
+import { useProgress } from "../state/progress";
+import { describeChordStack } from "../lib/interactionTools";
 import type { InstrumentId } from "../types/course";
 
 const chordChoices = ["C", "G", "Am", "F", "G7"];
@@ -36,11 +39,23 @@ function notesWithOctave(notes: string[], octave = 4) {
 
 export function InstrumentPage() {
   const { instrumentId } = useParams();
+  const navigate = useNavigate();
+  const { progress } = useProgress();
+  const audioEnabled = progress.settings.audioEnabled;
   const [symbol, setSymbol] = useState("C");
   const [tonic, setTonic] = useState("C");
   const [scaleType, setScaleType] = useState("major");
   const [status, setStatus] = useState<AudioPlaybackState>("idle");
   const [drumPattern, setDrumPattern] = useState(drumGroovePresets.backbeat);
+  const [drumCursor, setDrumCursor] = useState(-1);
+  const [playedNotes, setPlayedNotes] = useState<string[]>([]);
+
+  useEffect(() => {
+    return () => {
+      releaseAllLiveNotes();
+      stopAudioPlayback();
+    };
+  }, []);
 
   if (!isInstrumentId(instrumentId)) {
     return <Navigate to="/instruments" replace />;
@@ -56,6 +71,10 @@ export function InstrumentPage() {
   const activeChordNotes = chordHighlights.map((highlight) => highlight.note);
   const bassNotes = bassTargetsFor(symbol);
   const chordShape = chordShapeFor(profile.id, symbol);
+  const freePlayDetection = describeChordStack(playedNotes);
+  const freePlayChord = freePlayDetection.symbol
+    ? freePlayDetection.symbol.replace(/M$/, "")
+    : undefined;
 
   function toggleDrum(row: number, step: number) {
     setDrumPattern((current) =>
@@ -76,17 +95,21 @@ export function InstrumentPage() {
     }
 
     if (profile.id === "drums") {
-      const tokens = drumPattern[0].map((isActive) => (isActive ? "hit" : "rest"));
-      await playRhythm("Instrument drum pattern", tokens, {
-        audioEnabled: true,
-        onStateChange: setStatus
+      setStatus("playing");
+      await playDrumKit(drumPattern, {
+        audioEnabled,
+        onStep: setDrumCursor,
+        onDone: () => {
+          setDrumCursor(-1);
+          setStatus("idle");
+        }
       });
       return;
     }
 
     if (profile.id === "bass") {
       await playSequence("Bass targets", bassNotes, {
-        audioEnabled: true,
+        audioEnabled,
         onStateChange: setStatus
       });
       return;
@@ -94,14 +117,14 @@ export function InstrumentPage() {
 
     if (profile.id === "voice") {
       await playSequence("Voice guide", ["C4", "D4", "E4", "G4"], {
-        audioEnabled: true,
+        audioEnabled,
         onStateChange: setStatus
       });
       return;
     }
 
     await playChord(`${symbol} ${profile.title}`, notesWithOctave(activeChordNotes), {
-      audioEnabled: true,
+      audioEnabled,
       onStateChange: setStatus
     });
   }
@@ -114,6 +137,14 @@ export function InstrumentPage() {
           highlights={[...chordHighlights, ...scaleHighlights]}
           bassNote={symbol.includes("/") ? symbol.split("/")[1] : activeChordNotes[0]}
           selectedNotes={activeChordNotes}
+          audioEnabled={audioEnabled}
+          onToggle={(note) =>
+            setPlayedNotes((current) => {
+              const pc = note.replace(/[0-9]/g, "");
+              const next = [...current, pc];
+              return next.slice(-6);
+            })
+          }
         />
       );
     }
@@ -126,12 +157,20 @@ export function InstrumentPage() {
           tuning={profile.tuning}
           activeNotes={id === "bass" ? bassNotes : activeChordNotes}
           chordShape={chordShape}
+          audioEnabled={audioEnabled}
         />
       );
     }
 
     if (id === "drums") {
-      return <DrumPadWorkbench pattern={drumPattern} onToggle={toggleDrum} />;
+      return (
+        <DrumPadWorkbench
+          pattern={drumPattern}
+          onToggle={toggleDrum}
+          playbackCursor={drumCursor}
+          audioEnabled={audioEnabled}
+        />
+      );
     }
 
     return (
@@ -140,6 +179,7 @@ export function InstrumentPage() {
         onPlay={playCurrent}
         tonic={tonic}
         mode={scaleType.includes("minor") ? "minor" : "major"}
+        audioEnabled={audioEnabled}
       />
     );
   }
@@ -223,6 +263,46 @@ export function InstrumentPage() {
               {audioPlaybackLabel(status)}
             </p>
           </section>
+
+          {profile.id === "piano" ? (
+            <section>
+              <h2>Free play</h2>
+              <p className="free-play-readout" role="status">
+                {playedNotes.length > 0
+                  ? `${playedNotes.join(" ")} \u2192 ${freePlayDetection.label}`
+                  : "Tap keys to hear what chord you are building."}
+              </p>
+              <button
+                className="button button--quiet"
+                type="button"
+                onClick={() => setPlayedNotes([])}
+                disabled={playedNotes.length === 0}
+              >
+                Clear notes
+              </button>
+              <button
+                className="button button--secondary"
+                type="button"
+                disabled={!freePlayChord}
+                onClick={() => {
+                  if (freePlayChord) {
+                    navigate("/lab/song", {
+                      state: {
+                        seedProgression: {
+                          key: tonic,
+                          mode: scaleType.includes("minor") ? "minor" : "major",
+                          numerals: [freePlayChord]
+                        }
+                      }
+                    });
+                  }
+                }}
+              >
+                <Music3 size={17} aria-hidden="true" />
+                Send to Song Lab
+              </button>
+            </section>
+          ) : null}
         </aside>
 
         <div className="instrument-lab-stage">

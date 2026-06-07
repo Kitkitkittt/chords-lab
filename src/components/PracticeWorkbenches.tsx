@@ -524,6 +524,8 @@ function InstrumentPromptWorkbench({
         tuning={profile.tuning}
         activeNotes={prompt.renderSpec.highlightedNotes}
         chordShape={prompt.renderSpec.chordShape}
+        audioEnabled={audioEnabled}
+        onSelectNote={disabled ? undefined : (note) => choose(note)}
       />
     );
   }
@@ -540,6 +542,7 @@ function InstrumentPromptWorkbench({
     return (
       <DrumPadWorkbench
         pattern={pattern}
+        audioEnabled={audioEnabled}
         onToggle={(_, step) => {
           if (!disabled) {
             choose(rhythm[step] === "hit" ? "rest" : "hit");
@@ -554,6 +557,7 @@ function InstrumentPromptWorkbench({
       <VoiceRangeWorkbench
         activeNotes={prompt.renderSpec.highlightedNotes}
         onPlay={playReference}
+        audioEnabled={audioEnabled}
       />
     );
   }
@@ -567,6 +571,12 @@ function InstrumentPromptWorkbench({
         }
         bassNote={prompt.renderSpec.highlightedNotes[0]}
         selectedNotes={selected.length > 0 ? selected : prompt.renderSpec.highlightedNotes}
+        audioEnabled={audioEnabled}
+        onToggle={
+          disabled
+            ? undefined
+            : (note) => choose(note.replace(/[0-9]/g, ""))
+        }
       />
       <p className="lab-status" role="status">
         {audioPlaybackLabel(status)}
