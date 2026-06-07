@@ -1,38 +1,12 @@
-import {
-  BookOpen,
-  CircleHelp,
-  ClipboardList,
-  Compass,
-  Dumbbell,
-  Guitar,
-  GraduationCap,
-  Info,
-  Library,
-  Music2,
-  Music3,
-  RotateCcw
-} from "lucide-react";
+import { CircleHelp, Music2 } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { lessons } from "../data/course";
 import { useProgress } from "../state/progress";
 import type { AppMode } from "../types/course";
+import { MoreMenu } from "./MoreMenu";
+import { moreNavItems, primaryNavItems } from "./navItems";
 import { ProgressBar } from "./ProgressBar";
 import { WelcomeTour } from "./WelcomeTour";
-
-const navItems = [
-  { to: "/", label: "Home", icon: Music2 },
-  { to: "/learn", label: "Learn", icon: GraduationCap },
-  { to: "/practice", label: "Practice", icon: Dumbbell },
-  { to: "/instruments", label: "Instruments", icon: Guitar },
-  { to: "/review", label: "Review", icon: RotateCcw },
-  { to: "/lab/song", label: "Song Lab", icon: Music3 },
-  { to: "/tools/circle", label: "Tools", icon: Compass },
-  { to: "/glossary", label: "Glossary", icon: BookOpen },
-  { to: "/sources", label: "Sources", icon: Library },
-  { to: "/about", label: "About", icon: Info },
-  { to: "/progress", label: "Progress", icon: CircleHelp },
-  { to: "/plan", label: "Plan", icon: ClipboardList }
-];
 
 function appModeForPath(pathname: string): AppMode {
   if (pathname.startsWith("/learn/")) {
@@ -75,19 +49,18 @@ export function AppLayout() {
           </span>
           <span>
             <strong>Chords Lab</strong>
-            <small>Reference course</small>
+            <small>Music theory</small>
           </span>
         </NavLink>
         <nav className="primary-nav" aria-label="Primary navigation">
-          {navItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const Icon = item.icon;
 
             return (
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === "/"}
-                aria-label={item.label}
+                end={item.end}
                 title={item.label}
                 className={({ isActive }) =>
                   isActive ? "primary-nav__link is-active" : "primary-nav__link"
@@ -98,23 +71,55 @@ export function AppLayout() {
               </NavLink>
             );
           })}
+          <MoreMenu />
         </nav>
       </header>
+
       <main id="main-content" className="app-main">
         <Outlet />
       </main>
+
+      <nav className="bottom-nav" aria-label="Primary navigation (mobile)">
+        {primaryNavItems.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                isActive ? "bottom-nav__link is-active" : "bottom-nav__link"
+              }
+            >
+              <Icon size={20} aria-hidden="true" />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
+        <MoreMenu variant="bottom" />
+      </nav>
+
       <footer className="app-footer">
         <ProgressBar
           value={completedCount}
           max={lessons.length}
           label="Course completion"
         />
+        <nav className="app-footer__links" aria-label="More pages">
+          {moreNavItems.map((item) => (
+            <NavLink key={item.to} to={item.to}>
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
         <p>
           <CircleHelp size={16} aria-hidden="true" />
           Original lesson text with source citations. Progress stays on this
           device.
         </p>
       </footer>
+
       <WelcomeTour />
     </div>
   );

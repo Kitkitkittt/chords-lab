@@ -12,8 +12,9 @@ All learner state is stored in browser localStorage.
 - `src/App.tsx` - route tree.
 - `src/main.tsx` - React root, router, toast provider, progress provider, PWA
   registration, and global styles.
-- `src/components/` - layout, lesson utilities, course rail, lesson
-  checkpoints, global toasts, home launchpad, direct practice workbenches, and
+- `src/components/` - layout, navigation (`AppLayout`, `MoreMenu`, `navItems`),
+  lesson utilities, course rail, lesson checkpoints, global toasts, home
+  launchpad, direct practice workbenches, error boundary, welcome tour, and
   progress bar.
 - `src/content/lessons/` - MDX lessons with exported metadata.
 - `src/data/` - course structure, glossary, sources, interactive goals, and
@@ -30,11 +31,22 @@ All learner state is stored in browser localStorage.
 - `tests/e2e/` - Playwright browser tests.
 
 ## Rendering Model
-
 Lessons are MDX files that export a typed `meta` object. `src/data/course.ts`
 imports each lesson and combines the metadata with the lesson component. The
 lesson route looks up the active lesson by slug and renders it through
 `MDXProvider` with the shared lesson component map.
+
+## Navigation
+
+`src/components/navItems.ts` is the single source of nav structure: five
+always-visible `primaryNavItems` (Home, Learn, Practice, Tools, More) and
+grouped `moreNavGroups` for secondary destinations. `AppLayout` renders a slim
+top bar on desktop/tablet and a fixed bottom tab bar on mobile, both using the
+same primaries plus a `MoreMenu`. `MoreMenu` is an accessible disclosure
+(popover on desktop, bottom sheet on mobile) that closes on outside click,
+Escape, and route change. The footer also exposes the secondary links as
+quick-links on desktop. This keeps the top level small and calm while every
+route stays reachable.
 
 ## Progress Model
 

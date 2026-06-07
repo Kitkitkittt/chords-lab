@@ -60,6 +60,23 @@ test("first-run welcome tour shows once and dismisses", async ({ page, context }
   await expect(dialog).toBeHidden();
 });
 
+test("the More menu opens and navigates to a secondary page", async ({
+  page
+}) => {
+  await page.goto("/");
+  // Use whichever "More" button is visible: the top bar on desktop, or the
+  // bottom bar on mobile (the other primary nav is hidden per breakpoint).
+  await page.getByRole("button", { name: "More" }).filter({ visible: true }).click();
+
+  const menu = page.getByRole("menu", { name: "More navigation" });
+  await expect(menu).toBeVisible();
+  await menu.getByRole("menuitem", { name: "Sources" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Bibliography and use notes" })
+  ).toBeVisible();
+});
+
 test("index practice hub supports multiple interactive modules", async ({
   page
 }) => {

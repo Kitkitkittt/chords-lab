@@ -4,7 +4,31 @@ Last updated: 2026-06-05
 
 # Chords Lab Progress
 
-Last updated: 2026-06-05
+Last updated: 2026-06-07
+
+## Navigation Redesign (2026-06-07)
+
+Replaced the cramped 12-item flat nav with a clear, responsive hierarchy.
+
+- Information architecture: 5 always-visible primaries (Home, Learn, Practice,
+  Tools, More). Secondary destinations are grouped under "More": Practice & play
+  (Review, Instruments, Song Lab), Reference (Glossary, Sources), and Your data
+  & info (Progress, About, Plan). Shared nav data lives in
+  `src/components/navItems.ts`.
+- New `MoreMenu` component: an accessible disclosure (button with
+  `aria-expanded`/`aria-haspopup`/`aria-controls`) that renders as a popover on
+  desktop and a bottom sheet on mobile. Closes on outside click, Escape (returns
+  focus to the button), and route change. Unique panel ids per instance.
+- Mobile gets a fixed bottom tab bar with the 5 primaries (icon + label, >=44px
+  targets, safe-area inset padding). The top primary bar is hidden on mobile;
+  the old icon-only tablet rule and the horizontal scroll strip were removed so
+  labels always show.
+- The footer now carries grouped "More pages" quick-links as a secondary path on
+  desktop.
+- Tests: added `AppLayout.test.tsx` (primaries, More open/Escape, bottom nav) and
+  an e2e "More menu" navigation test (desktop + mobile). Suite: 96 unit/component
+  tests, 24 Playwright tests.
+- No route or `ProgressState` changes; purely presentational and accessibility.
 
 ## Launch Polish Pass (2026-06-05)
 
