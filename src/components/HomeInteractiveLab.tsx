@@ -343,17 +343,19 @@ export function HomeInteractiveLab() {
             </div>
           ) : null}
 
-          {mode !== "review" ? (
-            <button className="button" type="button" onClick={playCurrent}>
-              <Play size={18} aria-hidden="true" />
-              {playbackState === "playing" || playbackState === "loading"
-                ? "Stop"
-                : "Play"}
-            </button>
-          ) : null}
-          <Link className="button button--quiet" to={activeMode.path}>
-            Open full module
-          </Link>
+          <div className="lab-actions">
+            {mode !== "review" ? (
+              <button className="button" type="button" onClick={playCurrent}>
+                <Play size={18} aria-hidden="true" />
+                {playbackState === "playing" || playbackState === "loading"
+                  ? "Stop"
+                  : "Play"}
+              </button>
+            ) : null}
+            <Link className="button button--quiet" to={activeMode.path}>
+              Open full module
+            </Link>
+          </div>
           <p className="lab-status" role="status">
             {playbackState === "playing" ||
             playbackState === "loading" ||
