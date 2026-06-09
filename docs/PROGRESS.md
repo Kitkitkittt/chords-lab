@@ -4,7 +4,84 @@ Last updated: 2026-06-05
 
 # Chords Lab Progress
 
-Last updated: 2026-06-07
+Last updated: 2026-06-09
+
+## Learning Experience - Phase 5: De-fragilize Mappings (2026-06-09)
+
+Removed a class of drift bugs by centralizing lesson connections.
+
+- New `src/data/lessonLinks.ts` is the single source of truth for each lesson's
+  practice route, checkpoint module, and review modules. Replaced the two
+  duplicated hand-maintained maps in `LessonPage` (`lessonPracticeRoutes`,
+  `lessonCheckpointModules`) and the long `modulesForCompletedLessons` ladder in
+  `ReviewPage` with `lessonLinkFor` and `reviewModulesForCompletedLessons`.
+- Tests: `lessonLinks.test.ts` asserts every lesson resolves to a valid module
+  and route (no orphans/drift). Suite: 109 unit/component tests, 24 Playwright
+  tests.
+
+## Learning Experience - Phase 4: Calm Motivation (2026-06-09)
+
+Added gentle, opt-in acknowledgments consistent with the no-pressure ethos.
+
+- Skill level-up acknowledgment: when a canonical skill crosses a level boundary
+  (new -> learning -> practiced -> strong) the app emits a
+  `chordslab:skill-levelup` event and the toast layer shows a calm note (e.g.
+  "Interval quality reached strong - keep going at your own pace"). Detection
+  uses new `skillLevelMap` + `SKILL_LEVEL_RANK` helpers in `learningPath.ts`.
+- Home's "Today's review" card now reads as a gentle daily goal: "All clear -
+  nothing due today" when the queue is empty, otherwise the due/missed counts.
+- No streaks-as-pressure, no XP, no badges; all acknowledgments are dismissible
+  toasts.
+- Tests: `skills.test.ts` covers level-up detection. Suite: 106 unit/component
+  tests, 24 Playwright tests.
+
+## Learning Experience - Phase 3: Lesson Experience (2026-06-09)
+
+Made lessons more hands-on and the completion flow clearer.
+
+- The lesson checkpoint copy now frames it as the calm primary completion path
+  ("Two correct marks the lesson complete, any misses join your review queue. No
+  timer, no penalty").
+- The final lesson pager step now recommends the next still-incomplete lesson
+  (via `getFirstIncompleteLesson`) instead of dead-ending on /progress, and shows
+  "You finished the course" only when everything is done.
+- `KeyboardFigure` gained an optional `playable` mode: keys become buttons that
+  play their pitch through the live-voice engine, so lessons can be hands-on
+  inline.
+- `MicroCheck` now gives distinct feedback - "Correct." vs "Not quite - the
+  answer is X" - instead of the same explanation for right and wrong.
+- Tests: `MicroCheck.test.tsx` asserts the incorrect-answer reveal. Suite: 105
+  unit/component tests, 24 Playwright tests.
+
+## Learning Experience - Phase 2: Ear Training Depth (2026-06-09)
+
+Made ear training train hearing rather than memorization.
+
+- Chord-quality and interval ear prompts now play as block chords (mode
+  "chord") instead of always arpeggiating; scales/cadences/melodies stay
+  sequenced.
+- Seed-driven transposition: transposable prompts are shifted by a per-seed
+  semitone offset so the same relationship is heard in different registers and
+  cannot be memorized by fixed pitch (determinism preserved via the seed).
+- "Reveal notes" is gated for listening prompts until an answer is submitted, so
+  the reveal no longer short-circuits the exercise.
+- Tests: `practiceGenerators.test.ts` asserts seed transposition and block-chord
+  playback. Suite: 104 unit/component tests, 24 Playwright tests.
+
+## Learning Experience - Phase 1: Session Momentum & Payoff (2026-06-09)
+
+Gave practice sessions a sense of progress and a real ending.
+
+- `usePracticeSession` now exposes `liveStats` (prompt number, total, answered,
+  running correct, current streak, best streak) and tracks streaks on submit.
+- In-session header shows a progress bar plus "Prompt X of N - N correct -
+  streak N" (text-first, still no timer).
+- The end-of-session summary is now meaningful: an encouraging title for strong
+  sessions (>=80%), correct/attempted with best streak, review-queue size, and
+  clear CTAs - "Review your misses", "Practice again", and "Next: <module>". A
+  calm success tone plays once at the end of a strong session.
+- Tests: `PracticePage.test.tsx` asserts the in-session progress indicator.
+  Suite: 103 unit/component tests, 24 Playwright tests.
 
 ## Interactive Instruments - Phase C & D: Expression & Connections (2026-06-07)
 

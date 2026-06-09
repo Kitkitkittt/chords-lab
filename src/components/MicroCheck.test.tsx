@@ -39,4 +39,24 @@ describe("MicroCheck", () => {
       "test-check"
     );
   });
+
+  it("reveals the right answer on an incorrect choice", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MicroCheck
+        id="test-check-2"
+        prompt="Which notes form a C major triad?"
+        options={["C E G", "C D E"]}
+        answer="C E G"
+        explanation="C E G is root, third, and fifth."
+      />
+    );
+
+    await user.click(screen.getByLabelText("C D E"));
+    await user.click(screen.getByRole("button", { name: /check answer/i }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Not quite — the answer is C E G."
+    );
+  });
 });

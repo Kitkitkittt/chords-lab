@@ -95,4 +95,32 @@ describe("practice generators", () => {
     expect(prompt.answer.every((note) => !/\d/.test(note))).toBe(true);
     expect(prompt.renderSpec?.type).toBe("instrument");
   });
+
+  it("transposes ear prompts by seed and plays chord prompts as blocks", () => {
+    const a = generatePracticePrompts(
+      createPracticeSessionConfig("ear", {
+        topic: "mixed",
+        promptCount: 12,
+        seed: "ear-a"
+      })
+    );
+    const b = generatePracticePrompts(
+      createPracticeSessionConfig("ear", {
+        topic: "mixed",
+        promptCount: 12,
+        seed: "ear-b"
+      })
+    );
+
+    // Different seeds transpose the audio so pitches are not fixed.
+    const aNotes = a.map((p) => (p.audioNotes ?? []).join(",")).join("|");
+    const bNotes = b.map((p) => (p.audioNotes ?? []).join(",")).join("|");
+    expect(aNotes).not.toBe(bNotes);
+
+    // Chord-quality ear prompts now play as block chords.
+    const chordPrompt = a.find((p) => p.skillTargets?.includes("major triad"));
+    if (chordPrompt && chordPrompt.renderSpec?.type === "audio") {
+      expect(chordPrompt.renderSpec.mode).toBe("chord");
+    }
+  });
 });

@@ -17,6 +17,10 @@ import {
   localProgressRepository
 } from "../lib/progressRepository";
 import { updateReviewQueueForAttempt } from "../lib/reviewQueue";
+import {
+  SKILL_LEVEL_RANK,
+  skillLevelMap
+} from "../lib/learningPath";
 import type {
   PracticeSessionHistory,
   ProgressState,
@@ -211,6 +215,22 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
           cleared: reviewUpdate.cleared,
           consecutiveCorrect: reviewUpdate.state.consecutiveCorrect
         });
+
+        // Calm, opt-in acknowledgment: when a canonical skill crosses a level
+        // boundary (new -> learning -> practiced -> strong), surface a gentle
+        // toast. No streak pressure, no XP.
+        const beforeLevels = skillLevelMap(current.skillMastery);
+        const afterLevels = skillLevelMap(nextSkillMastery);
+        for (const [skillId, afterLevel] of afterLevels) {
+          const beforeRank = SKILL_LEVEL_RANK[beforeLevels.get(skillId) ?? "new"];
+          const afterRank = SKILL_LEVEL_RANK[afterLevel];
+          if (afterRank > beforeRank && afterRank >= SKILL_LEVEL_RANK.practiced) {
+            emitAppEvent("chordslab:skill-levelup", {
+              skillId,
+              level: afterLevel
+            });
+          }
+        }
 
         return {
           ...current,

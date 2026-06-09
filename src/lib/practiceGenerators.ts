@@ -725,85 +725,148 @@ function generateRhythmPrompt(
   );
 }
 
+function transposeEarNotes(notes: string[], semitones: number): string[] {
+  if (semitones === 0) {
+    return notes;
+  }
+
+  return notes.map((note) => {
+    if (note === "Rest" || /^(Rest|rest)$/.test(note) || !/\d/.test(note)) {
+      return note;
+    }
+
+    const midi = Note.midi(note);
+
+    if (typeof midi !== "number") {
+      return note;
+    }
+
+    return Note.fromMidi(midi + semitones);
+  });
+}
+
 function generateEarPrompt(
   config: PracticeSessionConfig,
   index: number
 ): PracticePrompt {
-  const prompts = [
+  const prompts: {
+    label: string;
+    choices: string[];
+    notes: string[];
+    explanation: string;
+    /** "chord" plays the notes together; "sequence" plays them in order. */
+    play: "chord" | "sequence";
+    /** When true, the prompt is transposed by a seed offset each time. */
+    transposable: boolean;
+  }[] = [
     {
       label: "perfect fifth",
       choices: ["major third", "perfect fourth", "perfect fifth", "octave"],
       notes: ["C4", "G4"],
-      explanation: "C to G is a stable perfect fifth."
+      explanation: "C to G is a stable perfect fifth.",
+      play: "chord",
+      transposable: true
     },
     {
       label: "major triad",
       choices: ["major triad", "minor triad", "diminished triad", "dominant seventh"],
       notes: ["C4", "E4", "G4"],
-      explanation: "The sound has a major third and perfect fifth above the root."
+      explanation: "The sound has a major third and perfect fifth above the root.",
+      play: "chord",
+      transposable: true
     },
     {
       label: "authentic cadence",
       choices: ["plagal cadence", "authentic cadence", "deceptive cadence", "half cadence"],
       notes: ["G3", "B3", "D4", "C4", "E4", "G4"],
-      explanation: "The dominant sound resolves to tonic."
+      explanation: "The dominant sound resolves to tonic.",
+      play: "sequence",
+      transposable: true
     },
     {
       label: "minor third",
       choices: ["minor third", "major third", "perfect fourth", "perfect fifth"],
       notes: ["A4", "C5"],
-      explanation: "The upper note is three half steps above the lower note."
+      explanation: "The upper note is three half steps above the lower note.",
+      play: "chord",
+      transposable: true
     },
     {
       label: "minor triad",
       choices: ["major triad", "minor triad", "diminished triad", "augmented triad"],
       notes: ["A3", "C4", "E4"],
-      explanation: "The chord has a minor third and perfect fifth above the root."
+      explanation: "The chord has a minor third and perfect fifth above the root.",
+      play: "chord",
+      transposable: true
     },
     {
       label: "dominant seventh",
       choices: ["major triad", "minor seventh", "dominant seventh", "major seventh"],
       notes: ["G3", "B3", "D4", "F4"],
-      explanation: "The sound adds a minor seventh to a major triad."
+      explanation: "The sound adds a minor seventh to a major triad.",
+      play: "chord",
+      transposable: true
     },
     {
       label: "natural minor",
       choices: ["major", "natural minor", "whole tone", "chromatic"],
       notes: ["A4", "B4", "C5", "D5", "E5", "F5", "G5", "A5"],
-      explanation: "The lowered third, sixth, and seventh give the scale its color."
+      explanation: "The lowered third, sixth, and seventh give the scale its color.",
+      play: "sequence",
+      transposable: true
     },
     {
       label: "plagal cadence",
       choices: ["plagal cadence", "authentic cadence", "deceptive cadence", "half cadence"],
       notes: ["F3", "A3", "C4", "C4", "E4", "G4"],
-      explanation: "The subdominant sound moves back to tonic."
+      explanation: "The subdominant sound moves back to tonic.",
+      play: "sequence",
+      transposable: true
     },
     {
       label: "syncopated rhythm",
       choices: ["steady quarters", "syncopated rhythm", "triplet rhythm", "whole note"],
       notes: ["Rest", "C4", "Rest", "G4", "C4", "Rest", "Rest", "G4"],
-      explanation: "The attacks fall away from the strongest beat positions."
+      explanation: "The attacks fall away from the strongest beat positions.",
+      play: "sequence",
+      transposable: false
     },
     {
       label: "melodic memory",
       choices: ["C D E", "C E G", "C F E", "G E C"],
       notes: ["C4", "D4", "E4"],
-      explanation: "The short melody steps upward through C, D, and E."
+      explanation: "The short melody steps upward through C, D, and E.",
+      play: "sequence",
+      transposable: false
     },
     {
       label: "descending bass",
       choices: ["ascending bass", "descending bass", "pedal bass", "repeated bass"],
       notes: ["C3", "B2", "A2", "G2"],
-      explanation: "Each bass note moves lower than the previous one."
+      explanation: "Each bass note moves lower than the previous one.",
+      play: "sequence",
+      transposable: true
     },
     {
       label: "pop progression",
       choices: ["I V vi IV", "I IV V I", "ii V I", "I vi ii V"],
       notes: ["C3", "G3", "A3", "F3"],
-      explanation: "The bass roots outline the common I V vi IV loop."
+      explanation: "The bass roots outline the common I V vi IV loop.",
+      play: "sequence",
+      transposable: false
     }
   ];
   const prompt = takeBySeed(prompts, config.seed, index);
+  // Seed-driven transposition (0-11 semitones) so learners hear the relationship
+  // in different registers instead of memorizing fixed pitches.
+  const offset = prompt.transposable
+    ? seededIndex(`${config.seed}:ear-transpose`, index, 12)
+    : 0;
+  const notes = transposeEarNotes(prompt.notes, offset);
+  const playback =
+    prompt.play === "chord"
+      ? chordPattern(prompt.label, notes)
+      : sequencePattern(prompt.label, notes);
 
   return enrichPrompt(
     {
@@ -815,10 +878,14 @@ function generateEarPrompt(
       choices: prompt.choices,
       answer: [prompt.label],
       explanation: prompt.explanation,
-      audioNotes: prompt.notes,
-      playbackPattern: sequencePattern(prompt.label, prompt.notes),
-      keyboardNotes: prompt.notes,
-      renderSpec: { type: "audio", notes: prompt.notes, mode: "sequence" }
+      audioNotes: notes,
+      playbackPattern: playback,
+      keyboardNotes: notes,
+      renderSpec: {
+        type: "audio",
+        notes,
+        mode: prompt.play === "chord" ? "chord" : "sequence"
+      }
     },
     config,
     index,

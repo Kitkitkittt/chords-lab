@@ -127,6 +127,11 @@ export function PracticePage() {
     session.prompt?.playbackPattern || session.prompt?.audioNotes?.length
   );
   const activeScore = moduleScore(activeModuleId, progress.practiceResults);
+  const activeModuleIndex = practiceModules.findIndex(
+    (module) => module.id === activeModuleId
+  );
+  const nextModule =
+    practiceModules[(activeModuleIndex + 1) % practiceModules.length];
   const sessionId = `${activeModuleId}:${sessionConfig.seed}:${sessionConfig.promptCount}:${sessionConfig.topic}`;
 
   useEffect(() => {
@@ -165,9 +170,20 @@ export function PracticePage() {
       missedPromptIds: session.sessionResult.missedPromptIds,
       completedAt: new Date().toISOString()
     });
+
+    // A calm success tone at the end of a strong session (no pressure, no timer).
+    if (
+      session.sessionResult.attempted > 0 &&
+      session.sessionResult.correct / session.sessionResult.attempted >= 0.8
+    ) {
+      void playFeedbackTone("success", {
+        audioEnabled: progress.settings.audioEnabled
+      });
+    }
   }, [
     activeModuleId,
     recordPracticeSession,
+    progress.settings.audioEnabled,
     session.isSessionComplete,
     session.sessionResult.attempted,
     session.sessionResult.correct,
@@ -265,10 +281,20 @@ export function PracticePage() {
             <div className="practice-task">
               {session.isSessionComplete ? (
                 <aside className="practice-session-summary" role="status">
-                  <strong>Session complete</strong>
-                  <span>
+                  <strong>
+                    {session.sessionResult.attempted > 0 &&
+                    session.sessionResult.correct /
+                      session.sessionResult.attempted >=
+                      0.8
+                      ? "Nice session!"
+                      : "Session complete"}
+                  </strong>
+                  <span className="practice-session-summary__score">
                     {session.sessionResult.correct}/
                     {session.sessionResult.attempted} correct
+                    {session.liveStats.bestStreak > 1
+                      ? ` · best streak ${session.liveStats.bestStreak}`
+                      : ""}
                   </span>
                   <span>
                     Review queue:{" "}
@@ -277,8 +303,45 @@ export function PracticePage() {
                       ? ""
                       : "s"}
                   </span>
+                  <div className="practice-session-summary__actions">
+                    {session.sessionResult.missedPromptIds.length > 0 ? (
+                      <Link className="button button--quiet" to="/review">
+                        Review your misses
+                      </Link>
+                    ) : null}
+                    <Link
+                      className="button button--quiet"
+                      to={`/practice/${activeModuleId}/setup`}
+                    >
+                      Practice again
+                    </Link>
+                    <Link
+                      className="button button--secondary"
+                      to={`/practice/${nextModule.id}/setup`}
+                    >
+                      Next: {nextModule.title}
+                    </Link>
+                  </div>
                 </aside>
-              ) : null}
+              ) : (
+                <div className="practice-session-progress" aria-live="polite">
+                  <div className="practice-session-progress__bar">
+                    <span
+                      style={{
+                        inlineSize: `${(session.liveStats.answered / Math.max(1, session.liveStats.total)) * 100}%`
+                      }}
+                    />
+                  </div>
+                  <span className="practice-session-progress__label">
+                    Prompt {session.liveStats.promptNumber} of{" "}
+                    {session.liveStats.total} · {session.liveStats.correct}{" "}
+                    correct
+                    {session.liveStats.streak > 1
+                      ? ` · streak ${session.liveStats.streak}`
+                      : ""}
+                  </span>
+                </div>
+              )}
               <div className="practice-prompt">
                 <Sparkles size={20} aria-hidden="true" />
                 <div>
@@ -321,7 +384,10 @@ export function PracticePage() {
                       <span>
                         {isAudioRevealed
                           ? (session.prompt.audioNotes ?? session.prompt.keyboardNotes ?? []).join(" ")
-                          : "Notes hidden until reveal."}
+                          : session.prompt.inputMode === "listening" &&
+                              !session.isAnswered
+                            ? "Listen and answer first; notes reveal after."
+                            : "Notes hidden until reveal."}
                       </span>
                     </div>
                     <button
@@ -337,6 +403,11 @@ export function PracticePage() {
                     <button
                       className="button button--quiet"
                       type="button"
+                      disabled={
+                        session.prompt.inputMode === "listening" &&
+                        !session.isAnswered &&
+                        !isAudioRevealed
+                      }
                       onClick={() => setIsAudioRevealed((current) => !current)}
                     >
                       {isAudioRevealed ? "Hide notes" : "Reveal notes"}

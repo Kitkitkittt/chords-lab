@@ -11,6 +11,8 @@ import {
   overallMastery,
   recommendSkills,
   rollUpSkillMastery,
+  skillLevelMap,
+  SKILL_LEVEL_RANK,
   trackProgressList
 } from "./learningPath";
 import { createDefaultAdaptiveSkillState } from "./adaptiveReview";
@@ -149,6 +151,25 @@ describe("learning path", () => {
     );
     expect(strong).toBeGreaterThan(0);
     expect(strong).toBeLessThanOrEqual(1);
+  });
+
+  it("detects a skill level-up across an attempt boundary", () => {
+    const before = progressWith({
+      "note-reading": mastery({ correct: 1, attempted: 2 })
+    });
+    const after = progressWith({
+      "note-reading": mastery({ correct: 10, attempted: 10 })
+    });
+
+    const beforeLevel =
+      skillLevelMap(before.skillMastery).get("note-reading") ?? "new";
+    const afterLevel =
+      skillLevelMap(after.skillMastery).get("note-reading") ?? "new";
+
+    expect(SKILL_LEVEL_RANK[afterLevel]).toBeGreaterThan(
+      SKILL_LEVEL_RANK[beforeLevel]
+    );
+    expect(afterLevel).toBe("strong");
   });
 
   it("derives per-track progress and a next skill", () => {

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { CheckCircle2, Info, TriangleAlert, XCircle } from "lucide-react";
 import type { ToastMessage } from "../types/course";
+import { isKnownSkill } from "../lib/learningPath";
+import { skillsById } from "../lib/skills";
 
 function createToastId(): string {
   return `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -102,11 +104,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       pushToast(toastFromReviewEvent((event as CustomEvent).detail));
     }
 
+    function handleSkillLevelUp(event: Event) {
+      const detail = (event as CustomEvent).detail as
+        | { skillId?: string; level?: string }
+        | undefined;
+      const title =
+        detail?.skillId && isKnownSkill(detail.skillId)
+          ? skillsById.get(detail.skillId)?.title ?? detail.skillId
+          : detail?.skillId ?? "A skill";
+
+      pushToast({
+        tone: "success",
+        title: `${title} reached ${detail?.level ?? "a new level"}`,
+        body: "Nice progress. Keep going at your own pace."
+      });
+    }
+
     window.addEventListener("offline", handleOffline);
     window.addEventListener("online", handleOnline);
     window.addEventListener("chordslab:progress-saved", handleProgressSaved);
     window.addEventListener("chordslab:audio-state", handleAudioState);
     window.addEventListener("chordslab:review-queue", handleReviewQueue);
+    window.addEventListener("chordslab:skill-levelup", handleSkillLevelUp);
 
     if (navigator.onLine === false) {
       handleOffline();
@@ -118,6 +137,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("chordslab:progress-saved", handleProgressSaved);
       window.removeEventListener("chordslab:audio-state", handleAudioState);
       window.removeEventListener("chordslab:review-queue", handleReviewQueue);
+      window.removeEventListener("chordslab:skill-levelup", handleSkillLevelUp);
     };
   }, [pushToast]);
 

@@ -5,7 +5,8 @@ import {
   audioPlaybackLabel,
   playChord,
   playSequence,
-  stopAudioPlayback
+  stopAudioPlayback,
+  triggerNote
 } from "../lib/audioEngine";
 import type { AudioPlaybackState } from "../lib/audioEngine";
 import { keyboardPitchClasses, normalizePitchClassForKeyboard } from "../lib/music";
@@ -41,6 +42,8 @@ type NotationFigureProps = {
 type KeyboardFigureProps = {
   label: string;
   active: string[];
+  /** When true, keys are buttons that play their pitch on click. */
+  playable?: boolean;
 };
 
 export function Callout({ title = "Focus", tone = "melody", children }: CalloutProps) {
@@ -110,7 +113,12 @@ export function MicroCheck({
           ) : (
             <X size={17} aria-hidden="true" />
           )}
-          <span>{explanation}</span>
+          <span>
+            <strong>
+              {result === "correct" ? "Correct. " : `Not quite — the answer is ${answer}. `}
+            </strong>
+            {explanation}
+          </span>
         </p>
       ) : null}
     </form>
@@ -269,7 +277,7 @@ export function NotationFigure({
   );
 }
 
-export function KeyboardFigure({ label, active }: KeyboardFigureProps) {
+export function KeyboardFigure({ label, active, playable }: KeyboardFigureProps) {
   const activeSet = new Set(active.map(normalizePitchClassForKeyboard));
 
   return (
@@ -277,23 +285,40 @@ export function KeyboardFigure({ label, active }: KeyboardFigureProps) {
       <figcaption>
         <Piano size={18} aria-hidden="true" />
         {label}
+        {playable ? (
+          <span className="keyboard-figure__hint"> · tap to play</span>
+        ) : null}
       </figcaption>
       <div className="keyboard-figure__keys" aria-label={label}>
         {keyboardPitchClasses().map((pitchClass) => {
           const isBlack = pitchClass.includes("#");
           const isActive = activeSet.has(pitchClass);
+          const className = [
+            "keyboard-figure__key",
+            isBlack ? "is-black" : "is-white",
+            isActive ? "is-active" : ""
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+          if (playable) {
+            return (
+              <button
+                key={pitchClass}
+                type="button"
+                className={className}
+                aria-label={pitchClass}
+                onClick={() =>
+                  void triggerNote(`${pitchClass}4`, { voiceId: "keys" })
+                }
+              >
+                {pitchClass}
+              </button>
+            );
+          }
 
           return (
-            <span
-              key={pitchClass}
-              className={[
-                "keyboard-figure__key",
-                isBlack ? "is-black" : "is-white",
-                isActive ? "is-active" : ""
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
+            <span key={pitchClass} className={className}>
               {pitchClass}
             </span>
           );

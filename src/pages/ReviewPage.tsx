@@ -9,6 +9,7 @@ import {
   practiceModules,
   practicePromptsById
 } from "../data/practice";
+import { reviewModulesForCompletedLessons } from "../data/lessonLinks";
 import { usePracticeSession } from "../hooks/usePracticeSession";
 import { playFeedbackTone } from "../lib/audioEngine";
 import { getDueSkillIds } from "../lib/adaptiveReview";
@@ -22,51 +23,6 @@ function isPracticePrompt(
   prompt: PracticePrompt | undefined
 ): prompt is PracticePrompt {
   return Boolean(prompt);
-}
-
-function modulesForCompletedLessons(completedLessonSlugs: string[]): string[] {
-  const completed = new Set(completedLessonSlugs);
-  const moduleIds = new Set<string>();
-
-  if (completed.has("sound-pitch")) {
-    moduleIds.add("pitch");
-  }
-
-  if (completed.has("staff-keyboard")) {
-    moduleIds.add("staff");
-  }
-
-  if (completed.has("scales-keys") || completed.has("scale-fluency")) {
-    moduleIds.add("scales");
-  }
-
-  if (
-    completed.has("intervals") ||
-    completed.has("triads") ||
-    completed.has("sevenths-inversions") ||
-    completed.has("diatonic-harmony")
-  ) {
-    moduleIds.add("intervals");
-    moduleIds.add("chords");
-  }
-
-  if (completed.has("rhythm-meter") || completed.has("rhythm-meter-lab")) {
-    moduleIds.add("rhythm");
-  }
-
-  if (completed.has("ear-training-basics")) {
-    moduleIds.add("ear");
-  }
-
-  if (
-    completed.has("diatonic-harmony") ||
-    completed.has("cadences-phrases") ||
-    completed.has("common-progressions")
-  ) {
-    moduleIds.add("harmony");
-  }
-
-  return Array.from(moduleIds);
 }
 
 function uniquePrompts(prompts: PracticePrompt[]): PracticePrompt[] {
@@ -89,7 +45,7 @@ function reviewPromptsFromProgress(progress: ProgressState) {
   const queuedPrompts = reviewQueue
     .map((promptId) => practicePromptsById.get(promptId))
     .filter(isPracticePrompt);
-  const completedModuleIds = modulesForCompletedLessons(
+  const completedModuleIds = reviewModulesForCompletedLessons(
     progress.completedLessonSlugs
   );
   const fallbackPrompts = allPracticePrompts.filter((prompt) => {

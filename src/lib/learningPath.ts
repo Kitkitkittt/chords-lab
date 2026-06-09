@@ -287,6 +287,34 @@ export function isKnownSkill(skillId: string): skillId is SkillId {
   return skillsById.has(skillId as SkillId);
 }
 
+export type SkillLevel = SkillProgress["level"];
+
+/** Ordinal rank of each mastery level, for detecting level-ups. */
+export const SKILL_LEVEL_RANK: Record<SkillLevel, number> = {
+  new: 0,
+  learning: 1,
+  practiced: 2,
+  strong: 3
+};
+
+/**
+ * Map each canonical SkillId to its current level. Used to detect when a skill
+ * crosses a level boundary so the app can show a calm acknowledgment.
+ */
+export function skillLevelMap(
+  skillMastery: ProgressState["skillMastery"],
+  now = new Date()
+): Map<SkillId, SkillLevel> {
+  const rollup = rollUpSkillMastery(skillMastery, now);
+  const levels = new Map<SkillId, SkillLevel>();
+
+  for (const [skillId, progress] of rollup) {
+    levels.set(skillId, progress.level);
+  }
+
+  return levels;
+}
+
 export type TrackMeta = {
   id: SkillTrackId;
   title: string;

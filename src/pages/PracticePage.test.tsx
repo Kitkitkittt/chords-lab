@@ -73,6 +73,13 @@ describe("PracticePage", () => {
     );
   }, 10000);
 
+  it("shows an in-session progress indicator with prompt count", () => {
+    renderPracticePage();
+
+    // Pitch session defaults to 10 prompts; the live indicator shows position.
+    expect(screen.getByText(/Prompt 1 of 10/i)).toBeInTheDocument();
+  });
+
   it("supports ordered scale prompts through a module deep link", async () => {
     const user = userEvent.setup();
 

@@ -183,15 +183,26 @@ Done:
 - Review interleaves due-skill prompts round-robin for better retention.
 - Selectable active learning track stored in local progress, biasing Home
   suggestions.
+- Playable instruments: tap-to-sound with sustain and distinct timbres,
+  instrument-as-answer practice, free-play chord detection, strum/octave
+  controls, and send-to-Song-Lab.
+- Session momentum: in-session progress + streak, and a real end-of-session
+  summary with CTAs.
+- Ear training plays block chords and transposes by seed so relationships are
+  heard, not memorized; reveal-notes gated until after answering.
+- Lessons: clearer checkpoint framing, next-lesson recommendation, playable
+  KeyboardFigure, and distinct MicroCheck feedback.
+- Calm motivation: gentle skill level-up acknowledgments and a soft daily-review
+  goal (no streak pressure, no XP).
+- Centralized lesson -> practice/checkpoint/review mappings in
+  `src/data/lessonLinks.ts` to prevent drift.
 
 Next:
 
-1. Add more concrete prompt factories behind each generated template category.
-2. Deepen instrument-specific chord-shape, scale-box, bassline, and groove tasks.
-3. Add track-scoped review sessions and per-track milestones.
-4. Add educator-reviewed lesson/example revisions.
-5. Optional opt-in microphone tuner (pitch match with cents feedback) using the
+1. Add track-scoped review sessions and per-track milestones.
+2. Add educator-reviewed lesson/example revisions.
+3. Optional opt-in microphone tuner (pitch match with cents feedback) using the
    engine's `nearestNoteFromFrequency`. This would change the current
    no-microphone stance, so it is deferred behind explicit consent, an
    off-by-default setting, and local-only processing. Not built yet.
-6. Add optional cloud sync only after account/privacy design is explicit.
+4. Add optional cloud sync only after account/privacy design is explicit.

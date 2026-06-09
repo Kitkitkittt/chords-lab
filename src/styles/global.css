@@ -1515,6 +1515,50 @@ code {
   font-weight: 700;
 }
 
+.practice-session-summary__score {
+  font-variant-numeric: tabular-nums;
+}
+
+.practice-session-summary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  inline-size: 100%;
+}
+
+.practice-session-progress {
+  display: grid;
+  gap: 0.4rem;
+  padding: var(--space-1) var(--space-2);
+}
+
+.practice-session-progress__bar {
+  block-size: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--surface-container-high);
+  overflow: hidden;
+}
+
+.practice-session-progress__bar span {
+  display: block;
+  block-size: 100%;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  transition: inline-size 200ms ease;
+}
+
+.practice-session-progress__label {
+  color: var(--on-surface-variant);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .practice-session-progress__bar span {
+    transition: none;
+  }
+}
+
 .practice-prompt {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -3237,6 +3281,22 @@ code {
 .keyboard-figure__key.is-active {
   background: var(--primary);
   color: var(--on-primary);
+}
+
+button.keyboard-figure__key {
+  cursor: pointer;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+button.keyboard-figure__key:active {
+  transform: translateY(1px);
+}
+
+.keyboard-figure__hint {
+  color: var(--on-surface-variant);
+  font-weight: 600;
 }
 
 .micro-check {

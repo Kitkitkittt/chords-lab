@@ -26,6 +26,8 @@ export function usePracticeSession({
   const [attempts, setAttempts] = useState<
     Record<string, { correct: boolean; selected: string[] }>
   >({});
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
 
   const prompt = prompts[promptIndex] ?? prompts[0];
 
@@ -34,6 +36,8 @@ export function usePracticeSession({
     setSelected([]);
     setFeedback(idlePracticeFeedback);
     setAttempts({});
+    setStreak(0);
+    setBestStreak(0);
   }, [prompts]);
 
   const isAnswered = feedback.status !== "idle";
@@ -110,14 +114,20 @@ export function usePracticeSession({
     }
 
     const result = scorePracticeAnswer(prompt, selected);
+    const isCorrect = result.status === "correct";
     setFeedback(result);
     setAttempts((current) => ({
       ...current,
       [prompt.id]: {
-        correct: result.status === "correct",
+        correct: isCorrect,
         selected
       }
     }));
+    setStreak((current) => {
+      const next = isCorrect ? current + 1 : 0;
+      setBestStreak((best) => Math.max(best, next));
+      return next;
+    });
     onAttempt(
       prompt.id,
       prompt.moduleId,
@@ -148,6 +158,15 @@ export function usePracticeSession({
     feedback,
     attempts,
     isAnswered,
+    liveStats: {
+      promptNumber: Math.min(promptIndex + 1, prompts.length),
+      total: prompts.length,
+      answered: Object.keys(attempts).length,
+      correct: Object.values(attempts).filter((attempt) => attempt.correct)
+        .length,
+      streak,
+      bestStreak
+    },
     isSessionComplete:
       prompts.length > 0 &&
       Object.keys(attempts).length >= prompts.length &&

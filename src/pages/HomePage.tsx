@@ -78,10 +78,19 @@ export function HomePage() {
         <Link className="mission-card" to="/review">
           <ListChecks size={19} aria-hidden="true" />
           <span>Today's review</span>
-          <strong>{reviewSummary.dueSkillCount} due</strong>
+          <strong>
+            {reviewSummary.dueSkillCount === 0 &&
+            reviewSummary.missedPromptCount === 0
+              ? "All clear"
+              : `${reviewSummary.dueSkillCount} due`}
+          </strong>
           <small>
-            {reviewSummary.missedPromptCount} missed prompt
-            {reviewSummary.missedPromptCount === 1 ? "" : "s"} waiting
+            {reviewSummary.dueSkillCount === 0 &&
+            reviewSummary.missedPromptCount === 0
+              ? "Nothing due today. A short review still helps."
+              : `${reviewSummary.missedPromptCount} missed prompt${
+                  reviewSummary.missedPromptCount === 1 ? "" : "s"
+                } waiting`}
           </small>
         </Link>
         <Link

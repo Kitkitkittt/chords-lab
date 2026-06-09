@@ -108,8 +108,9 @@ export function LessonCheckpoint({
         <span className="eyebrow">Checkpoint</span>
         <h2 id="lesson-checkpoint-title">Lesson checkpoint</h2>
         <p>
-          Answer three short prompts. Two correct answers marks the lesson
-          complete; misses stay in review until two correct answers in a row.
+          The calm way to finish: answer three short prompts. Two correct marks
+          the lesson complete, and any misses join your review queue. No timer,
+          no penalty.
         </p>
       </div>
 

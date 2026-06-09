@@ -15,62 +15,10 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { CourseRail } from "../components/CourseRail";
 import { LessonCheckpoint } from "../components/LessonCheckpoint";
 import { lessonComponents } from "../components/lessonComponentMap";
-import { getAdjacentLessons, lessonsBySlug, modulesBySlug } from "../data/course";
+import { getAdjacentLessons, getFirstIncompleteLesson, lessonsBySlug, modulesBySlug } from "../data/course";
+import { lessonLinkFor } from "../data/lessonLinks";
 import { useProgress } from "../state/progress";
 import type { LessonCheckpointResult } from "../types/course";
-import type { GeneratedPracticeModuleId } from "../lib/practiceGenerators";
-
-const lessonPracticeRoutes: Record<string, string> = {
-  "sound-pitch": "/practice/pitch/setup",
-  "staff-keyboard": "/practice/staff/setup",
-  "rhythm-meter": "/practice/rhythm/setup",
-  "accidentals-steps": "/practice/scales/setup",
-  "scales-keys": "/practice/scales/setup",
-  intervals: "/practice/intervals/setup",
-  triads: "/practice/chords/setup",
-  "review-glossary": "/review",
-  "scale-fluency": "/practice/scales/setup",
-  "sevenths-inversions": "/practice/chords/setup",
-  "diatonic-harmony": "/practice/harmony/setup",
-  "rhythm-meter-lab": "/practice/rhythm/setup",
-  "ear-training-basics": "/practice/ear/setup",
-  "song-building": "/lab/song",
-  "intervals-fluency": "/practice/intervals/setup",
-  "minor-scales-modes": "/practice/scales/setup",
-  "seventh-chords-keys": "/practice/chords/setup",
-  "cadences-phrases": "/practice/harmony/setup",
-  "common-progressions": "/practice/harmony/setup",
-  "voice-leading-basics": "/practice/harmony/setup",
-  "pop-rock-harmony": "/lab/song",
-  "form-song-sections": "/lab/song",
-  "analysis-lab": "/practice/harmony/setup"
-};
-
-const lessonCheckpointModules: Record<string, GeneratedPracticeModuleId> = {
-  "sound-pitch": "pitch",
-  "staff-keyboard": "staff",
-  "rhythm-meter": "rhythm",
-  "accidentals-steps": "scales",
-  "scales-keys": "scales",
-  intervals: "intervals",
-  triads: "chords",
-  "review-glossary": "pitch",
-  "scale-fluency": "scales",
-  "sevenths-inversions": "chords",
-  "diatonic-harmony": "harmony",
-  "rhythm-meter-lab": "rhythm",
-  "ear-training-basics": "ear",
-  "song-building": "harmony",
-  "intervals-fluency": "intervals",
-  "minor-scales-modes": "scales",
-  "seventh-chords-keys": "chords",
-  "cadences-phrases": "harmony",
-  "common-progressions": "harmony",
-  "voice-leading-basics": "harmony",
-  "pop-rock-harmony": "harmony",
-  "form-song-sections": "rhythm",
-  "analysis-lab": "harmony"
-};
 
 export function LessonPage() {
   const { moduleSlug, lessonSlug } = useParams();
@@ -109,8 +57,14 @@ export function LessonPage() {
   const bookmarked = isLessonBookmarked(lesson.slug);
   const complete = isLessonComplete(lesson.slug);
   const LessonContent = lesson.Component;
-  const practiceRoute = lessonPracticeRoutes[lesson.slug] ?? "/practice";
-  const checkpointModule = lessonCheckpointModules[lesson.slug] ?? "pitch";
+  const lessonLink = lessonLinkFor(lesson.slug);
+  const practiceRoute = lessonLink.practiceRoute;
+  const checkpointModule = lessonLink.checkpointModule;
+  // When this is the last lesson in the list, recommend the next still-incomplete
+  // lesson (skipping the current one) instead of dead-ending on /progress.
+  const firstIncomplete = getFirstIncompleteLesson(progress.completedLessonSlugs);
+  const nextRecommended =
+    firstIncomplete.slug !== lesson.slug ? firstIncomplete : undefined;
 
   return (
     <div className="lesson-layout">
@@ -210,9 +164,17 @@ export function LessonPage() {
                 Next
                 <ArrowRight size={18} aria-hidden="true" />
               </Link>
+            ) : nextRecommended ? (
+              <Link
+                className="button"
+                to={`/learn/${nextRecommended.moduleSlug}/${nextRecommended.slug}`}
+              >
+                Next: {nextRecommended.title}
+                <ArrowRight size={18} aria-hidden="true" />
+              </Link>
             ) : (
               <Link className="button" to="/progress">
-                Progress
+                You finished the course
                 <ArrowRight size={18} aria-hidden="true" />
               </Link>
             )}
