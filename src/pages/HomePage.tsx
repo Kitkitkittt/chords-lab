@@ -13,6 +13,7 @@ import { getAdaptiveReviewSummary } from "../lib/adaptiveReview";
 import { recommendSkills, trackProgressList } from "../lib/learningPath";
 import { useProgress } from "../state/progress";
 import { HomeInteractiveLab } from "../components/HomeInteractiveLab";
+import { HeroChordPlay } from "../components/HeroChordPlay";
 import { ProgressBar } from "../components/ProgressBar";
 
 export function HomePage() {
@@ -71,8 +72,10 @@ export function HomePage() {
             </Link>
           </div>
         </div>
-        <HomeInteractiveLab />
+        <HeroChordPlay />
       </section>
+
+      <HomeInteractiveLab />
 
       <section className="mission-map" aria-label="Today mission map">
         <Link className="mission-card" to="/review">

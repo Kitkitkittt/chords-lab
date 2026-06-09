@@ -89,16 +89,17 @@ test("index practice hub supports multiple interactive modules", async ({
     "aria-selected",
     "true"
   );
-  await page.getByRole("button", { name: "F", exact: true }).click();
+  const labControls = page.locator(".lab-controls");
+  await labControls.getByRole("button", { name: "F", exact: true }).click();
   await expect(page.locator(".lab-status")).toContainText("Bb4");
 
   await page.getByRole("tab", { name: /staff challenge/i }).click();
-  await page.getByRole("button", { name: "C4" }).click();
+  await labControls.getByRole("button", { name: "C4" }).click();
   await expect(page.locator(".lab-status")).toContainText("Correct: C4");
   await expect(page.getByText(/Notation unavailable/)).toHaveCount(0);
 
   await page.getByRole("tab", { name: /tap rhythm/i }).click();
-  await page.getByRole("button", { name: "2" }).click();
+  await labControls.getByRole("button", { name: "2" }).click();
   await expect(page.locator(".lab-status")).toContainText("F4 G4 F4 G4");
 });
 

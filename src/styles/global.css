@@ -4474,3 +4474,209 @@ html[data-reduced-motion="true"] *::after {
     transform: none;
   }
 }
+
+/* Landing hero: build-a-chord interactive */
+.hero-play {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  padding: var(--space-3);
+  border: var(--border-card);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(
+      120% 120% at 100% 0%,
+      rgba(57, 81, 193, 0.1),
+      transparent 60%
+    ),
+    var(--surface-container-lowest);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero-play__top {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.hero-play__top .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--primary);
+}
+
+.hero-play__top h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.hero-play__top p {
+  margin: 0;
+  color: var(--on-surface-variant);
+}
+
+.hero-play__readout {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-block-size: 3rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-container);
+}
+
+.hero-play__readout strong {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-play__readout span {
+  color: var(--on-surface-variant);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.hero-piano {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-md);
+  background: var(--inverse-surface);
+}
+
+.hero-piano__octave {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  flex: 1 1 0;
+  min-inline-size: 0;
+  gap: 0.25rem;
+}
+
+.hero-key {
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+  touch-action: none;
+  transition:
+    transform 90ms var(--ease-tactile),
+    background 120ms ease;
+}
+
+.hero-key--white {
+  grid-row: 1;
+  block-size: 7.5rem;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: #ffffff;
+  box-shadow: inset 0 -3px 0 rgba(25, 28, 29, 0.12);
+}
+
+/* Position black keys between the white keys (C# D# . F# G# A#). */
+.hero-key--black {
+  position: absolute;
+  grid-row: 1;
+  inline-size: 11%;
+  block-size: 4.6rem;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: #20242a;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+.hero-piano__octave .hero-key--black:nth-of-type(2) {
+  inset-inline-start: 10.5%;
+}
+.hero-piano__octave .hero-key--black:nth-of-type(4) {
+  inset-inline-start: 24.5%;
+}
+.hero-piano__octave .hero-key--black:nth-of-type(7) {
+  inset-inline-start: 52.5%;
+}
+.hero-piano__octave .hero-key--black:nth-of-type(9) {
+  inset-inline-start: 66.5%;
+}
+.hero-piano__octave .hero-key--black:nth-of-type(11) {
+  inset-inline-start: 80.5%;
+}
+
+.hero-key--white.is-held {
+  background: var(--primary-container);
+  box-shadow: inset 0 -3px 0 var(--primary);
+}
+
+.hero-key--black.is-held {
+  background: var(--primary);
+}
+
+.hero-key:active {
+  transform: translateY(2px);
+}
+
+.hero-play__presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hero-play__presets > svg {
+  color: var(--on-surface-variant);
+}
+
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.75rem;
+  border: var(--border-card);
+  border-radius: var(--radius-full);
+  background: var(--surface-container-low);
+  color: var(--on-surface);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease, transform 90ms var(--ease-tactile);
+}
+
+.hero-chip:hover,
+.hero-chip:focus-visible {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.hero-chip:active {
+  transform: translateY(1px);
+}
+
+.hero-chip--clear {
+  margin-inline-start: auto;
+}
+
+.hero-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .hero-key--white {
+    block-size: 6rem;
+  }
+
+  .hero-key--black {
+    block-size: 3.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-key,
+  .hero-chip {
+    transition: none;
+  }
+
+  .hero-key:active,
+  .hero-chip:active {
+    transform: none;
+  }
+}
