@@ -6,6 +6,22 @@ Last updated: 2026-06-05
 
 Last updated: 2026-06-09
 
+## Landing Hero: Build-a-Chord Hook (2026-06-09)
+
+Replaced the static hero side panel with an immediately playable interaction so
+the landing page invites a first touch within seconds.
+
+- New `HeroChordPlay` component: a compact two-octave keyboard (proper black-key
+  positioning) that sounds notes on press (live-voice engine, press-and-hold)
+  and names the chord in real time via `describeChordStack` (symbol + quality).
+- One-tap chord presets (C, Am, Fmaj7, G7) arpeggiate and fill the readout to
+  spark exploration; a Clear chip resets.
+- Placed in the hero; the Practice hub moved just below it as its own section.
+- Keyboard-accessible, reduced-motion aware, uses design tokens.
+- Tests: `HeroChordPlay.test.tsx`; scoped the home e2e button queries to the
+  practice-hub region to avoid collisions with the new hero keys. Suite: 112
+  unit/component tests, 24 Playwright tests. Deployed to Netlify.
+
 ## UI Consistency Pass: Design Tokens (2026-06-09)
 
 A safe, non-visual-redesign consolidation to remove "messy" inconsistencies.
