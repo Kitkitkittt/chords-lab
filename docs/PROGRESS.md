@@ -6,6 +6,20 @@ Last updated: 2026-06-05
 
 Last updated: 2026-06-09
 
+## UI Consistency Pass: Design Tokens (2026-06-09)
+
+A safe, non-visual-redesign consolidation to remove "messy" inconsistencies.
+
+- Added `--radius-full` and normalized all `999px` pill radii to it; radii now
+  resolve through the `--radius-*` tokens.
+- Added semantic border tokens `--border-card` / `--border-strong` and snapped
+  eight slightly-different primary-tint border opacities (0.12/0.16/0.18/0.26)
+  to the two canonical tones; card edges now use `var(--border-card)` (19 sites).
+- Added a `--focus-ring` token and routed the global `:focus-visible` outline
+  through it for one consistent focus treatment.
+- No layout or color redesign; tokens only. Verified: typecheck, lint, 109 unit
+  tests, build, and 24 Playwright e2e all green.
+
 ## Learning Experience - Phase 5: De-fragilize Mappings (2026-06-09)
 
 Removed a class of drift bugs by centralizing lesson connections.

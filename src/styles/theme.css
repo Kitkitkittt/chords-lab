@@ -31,6 +31,7 @@
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
+  --radius-full: 999px;
   --space-1: 0.5rem;
   --space-2: 1rem;
   --space-3: 1.5rem;
@@ -44,4 +45,8 @@
   --shadow-soft: 0 24px 60px rgba(60, 84, 196, 0.08);
   --shadow-press: inset 0 2px 8px rgba(25, 28, 29, 0.08);
   --ease-tactile: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Semantic borders for consistent card/control edges */
+  --border-card: 1px solid rgba(57, 81, 193, 0.14);
+  --border-strong: 1px solid rgba(57, 81, 193, 0.28);
+  --focus-ring: 3px solid rgba(57, 81, 193, 0.45);
 }
