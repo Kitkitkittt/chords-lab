@@ -31,7 +31,7 @@ describe("AppLayout navigation", () => {
     const primaryNav = screen.getByRole("navigation", {
       name: "Primary navigation"
     });
-    for (const label of ["Home", "Learn", "Practice", "Tools"]) {
+    for (const label of ["Home", "Learn", "Play", "Practice"]) {
       expect(
         within(primaryNav).getByRole("link", { name: label })
       ).toBeInTheDocument();
@@ -61,6 +61,9 @@ describe("AppLayout navigation", () => {
     expect(
       within(menu).getByRole("menuitem", { name: "Song Lab" })
     ).toHaveAttribute("href", "/lab/song");
+    expect(
+      within(menu).getByRole("menuitem", { name: "Tools" })
+    ).toHaveAttribute("href", "/tools/circle");
     expect(within(menu).getByText("Reference")).toBeInTheDocument();
   });
 

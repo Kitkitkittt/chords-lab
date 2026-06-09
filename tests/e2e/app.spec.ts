@@ -77,6 +77,36 @@ test("the More menu opens and navigates to a secondary page", async ({
   ).toBeVisible();
 });
 
+test("the Play hub lets a visitor start a backing loop and pick a vibe", async ({
+  page
+}) => {
+  await page.goto("/play");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Play" })
+  ).toBeVisible();
+
+  // Vibes are selectable; choosing one keeps it checked.
+  const vibes = page.getByRole("radio");
+  await expect(vibes.first()).toHaveAttribute("aria-checked", "true");
+  await vibes.nth(1).click();
+  await expect(vibes.nth(1)).toHaveAttribute("aria-checked", "true");
+
+  // Starting the loop flips the transport to a stop control.
+  await page.getByRole("button", { name: /Play loop/i }).click();
+  await expect(page.getByRole("button", { name: /^Stop$/ })).toBeVisible();
+
+  // Ear games live on the same hub: guessing reveals an answer instantly.
+  await expect(
+    page.getByRole("heading", { name: "Ear games" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Hear it/i }).click();
+  const earOptions = page.locator(".ear-games__options button");
+  await earOptions.first().click();
+  await expect(
+    page.getByRole("button", { name: /Next round/i })
+  ).toBeVisible();
+});
+
 test("index practice hub supports multiple interactive modules", async ({
   page
 }) => {

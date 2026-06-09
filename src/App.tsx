@@ -10,6 +10,7 @@ import { InstrumentsPage } from "./pages/InstrumentsPage";
 import { LearnPage } from "./pages/LearnPage";
 import { LessonPage } from "./pages/LessonPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { PlayPage } from "./pages/PlayPage";
 import { PracticePage } from "./pages/PracticePage";
 import { PracticeSetupPage } from "./pages/PracticeSetupPage";
 import { ProgressExportPage } from "./pages/ProgressExportPage";
@@ -40,6 +41,7 @@ export function App() {
           }
         />
         <Route path="learn/:moduleSlug/:lessonSlug" element={<LessonPage />} />
+        <Route path="play" element={<PlayPage />} />
         <Route path="practice" element={<PracticePage />} />
         <Route path="practice/:moduleId/setup" element={<PracticeSetupPage />} />
         <Route path="practice/:moduleId" element={<PracticePage />} />

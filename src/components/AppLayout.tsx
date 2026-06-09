@@ -17,6 +17,10 @@ function appModeForPath(pathname: string): AppMode {
     return "drilling";
   }
 
+  if (pathname.startsWith("/play")) {
+    return "playing";
+  }
+
   if (pathname.startsWith("/review")) {
     return "reviewing";
   }

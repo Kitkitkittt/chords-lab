@@ -7,6 +7,7 @@ import {
   triggerNoteRelease
 } from "../lib/audioEngine";
 import { describeChordStack } from "../lib/interactionTools";
+import { ChordFlourish } from "./ChordFlourish";
 import { useProgress } from "../state/progress";
 
 /**
@@ -98,10 +99,11 @@ export function HeroChordPlay() {
         <p>Tap the keys. We name what you play.</p>
       </div>
 
-      <div className="hero-play__readout" role="status" aria-live="polite">
-        <strong>{detection.symbol ?? (held.length > 0 ? "…" : "—")}</strong>
-        <span>{readout}</span>
-      </div>
+      <ChordFlourish
+        symbol={detection.symbol}
+        detail={readout}
+        placeholder={held.length > 0 ? "…" : "—"}
+      />
 
       <div className="hero-piano" aria-label="Mini keyboard">
         {OCTAVES.map((octave) => (

@@ -428,6 +428,144 @@ export function playSongSketch(
 }
 
 // --------------------------------------------------------------------------
+// Looping backing playback (Jam Room)
+// --------------------------------------------------------------------------
+
+export type LoopHandle = {
+  /** Stop the loop and release its voice. */
+  stop: () => void;
+};
+
+type LoopOptions = {
+  audioEnabled: boolean;
+  /** Beats-per-minute override; defaults to the pattern's own bpm. */
+  bpm?: number;
+  onStateChange?: (state: AudioPlaybackState) => void;
+  /** Fired at the start of each loop iteration with the 0-based count. */
+  onLoop?: (iteration: number) => void;
+  /** Fired for each non-rest event within an iteration. */
+  onStep?: (event: AudioEvent, index: number) => void;
+};
+
+let activeLoop: { id: number; dispose: () => void } | undefined;
+let loopId = 0;
+
+/** Stop any running backing loop. Safe to call when nothing is playing. */
+export function stopLoop(onStateChange?: (state: AudioPlaybackState) => void): void {
+  if (activeLoop) {
+    activeLoop.dispose();
+    activeLoop = undefined;
+  }
+
+  onStateChange?.("stopped");
+}
+
+/**
+ * Play a pattern on repeat as a backing track. Returns a handle to stop it.
+ * Designed for the Jam Room: a calm, user-started loop to play over. Each
+ * iteration reschedules its own events so timing stays aligned to the grid.
+ */
+export async function playLoop(
+  pattern: PlaybackPattern,
+  options: LoopOptions
+): Promise<LoopHandle> {
+  const noop: LoopHandle = { stop: () => {} };
+
+  if (!options.audioEnabled) {
+    options.onStateChange?.("disabled");
+    emitAudioState("disabled");
+    return noop;
+  }
+
+  stopLoop();
+  stopAudioPlayback();
+  options.onStateChange?.("loading");
+
+  try {
+    const Tone = await import("tone");
+    await Tone.start();
+    audioUnlockStatus = "unlocked";
+
+    const synth = new Tone.PolySynth(Tone.Synth).toDestination() as ManagedSynth;
+    const bpm = Math.max(40, options.bpm ?? pattern.bpm);
+    const secondsPerBeat = 60 / bpm;
+    const perBeatMs = 60000 / bpm;
+    const loopBeats = pattern.events.reduce(
+      (end, event) => Math.max(end, event.startBeat + event.durationBeats),
+      0
+    );
+    const loopMs = Math.max(perBeatMs, loopBeats * perBeatMs);
+    const id = loopId + 1;
+    loopId = id;
+
+    const timeouts: number[] = [];
+    let intervalHandle = 0;
+
+    const scheduleIteration = (iteration: number) => {
+      if (activeLoop?.id !== id) {
+        return;
+      }
+
+      options.onLoop?.(iteration);
+      const now = Tone.now() + 0.04;
+
+      pattern.events.forEach((event, index) => {
+        if (isRest(event) || !event.note) {
+          return;
+        }
+
+        synth.triggerAttackRelease(
+          normalizePlayableNotes(event.note),
+          Math.max(0.04, event.durationBeats * secondsPerBeat),
+          now + event.startBeat * secondsPerBeat,
+          event.velocity ?? 0.6
+        );
+
+        timeouts.push(
+          window.setTimeout(() => {
+            if (activeLoop?.id === id) {
+              options.onStep?.(event, index);
+            }
+          }, Math.max(0, event.startBeat * perBeatMs))
+        );
+      });
+    };
+
+    const dispose = () => {
+      if (intervalHandle) {
+        window.clearInterval(intervalHandle);
+      }
+
+      timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      synth.releaseAll?.();
+      synth.dispose();
+      options.onStateChange?.("idle");
+    };
+
+    activeLoop = { id, dispose };
+    scheduleIteration(0);
+    let iteration = 1;
+    intervalHandle = window.setInterval(() => {
+      // Clear the previous iteration's step timeouts before scheduling more.
+      timeouts.splice(0).forEach((timeoutId) => window.clearTimeout(timeoutId));
+      scheduleIteration(iteration);
+      iteration += 1;
+    }, loopMs);
+
+    options.onStateChange?.("playing");
+
+    return {
+      stop: () => stopLoop(options.onStateChange)
+    };
+  } catch {
+    audioUnlockStatus = "blocked";
+    options.onStateChange?.("error");
+    emitAudioState("error");
+    return noop;
+  }
+}
+
+// --------------------------------------------------------------------------
 // Live instrument voices (tap-to-sound, press-and-hold sustain)
 // --------------------------------------------------------------------------
 

@@ -6,6 +6,32 @@ Last updated: 2026-06-05
 
 Last updated: 2026-06-09
 
+## Play Hub: Jam Room, Chord Flourish, and Ear Games (2026-06-09)
+
+Added an entertainment-focused, low-pressure Play destination and spread its
+delight across existing surfaces. New-visitor hook first, linger-longer second;
+opt-in games with no scoring, no timers, in-browser only.
+
+- Jam Room (`/play`): pick a "vibe" (calm key + diatonic loop + tempo + soloing
+  scale), start a looping backing track (chords + bass), and play melody over it
+  on a keyboard that highlights the in-scale notes so it always sounds good.
+  Surprise-me reshuffles the vibe; one tap opens the loop in Song Lab.
+  Backed by a new pure `jam.ts` lib and a new `playLoop`/`stopLoop` in the audio
+  engine (repeats a pattern with onLoop/onStep, clean teardown on stop/unmount).
+- Chord recognition flourish: a shared `ChordFlourish` component that briefly
+  swells + glows when a *new* chord is recognized. Wired into the hero keyboard,
+  instrument free-play, and the Jam Room so the "we heard that" moment is
+  consistent. Respects prefers-reduced-motion.
+- Ear games: three quick, replayable listening games (Name the gap / Major or
+  minor? / Higher or lower?) on the Play hub. Instant reveal, friendly copy, a
+  "New round" button, and nothing persisted — distinct from the graded ear
+  training that still lives in Practice. Pure round generation in `earGames.ts`.
+- Navigation: Play promoted to primary nav (Home · Learn · Play · Practice);
+  Tools moved into the More menu to keep the mobile bottom bar at four items.
+  Added a "playing" AppMode for the `/play` route.
+- Verified: typecheck, lint, 134 unit tests (was 112), production build, and 26
+  Playwright e2e (desktop + mobile, including a new Play-hub flow). Deployed.
+
 ## Landing Page Refactor (2026-06-09)
 
 Sharpened the landing page hierarchy and reduced repetition.

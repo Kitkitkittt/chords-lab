@@ -4743,3 +4743,420 @@ html[data-reduced-motion="true"] *::after {
     transform: none;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Jam Room                                                                   */
+/* -------------------------------------------------------------------------- */
+
+.jam-room {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.jam-room__head h2 {
+  margin: 0 0 0.3rem;
+}
+
+.jam-room__head p {
+  margin: 0;
+  color: var(--on-surface-variant);
+  max-inline-size: 52ch;
+}
+
+.jam-vibes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
+}
+
+.jam-vibe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  text-align: start;
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background 120ms ease, transform 90ms var(--ease-tactile),
+    border-color 120ms ease;
+}
+
+.jam-vibe:hover,
+.jam-vibe:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+.jam-vibe.is-active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  border-color: var(--primary);
+}
+
+.jam-vibe strong {
+  font-size: 1.05rem;
+}
+
+.jam-vibe span {
+  color: inherit;
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
+.jam-vibe__meta {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.jam-transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.jam-transport__status {
+  margin-inline-start: auto;
+  color: var(--on-surface-variant);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.jam-bars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jam-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-inline-size: 4.5rem;
+  padding: 0.55rem 0.75rem;
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+  transition: background 120ms ease, transform 120ms var(--ease-tactile);
+}
+
+.jam-bar.is-active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  transform: translateY(-2px);
+}
+
+.jam-bar__numeral {
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.jam-bar__chord {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.jam-keyboard {
+  position: relative;
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-md);
+  background: var(--inverse-surface);
+  overflow-x: auto;
+}
+
+.jam-key {
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  touch-action: none;
+  transition: transform 90ms var(--ease-tactile), background 120ms ease;
+}
+
+.jam-key--white {
+  inline-size: 2.4rem;
+  block-size: 8rem;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: #ffffff;
+  box-shadow: inset 0 -3px 0 rgba(25, 28, 29, 0.12);
+}
+
+.jam-key--black {
+  inline-size: 1.5rem;
+  block-size: 5rem;
+  margin-inline: -0.85rem;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: #20242a;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+/* In-scale notes get a calm dot so "safe" keys are discoverable. */
+.jam-key--white.is-in-scale {
+  background: linear-gradient(
+    to bottom,
+    #ffffff 70%,
+    var(--primary-container) 70%
+  );
+}
+
+.jam-key--black.is-in-scale {
+  background: linear-gradient(to bottom, #20242a 60%, var(--primary) 60%);
+}
+
+.jam-key--white.is-held {
+  background: var(--primary-container);
+  box-shadow: inset 0 -3px 0 var(--primary);
+}
+
+.jam-key--black.is-held {
+  background: var(--primary);
+}
+
+.jam-key:active {
+  transform: translateY(2px);
+}
+
+@media (max-width: 720px) {
+  .jam-key--white {
+    inline-size: 2rem;
+    block-size: 6.5rem;
+  }
+
+  .jam-key--black {
+    inline-size: 1.3rem;
+    block-size: 4rem;
+    margin-inline: -0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jam-vibe,
+  .jam-bar,
+  .jam-key {
+    transition: none;
+  }
+
+  .jam-vibe:hover,
+  .jam-vibe:focus-visible,
+  .jam-bar.is-active,
+  .jam-key:active {
+    transform: none;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chord recognition flourish (shared)                                        */
+/* -------------------------------------------------------------------------- */
+
+.chord-flourish {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-block-size: 3rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-container);
+}
+
+.chord-flourish__symbol {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Brief swell + glow each time a new chord is recognized. */
+.chord-flourish__symbol.is-recognized {
+  animation: chord-recognize 420ms var(--ease-tactile);
+}
+
+.chord-flourish__detail {
+  color: var(--on-surface-variant);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@keyframes chord-recognize {
+  0% {
+    transform: scale(0.86);
+    opacity: 0.5;
+  }
+  45% {
+    transform: scale(1.12);
+    text-shadow: 0 0 14px var(--primary-container);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chord-flourish__symbol.is-recognized {
+    animation: none;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Ear games (Play hub)                                                       */
+/* -------------------------------------------------------------------------- */
+
+.ear-games {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ear-games__head h2 {
+  margin: 0 0 0.3rem;
+}
+
+.ear-games__head p {
+  margin: 0;
+  color: var(--on-surface-variant);
+}
+
+.ear-games__tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.5rem;
+}
+
+.ear-games__tab {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 0.9rem;
+  text-align: start;
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.ear-games__tab:hover,
+.ear-games__tab:focus-visible {
+  border-color: var(--primary);
+}
+
+.ear-games__tab.is-active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  border-color: var(--primary);
+}
+
+.ear-games__tab span {
+  font-size: 0.88rem;
+  opacity: 0.85;
+}
+
+.ear-games__stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+}
+
+.ear-games__transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ear-games__status {
+  color: var(--on-surface-variant);
+  font-weight: 600;
+}
+
+.ear-games__prompt {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.ear-games__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ear-games__option {
+  padding: 0.6rem 1.1rem;
+  border: var(--border-strong);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--on-surface);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease, transform 90ms var(--ease-tactile);
+}
+
+.ear-games__option:hover:not(:disabled),
+.ear-games__option:focus-visible {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.ear-games__option:disabled {
+  cursor: default;
+}
+
+.ear-games__option.is-answer {
+  background: var(--tertiary-container);
+  border-color: var(--tertiary);
+  color: var(--tertiary);
+}
+
+.ear-games__option.is-wrong {
+  background: var(--error-container);
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.ear-games__reveal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-container);
+}
+
+.ear-games__reveal.is-correct {
+  background: var(--tertiary-container);
+}
+
+.ear-games__reveal strong {
+  font-family: var(--font-heading);
+}
+
+.ear-games__reveal .button {
+  margin-inline-start: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ear-games__option {
+    transition: none;
+  }
+}

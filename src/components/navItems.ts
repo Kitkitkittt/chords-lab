@@ -11,7 +11,8 @@ import {
   type LucideIcon,
   Music2,
   Music3,
-  RotateCcw
+  RotateCcw,
+  Sparkles
 } from "lucide-react";
 
 export type NavItem = {
@@ -31,8 +32,8 @@ export type NavGroup = {
 export const primaryNavItems: NavItem[] = [
   { to: "/", label: "Home", icon: Music2, end: true },
   { to: "/learn", label: "Learn", icon: GraduationCap },
-  { to: "/practice", label: "Practice", icon: Dumbbell },
-  { to: "/tools/circle", label: "Tools", icon: Compass }
+  { to: "/play", label: "Play", icon: Sparkles },
+  { to: "/practice", label: "Practice", icon: Dumbbell }
 ];
 
 /** Secondary destinations, grouped, shown in the "More" menu. */
@@ -41,6 +42,7 @@ export const moreNavGroups: NavGroup[] = [
     heading: "Practice & play",
     items: [
       { to: "/review", label: "Review", icon: RotateCcw },
+      { to: "/tools/circle", label: "Tools", icon: Compass },
       { to: "/instruments", label: "Instruments", icon: Guitar },
       { to: "/lab/song", label: "Song Lab", icon: Music3 }
     ]

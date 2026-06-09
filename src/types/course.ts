@@ -127,7 +127,8 @@ export type AppMode =
   | "drilling"
   | "reviewing"
   | "experimenting"
-  | "instrumenting";
+  | "instrumenting"
+  | "playing";
 
 export type ToastMessage = {
   id: string;

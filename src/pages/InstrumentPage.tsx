@@ -27,6 +27,7 @@ import {
 } from "../lib/instruments";
 import { useProgress } from "../state/progress";
 import { describeChordStack } from "../lib/interactionTools";
+import { ChordFlourish } from "../components/ChordFlourish";
 import type { InstrumentId } from "../types/course";
 
 const chordChoices = ["C", "G", "Am", "F", "G7"];
@@ -267,11 +268,15 @@ export function InstrumentPage() {
           {profile.id === "piano" ? (
             <section>
               <h2>Free play</h2>
-              <p className="free-play-readout" role="status">
-                {playedNotes.length > 0
-                  ? `${playedNotes.join(" ")} \u2192 ${freePlayDetection.label}`
-                  : "Tap keys to hear what chord you are building."}
-              </p>
+              <ChordFlourish
+                symbol={freePlayDetection.symbol}
+                detail={
+                  playedNotes.length > 0
+                    ? `${playedNotes.join(" ")} \u2192 ${freePlayDetection.label}`
+                    : "Tap keys to hear what chord you are building."
+                }
+                placeholder={playedNotes.length > 0 ? "\u2026" : "\u2014"}
+              />
               <button
                 className="button button--quiet"
                 type="button"
