@@ -24,7 +24,7 @@ test("home, lesson completion, progress persistence, and accessibility", async (
     .analyze();
   expect(accessibilityScanResults.violations).toEqual([]);
 
-  await page.getByRole("link", { name: "Continue lesson" }).click();
+  await page.getByRole("link", { name: /Start learning|Continue lesson/ }).click();
   await expect(
     page.getByRole("heading", { name: "Sound, Pitch, and Octaves" })
   ).toBeVisible();

@@ -1,7 +1,11 @@
 import {
   ArrowRight,
+  Compass,
+  Dumbbell,
+  Guitar,
   ListChecks,
   Play,
+  RotateCcw,
   Sparkles,
   Target,
   Music
@@ -46,39 +50,55 @@ export function HomePage() {
     <div className="page-stack">
       <section className="home-hero" aria-labelledby="home-title">
         <div className="home-hero__content">
-          <span className="eyebrow">Beginner reference course</span>
+          <span className="eyebrow">Local-first music theory</span>
           <h1 id="home-title">Chords Lab</h1>
-          <p>
+          <p className="home-hero__lede">
             {isFirstVisit
-              ? "Begin with Foundations: sound, pitch, octave, and note names in one short loop."
-              : "Learn the symbols behind pitch, rhythm, scales, intervals, and triads through short cited lessons and small checks."}
+              ? "Learn music theory by playing it. Build chords, hear them, and read the symbols behind the sound — calm, hands-on, no account."
+              : "Pick up where you left off. Short cited lessons, generated practice, ear training, and a Song Lab — all in one calm workspace."}
           </p>
           <div className="hero-actions">
             <Link
               className="button"
               to={`/learn/${resumeLesson.moduleSlug}/${resumeLesson.slug}`}
             >
-              Continue lesson
+              {isFirstVisit ? "Start learning" : "Continue lesson"}
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
             <Link className="button button--quiet" to={`/practice/${continuePractice.id}`}>
               Continue practice
             </Link>
-            <Link className="button button--quiet" to="/lab/song">
-              Play in Song Lab
-            </Link>
-            <Link className="button button--quiet" to="/instruments">
-              Instrument lab
-            </Link>
           </div>
+          <dl className="hero-stats" aria-label="What's inside">
+            <div>
+              <dt>{lessons.length}</dt>
+              <dd>cited lessons</dd>
+            </div>
+            <div>
+              <dt>{practiceModules.length}</dt>
+              <dd>practice modules</dd>
+            </div>
+            <div>
+              <dt>{completedCount}</dt>
+              <dd>lessons done</dd>
+            </div>
+          </dl>
+          <p className="home-hero__note">
+            No accounts. No timers. Works offline. Progress stays on your device.
+          </p>
         </div>
         <HeroChordPlay />
       </section>
 
       <HomeInteractiveLab />
 
-      <section className="mission-map" aria-label="Today mission map">
-        <Link className="mission-card" to="/review">
+      <section className="home-section" aria-labelledby="today-title">
+        <div className="section-heading">
+          <span className="eyebrow">Today</span>
+          <h2 id="today-title">Pick up where you left off</h2>
+        </div>
+        <div className="mission-map">
+          <Link className="mission-card" to="/review">
           <ListChecks size={19} aria-hidden="true" />
           <span>Today's review</span>
           <strong>
@@ -115,6 +135,7 @@ export function HomePage() {
           </strong>
           <small>{progress.savedSongSketches.length} saved locally</small>
         </Link>
+        </div>
       </section>
 
       {skillRecommendations.length > 0 ? (
@@ -214,23 +235,33 @@ export function HomePage() {
         </Link>
       </section>
 
-      <section className="home-action-strip" aria-label="Interactive paths">
-        <Link to={`/practice/${continuePractice.id}`}>
-          <strong>Continue practice</strong>
-          <span>{continuePractice.title}: {continuePractice.goal}</span>
-        </Link>
-        <Link to="/review">
-          <strong>Review queue</strong>
-          <span>Replay missed prompts and mixed checks without a timer.</span>
-        </Link>
-        <Link to="/lab/song">
-          <strong>Song Lab</strong>
-          <span>Build beat, bass, chord, melody, and form blocks.</span>
-        </Link>
-        <Link to="/instruments">
-          <strong>Instrument lab</strong>
-          <span>Map the same idea on piano, guitar, bass, drums, voice, and ukulele.</span>
-        </Link>
+      <section className="home-section" aria-labelledby="explore-title">
+        <div className="section-heading">
+          <span className="eyebrow">Explore</span>
+          <h2 id="explore-title">Ways to play and practice</h2>
+        </div>
+        <div className="home-action-strip">
+          <Link to={`/practice/${continuePractice.id}`}>
+            <Dumbbell size={20} aria-hidden="true" />
+            <strong>Practice</strong>
+            <span>{continuePractice.title}: {continuePractice.goal}</span>
+          </Link>
+          <Link to="/review">
+            <RotateCcw size={20} aria-hidden="true" />
+            <strong>Review queue</strong>
+            <span>Replay missed prompts and mixed checks without a timer.</span>
+          </Link>
+          <Link to="/tools/circle">
+            <Compass size={20} aria-hidden="true" />
+            <strong>Theory tools</strong>
+            <span>Circle of fifths and a chord-progression playground.</span>
+          </Link>
+          <Link to="/instruments">
+            <Guitar size={20} aria-hidden="true" />
+            <strong>Instrument lab</strong>
+            <span>Play piano, guitar, bass, drums, voice, and ukulele.</span>
+          </Link>
+        </div>
       </section>
 
       <section className="module-grid" aria-labelledby="modules-title">
