@@ -6,6 +6,23 @@ Last updated: 2026-06-05
 
 Last updated: 2026-06-09
 
+## Landing Page Refactor (2026-06-09)
+
+Sharpened the landing page hierarchy and reduced repetition.
+
+- Hero rewritten with a clearer value proposition (play-first, calm,
+  local-first), a single primary CTA ("Start learning" first visit / "Continue
+  lesson" returning) plus one quiet secondary, a quick stats row (lessons,
+  practice modules, lessons done), and a trust note (no accounts/timers, offline).
+- Grouped the loose sections under labeled `home-section` headings ("Today",
+  "Explore") so the page scans top-to-bottom instead of reading as equal-weight
+  cards.
+- The Explore action strip gained icons, hover lift, and topic-accurate targets
+  (Practice, Review, Theory tools, Instrument lab), removing duplicate links that
+  already appear in the hero/mission map.
+- Verified: typecheck, lint, 112 unit tests, build, 24 e2e (updated the home
+  flow test to accept the first-visit "Start learning" label). Deployed.
+
 ## Landing Hero: Build-a-Chord Hook (2026-06-09)
 
 Replaced the static hero side panel with an immediately playable interaction so
