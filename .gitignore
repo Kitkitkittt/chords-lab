@@ -1,9 +1,28 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+*.tsbuildinfo
+
+# Test / tooling artifacts
 coverage/
 playwright-report/
 test-results/
 .playwright-cli/
-*.tsbuildinfo
+
+# Logs
 *.log
+logs/
+
+# Editor / OS
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.local
+
+# Environment
+.env
+.env.*
+!.env.example

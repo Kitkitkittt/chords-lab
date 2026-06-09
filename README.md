@@ -3,14 +3,32 @@
 Chords Lab is a local-first, interactive music theory PWA for
 beginner-to-early-intermediate learners. It teaches core theory through short
 lessons, generated practice sessions, replayable audio, rendered notation,
-keyboard visuals, local progress, review queues, and Song Lab sketches for
-building musical patterns.
+playable on-screen instruments, interactive theory tools, local progress with
+spaced review, and a Song Lab for building musical patterns.
 
 The app is intentionally calm: no accounts, no timers, no autoplay, no backend,
 and no analytics. Progress stays in the learner's browser.
 
+## Highlights
+
+- Derived music-theory engine built on Tonal (`src/lib/theory.ts`): notes,
+  intervals, scales, modes, keys, Roman numerals, progressions, chord
+  inversions, solfege, and voice leading — correct for every key.
+- A skill graph that links lessons to skills to prompts, powering soft
+  recommendations, interleaved spaced review, and parallel learning tracks.
+- Playable instruments (piano, guitar, bass, drums, voice, ukulele) with
+  tap-to-sound, press-and-hold sustain, distinct timbres, and instrument-as-
+  answer practice.
+- Interactive theory tools: a circle of fifths, a chord-progression playground
+  with voice-leading, and a fretboard scale-box explorer.
+- Calm momentum: in-session progress and streaks, meaningful end-of-session
+  summaries, and gentle skill level-up acknowledgments (no streak pressure).
+- Installable, offline-capable PWA with a crash-recovery error boundary and a
+  first-run welcome tour.
+
 ## Contents
 
+- [Highlights](#highlights)
 - [What Chords Lab Does](#what-chords-lab-does)
 - [Current App Status](#current-app-status)
 - [Feature Tour](#feature-tour)
@@ -23,6 +41,7 @@ and no analytics. Progress stays in the learner's browser.
 - [Local Progress And Privacy](#local-progress-and-privacy)
 - [Testing](#testing)
 - [PWA And Offline Behavior](#pwa-and-offline-behavior)
+- [Deployment](#deployment)
 - [Content And Source Policy](#content-and-source-policy)
 - [Roadmap](#roadmap)
 - [Troubleshooting](#troubleshooting)
@@ -482,6 +501,56 @@ Workbox is configured with:
 
 The expected offline behavior is an app-shell load after the first successful
 visit. Learner progress remains local to the browser.
+
+## Deployment
+
+Chords Lab is a fully static single-page app — the production build in `dist/`
+is just HTML, CSS, JS, and assets, so it can be hosted on any static host or
+CDN. There is no server, database, or environment configuration to set up.
+
+Build the site:
+
+```bash
+npm run build
+```
+
+This outputs to `dist/`. Serve that directory from any static host.
+
+### SPA routing
+
+The app uses client-side routing (React Router). Configure the host to rewrite
+all unknown paths to `/index.html` so deep links like `/practice/pitch` work on
+refresh.
+
+- Netlify: a `public/_redirects` file with `/* /index.html 200`, or the build
+  config equivalent.
+- Vercel: a rewrite of `/(.*)` to `/index.html`.
+- Cloudflare Pages / GitHub Pages / S3+CloudFront: enable SPA fallback to
+  `index.html`.
+
+### Netlify
+
+```bash
+npx netlify deploy --build --prod
+```
+
+Build command: `npm run build`. Publish directory: `dist`.
+
+### Vercel
+
+```bash
+npx vercel --prod
+```
+
+Framework preset: Vite. Build command: `npm run build`. Output directory:
+`dist`.
+
+### Cloudflare Pages
+
+Build command: `npm run build`. Build output directory: `dist`.
+
+The service worker auto-updates on deploy, so returning visitors pick up new
+versions after a reload.
 
 ## Content And Source Policy
 
