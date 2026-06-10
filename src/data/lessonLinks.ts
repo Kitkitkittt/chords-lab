@@ -135,6 +135,21 @@ export const lessonLinks: Record<string, LessonLink> = {
     practiceRoute: routeFor("harmony"),
     checkpointModule: "harmony",
     reviewModules: ["harmony"]
+  },
+  "chord-extensions": {
+    practiceRoute: routeFor("chords"),
+    checkpointModule: "chords",
+    reviewModules: ["chords", "harmony"]
+  },
+  "syncopation-groove": {
+    practiceRoute: routeFor("rhythm"),
+    checkpointModule: "rhythm",
+    reviewModules: ["rhythm"]
+  },
+  "twelve-bar-blues": {
+    practiceRoute: routeFor("harmony"),
+    checkpointModule: "harmony",
+    reviewModules: ["chords", "harmony"]
   }
 };
 

@@ -3,7 +3,7 @@ import { courseModules, lessons, lessonsBySlug, modulesBySlug } from "./course";
 
 describe("course metadata", () => {
   it("has valid module and lesson references", () => {
-    expect(lessons.length).toBe(23);
+    expect(lessons.length).toBe(26);
 
     for (const module of courseModules) {
       expect(module.lessonSlugs.length).toBeGreaterThan(0);
@@ -16,7 +16,7 @@ describe("course metadata", () => {
 
     for (const lesson of lessons) {
       expect(modulesBySlug.has(lesson.moduleSlug)).toBe(true);
-      expect(lesson.level).toBe("beginner");
+      expect(["beginner", "intermediate"]).toContain(lesson.level);
       expect(lesson.estimatedMinutes).toBeGreaterThan(0);
       expect(lesson.outcomes.length).toBeGreaterThan(0);
     }

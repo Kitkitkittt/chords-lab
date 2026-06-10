@@ -1,0 +1,54 @@
+export const meta = {
+  slug: "twelve-bar-blues",
+  title: "The Twelve-Bar Blues",
+  moduleSlug: "blues",
+  level: "intermediate",
+  estimatedMinutes: 12,
+  outcomes: [
+    "Map the twelve-bar blues form with I, IV, and V",
+    "Use dominant seventh chords as the blues color",
+    "Hear the form as a repeating loop"
+  ],
+  prerequisites: ["seventh-chords-keys", "common-progressions"],
+  citations: [
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    },
+    {
+      label: "Teoria chords",
+      url: "https://www.teoria.com/en/tutorials/chords/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    }
+  ]
+};
+
+## A blues is a twelve-bar shape
+
+The twelve-bar blues is one of the most reused forms in popular music. It uses just three chords — I, IV, and V — over twelve bars, usually as dominant sevenths for the bluesy color.
+
+<AudioExample label="C7 dominant color" notes={["C4", "E4", "G4", "Bb4"]} mode="chord" />
+
+## The standard layout
+
+Bars follow this map in C: I I I I, IV IV I I, V IV I V. The final V is the "turnaround" that pushes back to the top.
+
+<PlayableProgression
+  numerals={["I", "IV", "I", "V"]}
+  tonic="C"
+  mode="major"
+  label="Blues skeleton in C"
+/>
+
+## Hear it loop
+
+Play the loop above a few times. That pull from V back to I is the engine of the blues.
+
+<MicroCheck
+  id="blues-chord-count"
+  prompt="How many different chords does a basic twelve-bar blues use?"
+  options={["Three (I, IV, V)", "Seven", "Two"]}
+  answer="Three (I, IV, V)"
+  explanation="The twelve-bar blues is built from I, IV, and V, often as dominant sevenths."
+/>

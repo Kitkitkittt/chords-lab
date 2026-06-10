@@ -125,6 +125,20 @@ test("the Play hub lets a visitor start a backing loop and pick a vibe", async (
   ).toBeVisible();
 });
 
+test("an intermediate lesson renders an interactive progression block", async ({
+  page
+}) => {
+  await page.goto("/learn/blues/twelve-bar-blues");
+  await expect(
+    page.getByRole("heading", { name: "The Twelve-Bar Blues" })
+  ).toBeVisible();
+
+  // The PlayableProgression interactive block renders.
+  await expect(
+    page.getByRole("button", { name: /Play loop/i }).first()
+  ).toBeVisible();
+});
+
 test("index practice hub supports multiple interactive modules", async ({
   page
 }) => {

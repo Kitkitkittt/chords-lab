@@ -209,7 +209,10 @@ const lessonSkillMap: Record<string, SkillId[]> = {
   "voice-leading-basics": ["voice-leading"],
   "pop-rock-harmony": ["roman-numerals"],
   "form-song-sections": ["instrument-application"],
-  "analysis-lab": ["roman-numerals"]
+  "analysis-lab": ["roman-numerals"],
+  "chord-extensions": ["chord-spelling"],
+  "syncopation-groove": ["rhythm-reading"],
+  "twelve-bar-blues": ["roman-numerals", "chord-spelling"]
 };
 
 /**

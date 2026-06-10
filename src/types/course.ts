@@ -10,7 +10,7 @@ export type LessonMeta = {
   slug: string;
   title: string;
   moduleSlug: string;
-  level: "beginner";
+  level: "beginner" | "intermediate";
   estimatedMinutes: number;
   outcomes: string[];
   prerequisites: string[];

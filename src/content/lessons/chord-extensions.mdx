@@ -1,0 +1,53 @@
+export const meta = {
+  slug: "chord-extensions",
+  title: "Chord Extensions and Color",
+  moduleSlug: "extensions",
+  level: "intermediate",
+  estimatedMinutes: 11,
+  outcomes: [
+    "Add sevenths, ninths, and sus tones to triads",
+    "Hear how extensions change a chord's color",
+    "Use add9 and sus chords in a progression"
+  ],
+  prerequisites: ["sevenths-inversions", "diatonic-harmony"],
+  citations: [
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    },
+    {
+      label: "Teoria chords",
+      url: "https://www.teoria.com/en/tutorials/chords/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    }
+  ]
+};
+
+## Extensions stack thirds past the seventh
+
+A triad stacks two thirds. Keep stacking and you reach the seventh, ninth, eleventh, and thirteenth. Each added tone keeps the chord's function but changes its color.
+
+<AudioExample label="C major triad" notes={["C4", "E4", "G4"]} mode="chord" />
+
+<AudioExample label="C add9" notes={["C4", "E4", "G4", "D5"]} mode="chord" />
+
+## Sus chords trade the third for a neighbor
+
+A suspended chord replaces the third with the second (sus2) or fourth (sus4). It sounds open and unresolved until the third returns.
+
+<AudioExample label="Csus4 then C" notes={["C4", "F4", "G4"]} mode="chord" />
+
+## Hear extensions inside a loop
+
+Play this loop and notice how the add9 and sus colors sit inside familiar harmony:
+
+<PlayableProgression numerals={["I", "IV", "V", "I"]} tonic="C" mode="major" label="Color loop in C" />
+
+<MicroCheck
+  id="chord-extensions-add9"
+  prompt="What note does an add9 chord add to a triad?"
+  options={["The ninth (a second above the octave)", "The flat seventh", "The tritone"]}
+  answer="The ninth (a second above the octave)"
+  explanation="Add9 stacks the ninth on the triad without the seventh."
+/>

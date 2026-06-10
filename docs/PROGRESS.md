@@ -4,7 +4,38 @@ Last updated: 2026-06-05
 
 # Chords Lab Progress
 
-Last updated: 2026-06-09
+Last updated: 2026-06-10
+
+## Play Room Expansion, Lesson Variety, and Play-First Landing (2026-06-10)
+
+Shipped a multi-phase upgrade across the Play room, lessons, and home page.
+
+- Audio engine: `playLoop` now routes each event to a per-track voice (chords,
+  bass, drums) instead of one synth, with a per-track mixer (volume in dB +
+  mute). Added `pad` and `arp` timbres. Fixed a drum-timing bug where unpitched
+  NoiseSynth voices (snare/hat/clap) used the pitched MembraneSynth signature.
+- Beats: new pure `beats.ts` with named, vibe-independent drum patterns
+  (Backbeat, Four on the floor, Lo-fi, Half-time, Bossa-ish, plus No drums) as
+  4-row x 8-step grids, and a grid -> AudioEvents converter that repeats per bar.
+- Jam Room: added a mixer (channel strips with volume + mute), a beat picker, a
+  tempo slider, and an editable drum grid (tap cells to make your own beat; row
+  labels preview the drum). The loop restarts live as the mix/beat/tempo/vibe
+  change.
+- Lessons - new interactive blocks: `PlayableProgression` (tap a chord or play
+  the loop) and `IntervalExplorer` (tap a note to hear + name the interval from
+  a root), registered in the MDX component map and used in the intervals and
+  common-progressions lessons.
+- Lessons - new content + tier: added an `intermediate` level and three
+  intermediate lessons (Chord Extensions and Color, Syncopation and Groove, The
+  Twelve-Bar Blues) with their modules, lesson links, and skill mappings. Course
+  is now 26 lessons.
+- Home: first-time visitors are led with Play - hero primary CTA is "Start
+  playing" (learning becomes secondary), a featured "Make something that sounds
+  good" band links to the Jam Room and Ear games, and a "Just play" mission card
+  was added for returning users.
+- Verified each phase: typecheck, lint, 148 unit tests (was 112), production
+  build, and 28 Playwright e2e (desktop + mobile, incl. Play hub mixer/beat grid
+  and an intermediate-lesson interactive block).
 
 ## Play Hub: Jam Room, Chord Flourish, and Ear Games (2026-06-09)
 

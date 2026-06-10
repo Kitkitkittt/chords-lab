@@ -7,6 +7,9 @@ import AnalysisLab, {
 import CadencesPhrases, {
   meta as cadencesPhrasesMeta
 } from "../content/lessons/cadences-phrases.mdx";
+import ChordExtensions, {
+  meta as chordExtensionsMeta
+} from "../content/lessons/chord-extensions.mdx";
 import CommonProgressions, {
   meta as commonProgressionsMeta
 } from "../content/lessons/common-progressions.mdx";
@@ -59,7 +62,13 @@ import SoundPitch, {
 import StaffKeyboard, {
   meta as staffKeyboardMeta
 } from "../content/lessons/staff-keyboard.mdx";
+import SyncopationGroove, {
+  meta as syncopationGrooveMeta
+} from "../content/lessons/syncopation-groove.mdx";
 import Triads, { meta as triadsMeta } from "../content/lessons/triads.mdx";
+import TwelveBarBlues, {
+  meta as twelveBarBluesMeta
+} from "../content/lessons/twelve-bar-blues.mdx";
 import VoiceLeadingBasics, {
   meta as voiceLeadingBasicsMeta
 } from "../content/lessons/voice-leading-basics.mdx";
@@ -217,6 +226,30 @@ export const courseModules: CourseModule[] = [
     description:
       "Combine rhythm, melody, harmony, and form labels in short analyses.",
     lessonSlugs: ["analysis-lab"]
+  },
+  {
+    slug: "extensions",
+    title: "Chord Extensions",
+    colorRole: "harmony",
+    description:
+      "Add sevenths, ninths, and suspensions for richer chord color.",
+    lessonSlugs: ["chord-extensions"]
+  },
+  {
+    slug: "groove",
+    title: "Syncopation and Groove",
+    colorRole: "rhythm",
+    description:
+      "Accent off-beats and build syncopated grooves you can feel.",
+    lessonSlugs: ["syncopation-groove"]
+  },
+  {
+    slug: "blues",
+    title: "The Blues",
+    colorRole: "harmony",
+    description:
+      "Play the twelve-bar blues form with dominant-seventh color.",
+    lessonSlugs: ["twelve-bar-blues"]
   }
 ];
 
@@ -243,7 +276,10 @@ export const lessons: Lesson[] = [
   { ...voiceLeadingBasicsMeta, Component: VoiceLeadingBasics },
   { ...popRockHarmonyMeta, Component: PopRockHarmony },
   { ...formSongSectionsMeta, Component: FormSongSections },
-  { ...analysisLabMeta, Component: AnalysisLab }
+  { ...analysisLabMeta, Component: AnalysisLab },
+  { ...chordExtensionsMeta, Component: ChordExtensions },
+  { ...syncopationGrooveMeta, Component: SyncopationGroove },
+  { ...twelveBarBluesMeta, Component: TwelveBarBlues }
 ];
 
 export const lessonsBySlug = new Map(
