@@ -5327,3 +5327,133 @@ html[data-reduced-motion="true"] *::after {
     transition: none;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Lesson interactive blocks (PlayableProgression, IntervalExplorer)          */
+/* -------------------------------------------------------------------------- */
+
+.playable-progression {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+  margin-block: 1rem;
+}
+
+.playable-progression__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.playable-progression__head .button {
+  margin-inline-start: auto;
+}
+
+.playable-progression__status {
+  color: var(--on-surface-variant);
+  font-weight: 600;
+}
+
+.playable-progression__chords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.playable-progression__chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-inline-size: 4.5rem;
+  padding: 0.6rem 0.85rem;
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background 120ms ease, transform 90ms var(--ease-tactile);
+}
+
+.playable-progression__chip:hover,
+.playable-progression__chip:focus-visible {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.playable-progression__chip.is-active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  border-color: var(--primary);
+}
+
+.playable-progression__numeral {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.playable-progression__symbol {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+}
+
+.interval-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+  margin-block: 1rem;
+}
+
+.interval-explorer__readout {
+  font-weight: 600;
+  min-block-size: 1.5rem;
+}
+
+.interval-explorer__notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.interval-explorer__note {
+  min-inline-size: 2.75rem;
+  padding: 0.5rem 0.7rem;
+  border: var(--border-strong);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--on-surface);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease, transform 90ms var(--ease-tactile);
+}
+
+.interval-explorer__note:hover,
+.interval-explorer__note:focus-visible {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.interval-explorer__note.is-active {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playable-progression__chip,
+  .interval-explorer__note {
+    transition: none;
+  }
+}
