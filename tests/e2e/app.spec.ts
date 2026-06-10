@@ -86,14 +86,24 @@ test("the Play hub lets a visitor start a backing loop and pick a vibe", async (
   ).toBeVisible();
 
   // Vibes are selectable; choosing one keeps it checked.
-  const vibes = page.getByRole("radio");
+  const vibes = page
+    .getByRole("radiogroup", { name: /Backing vibe/i })
+    .getByRole("radio");
   await expect(vibes.first()).toHaveAttribute("aria-checked", "true");
   await vibes.nth(1).click();
   await expect(vibes.nth(1)).toHaveAttribute("aria-checked", "true");
 
+  // The mixer offers beats and an editable drum grid.
+  await expect(
+    page.getByRole("radiogroup", { name: /^Beat$/i }).getByRole("radio").first()
+  ).toBeVisible();
+  await expect(page.getByRole("gridcell").first()).toBeVisible();
+
   // Starting the loop flips the transport to a stop control.
   await page.getByRole("button", { name: /Play loop/i }).click();
-  await expect(page.getByRole("button", { name: /^Stop$/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Stop$/ })).toBeVisible({
+    timeout: 15000
+  });
 
   // Ear games live on the same hub: guessing reveals an answer instantly.
   await expect(

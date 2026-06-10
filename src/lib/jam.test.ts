@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { beatById } from "./beats";
 import {
   VIBES,
   vibeBackingPattern,
@@ -56,5 +57,19 @@ describe("jam lib", () => {
     expect(Array.isArray(chordEvent?.note)).toBe(true);
     const notes = chordEvent?.note as string[];
     expect(notes.every((note) => /\d/.test(note))).toBe(true);
+  });
+
+  it("folds an optional drum grid into the backing pattern", () => {
+    const beat = beatById("backbeat")!;
+    const withDrums = vibeBackingPattern(VIBES[0], beat.grid);
+    const drumEvents = withDrums.events.filter(
+      (event) => event.track === "drums"
+    );
+    expect(drumEvents.length).toBeGreaterThan(0);
+    expect(drumEvents.every((event) => event.voice !== undefined)).toBe(true);
+
+    // Without a grid there are no drum events.
+    const noDrums = vibeBackingPattern(VIBES[0]);
+    expect(noDrums.events.some((event) => event.track === "drums")).toBe(false);
   });
 });

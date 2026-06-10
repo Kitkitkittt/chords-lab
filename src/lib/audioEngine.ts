@@ -18,6 +18,12 @@ export type AudioEvent = {
   durationBeats: number;
   velocity?: number;
   track?: string;
+  /**
+   * Optional explicit timbre for looped playback. When set, the loop engine
+   * routes this event to that voice (e.g. a drum row's "kick"/"snare"). When
+   * omitted, the loop maps the event's `track` to a default voice.
+   */
+  voice?: LiveVoiceId;
 };
 
 export type PlaybackPattern = {
@@ -440,12 +446,35 @@ type LoopOptions = {
   audioEnabled: boolean;
   /** Beats-per-minute override; defaults to the pattern's own bpm. */
   bpm?: number;
+  /**
+   * Per-track mixer settings. Keys are track names found on the pattern's
+   * events (e.g. "chords", "bass", "drums"). Missing tracks play at full level.
+   */
+  trackMix?: Record<string, { volumeDb?: number; muted?: boolean }>;
   onStateChange?: (state: AudioPlaybackState) => void;
   /** Fired at the start of each loop iteration with the 0-based count. */
   onLoop?: (iteration: number) => void;
   /** Fired for each non-rest event within an iteration. */
   onStep?: (event: AudioEvent, index: number) => void;
 };
+
+/** Map a logical track name to the voice used for looped playback. */
+function loopVoiceForTrack(track: string | undefined): LiveVoiceId {
+  switch (track) {
+    case "bass":
+      return "bass";
+    case "drums":
+      return "kick"; // overridden per-event by AudioEvent.voice for snare/hat/clap
+    case "melody":
+    case "arp":
+      return "arp";
+    case "pad":
+      return "pad";
+    case "chords":
+    default:
+      return "keys";
+  }
+}
 
 let activeLoop: { id: number; dispose: () => void } | undefined;
 let loopId = 0;
@@ -461,9 +490,10 @@ export function stopLoop(onStateChange?: (state: AudioPlaybackState) => void): v
 }
 
 /**
- * Play a pattern on repeat as a backing track. Returns a handle to stop it.
- * Designed for the Jam Room: a calm, user-started loop to play over. Each
- * iteration reschedules its own events so timing stays aligned to the grid.
+ * Play a pattern on repeat as a backing track, routing each event to a voice
+ * chosen by its `voice` field or its `track`. Supports a per-track mixer
+ * (volume + mute). Returns a handle to stop it. Each iteration reschedules its
+ * own events so timing stays aligned to the grid.
  */
 export async function playLoop(
   pattern: PlaybackPattern,
@@ -486,7 +516,6 @@ export async function playLoop(
     await Tone.start();
     audioUnlockStatus = "unlocked";
 
-    const synth = new Tone.PolySynth(Tone.Synth).toDestination() as ManagedSynth;
     const bpm = Math.max(40, options.bpm ?? pattern.bpm);
     const secondsPerBeat = 60 / bpm;
     const perBeatMs = 60000 / bpm;
@@ -497,6 +526,21 @@ export async function playLoop(
     const loopMs = Math.max(perBeatMs, loopBeats * perBeatMs);
     const id = loopId + 1;
     loopId = id;
+
+    // Build one voice per distinct timbre used by this pattern.
+    const neededVoices = new Set<LiveVoiceId>();
+    pattern.events.forEach((event) => {
+      neededVoices.add(event.voice ?? loopVoiceForTrack(event.track));
+    });
+
+    const loopVoices = new Map<LiveVoiceId, LiveVoice>();
+    for (const voiceId of neededVoices) {
+      const voice = createVoice(Tone, voiceId);
+      loopVoices.set(voiceId, voice);
+    }
+
+    const mixForTrack = (track: string | undefined) =>
+      (track && options.trackMix?.[track]) || undefined;
 
     const timeouts: number[] = [];
     let intervalHandle = 0;
@@ -514,12 +558,48 @@ export async function playLoop(
           return;
         }
 
-        synth.triggerAttackRelease(
-          normalizePlayableNotes(event.note),
-          Math.max(0.04, event.durationBeats * secondsPerBeat),
-          now + event.startBeat * secondsPerBeat,
-          event.velocity ?? 0.6
-        );
+        const mix = mixForTrack(event.track);
+        if (mix?.muted) {
+          return;
+        }
+
+        const voiceId = event.voice ?? loopVoiceForTrack(event.track);
+        const voice = loopVoices.get(voiceId);
+        if (!voice) {
+          return;
+        }
+
+        if (voice.volume) {
+          voice.volume.value = mix?.volumeDb ?? 0;
+        }
+
+        const startTime = now + event.startBeat * secondsPerBeat;
+
+        if (isPercussion(voiceId)) {
+          if (voiceId === "kick") {
+            // MembraneSynth is pitched: (note, duration, time, velocity).
+            voice.triggerAttackRelease(
+              PERCUSSION_NOTE.kick ?? "C2",
+              "16n",
+              startTime,
+              event.velocity ?? 0.9
+            );
+          } else {
+            // NoiseSynth is unpitched: (duration, time, velocity).
+            (voice.triggerAttackRelease as unknown as (
+              duration: string,
+              time: number,
+              velocity?: number
+            ) => void)("16n", startTime, event.velocity ?? 0.8);
+          }
+        } else {
+          voice.triggerAttackRelease(
+            normalizePlayableNotes(event.note),
+            Math.max(0.04, event.durationBeats * secondsPerBeat),
+            startTime,
+            event.velocity ?? 0.6
+          );
+        }
 
         timeouts.push(
           window.setTimeout(() => {
@@ -537,8 +617,11 @@ export async function playLoop(
       }
 
       timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
-      synth.releaseAll?.();
-      synth.dispose();
+      loopVoices.forEach((voice) => {
+        voice.releaseAll?.();
+        voice.dispose();
+      });
+      loopVoices.clear();
       options.onStateChange?.("idle");
     };
 
@@ -575,6 +658,8 @@ export type LiveVoiceId =
   | "pluck"
   | "bass"
   | "voice"
+  | "pad"
+  | "arp"
   | "kick"
   | "snare"
   | "hat"
@@ -584,13 +669,15 @@ type LiveVoice = {
   triggerAttack?: (note: string, time?: number, velocity?: number) => void;
   triggerRelease?: (note?: string, time?: number) => void;
   triggerAttackRelease: (
-    note: string,
+    note: string | string[],
     duration: number | string,
     time?: number,
     velocity?: number
   ) => void;
   releaseAll?: () => void;
   dispose: () => void;
+  /** Optional output gain (decibels) for mixer control during looped playback. */
+  volume?: { value: number };
 };
 
 type ToneModule = typeof import("tone");
@@ -626,6 +713,16 @@ function createVoice(Tone: ToneModule, voiceId: LiveVoiceId): LiveVoice {
       }).toDestination() as unknown as LiveVoice;
     case "voice":
       return new Tone.PolySynth(Tone.AMSynth).toDestination() as unknown as LiveVoice;
+    case "pad":
+      return new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.6, decay: 0.3, sustain: 0.8, release: 1.4 }
+      }).toDestination() as unknown as LiveVoice;
+    case "arp":
+      return new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.005, decay: 0.18, sustain: 0.1, release: 0.2 }
+      }).toDestination() as unknown as LiveVoice;
     case "kick":
       return new Tone.MembraneSynth().toDestination() as unknown as LiveVoice;
     case "snare":

@@ -1,5 +1,6 @@
 import { Note } from "tonal";
 import type { AudioEvent, PlaybackPattern } from "./audioEngine";
+import { drumGridEvents, type DrumGrid } from "./beats";
 import {
   chordNotes,
   progressionChords,
@@ -116,9 +117,13 @@ function bassNoteFor(symbol: string): string {
 /**
  * Build a looping backing pattern for a vibe: one bar per chord (4 beats),
  * each chord sustained as a soft pad with a root bass note on the downbeat.
- * The returned pattern is meant to be fed to `playLoop`.
+ * An optional drum grid is folded in (repeating per bar). The returned pattern
+ * is meant to be fed to `playLoop`.
  */
-export function vibeBackingPattern(vibe: Vibe): PlaybackPattern {
+export function vibeBackingPattern(
+  vibe: Vibe,
+  drumGrid?: DrumGrid
+): PlaybackPattern {
   const chords = vibeChords(vibe);
   const beatsPerBar = 4;
   const events: AudioEvent[] = [];
@@ -152,6 +157,10 @@ export function vibeBackingPattern(vibe: Vibe): PlaybackPattern {
       track: "bass"
     });
   });
+
+  if (drumGrid) {
+    events.push(...drumGridEvents(drumGrid, chords.length));
+  }
 
   return {
     label: `${vibe.label} backing`,
