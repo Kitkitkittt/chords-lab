@@ -54,20 +54,37 @@ export function HomePage() {
           <h1 id="home-title">Chords Lab</h1>
           <p className="home-hero__lede">
             {isFirstVisit
-              ? "Learn music theory by playing it. Build chords, hear them, and read the symbols behind the sound — calm, hands-on, no account."
+              ? "Play music theory before you study it. Start a backing loop, noodle on the keys, build chords and hear them — calm, hands-on, no account."
               : "Pick up where you left off. Short cited lessons, generated practice, ear training, and a Song Lab — all in one calm workspace."}
           </p>
           <div className="hero-actions">
-            <Link
-              className="button"
-              to={`/learn/${resumeLesson.moduleSlug}/${resumeLesson.slug}`}
-            >
-              {isFirstVisit ? "Start learning" : "Continue lesson"}
-              <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-            <Link className="button button--quiet" to={`/practice/${continuePractice.id}`}>
-              Continue practice
-            </Link>
+            {isFirstVisit ? (
+              <>
+                <Link className="button" to="/play">
+                  Start playing
+                  <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+                <Link
+                  className="button button--quiet"
+                  to={`/learn/${resumeLesson.moduleSlug}/${resumeLesson.slug}`}
+                >
+                  Start learning
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  className="button"
+                  to={`/learn/${resumeLesson.moduleSlug}/${resumeLesson.slug}`}
+                >
+                  Continue lesson
+                  <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+                <Link className="button button--quiet" to={`/practice/${continuePractice.id}`}>
+                  Continue practice
+                </Link>
+              </>
+            )}
           </div>
           <dl className="hero-stats" aria-label="What's inside">
             <div>
@@ -88,6 +105,34 @@ export function HomePage() {
           </p>
         </div>
         <HeroChordPlay />
+      </section>
+
+      <section className="play-featured" aria-labelledby="play-featured-title">
+        <div className="section-heading">
+          <span className="eyebrow">
+            <Sparkles size={15} aria-hidden="true" /> New — the Play room
+          </span>
+          <h2 id="play-featured-title">Make something that sounds good</h2>
+          <p>
+            No lessons required. Pick a vibe and a beat, shape the mix, and play
+            over a looping backing track. Then try a quick ear game.
+          </p>
+        </div>
+        <div className="play-featured__actions">
+          <Link className="play-featured__primary" to="/play">
+            <Sparkles size={20} aria-hidden="true" />
+            <strong>Open the Jam Room</strong>
+            <span>Vibes, beats, a mixer, and a play-over keyboard.</span>
+            <span className="play-featured__cta">
+              Play now <ArrowRight size={15} aria-hidden="true" />
+            </span>
+          </Link>
+          <Link className="play-featured__secondary" to="/play">
+            <Music size={18} aria-hidden="true" />
+            <strong>Ear games</strong>
+            <span>Name the gap, major or minor, higher or lower.</span>
+          </Link>
+        </div>
       </section>
 
       <HomeInteractiveLab />
@@ -124,6 +169,12 @@ export function HomePage() {
           <span>New concept</span>
           <strong>{resumeLesson.title}</strong>
           <small>{resumeLesson.estimatedMinutes} minute lesson loop</small>
+        </Link>
+        <Link className="mission-card" to="/play">
+          <Sparkles size={19} aria-hidden="true" />
+          <span>Just play</span>
+          <strong>Jam Room</strong>
+          <small>Loop a backing track and play over it.</small>
         </Link>
         <Link className="mission-card" to="/lab/song">
           <Play size={19} aria-hidden="true" />

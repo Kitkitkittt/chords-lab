@@ -19,6 +19,14 @@ test("home, lesson completion, progress persistence, and accessibility", async (
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Chords Lab" })).toBeVisible();
 
+  // First-time visitors are led toward the Play room.
+  await expect(
+    page.getByRole("heading", { name: "Make something that sounds good" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Open the Jam Room/i })
+  ).toBeVisible();
+
   const accessibilityScanResults = await new AxeBuilder({ page })
     .disableRules(["color-contrast"])
     .analyze();
