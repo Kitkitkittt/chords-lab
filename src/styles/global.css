@@ -207,6 +207,8 @@ code {
   gap: 0.75rem;
   min-inline-size: 15rem;
   max-inline-size: 18rem;
+  max-block-size: min(80vh, 32rem);
+  overflow-y: auto;
   padding: var(--space-2);
   border: var(--border-card);
   border-radius: var(--radius-lg);
@@ -5534,3 +5536,333 @@ html[data-reduced-motion="true"] *::after {
     transform: none;
   }
 }
+
+/* --- V8: shared pill token --- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 2.25rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-full);
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pill[data-reason="due"],
+.pill[data-kind="spice"] {
+  background: var(--secondary-container);
+}
+
+.pill[data-reason="new"] {
+  background: var(--tertiary-container);
+}
+
+.pill[data-reason="weak"] {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+/* --- V8: settings select --- */
+.settings-panel__select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settings-panel__select select {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: var(--border-card);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+}
+
+/* --- V8: insight cards on Progress --- */
+.insight-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.insight-cards__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-2);
+}
+
+.insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: var(--border-card);
+  background: var(--surface-container-low);
+  box-shadow: var(--shadow-soft);
+}
+
+.insight-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.insight-card[data-tone="celebrate"] {
+  background: var(--tertiary-container);
+}
+
+.insight-card[data-tone="focus"] {
+  background: var(--primary-container);
+}
+
+.insight-card[data-tone="focus"] p {
+  color: var(--on-primary-container);
+}
+
+/* --- V8: chord-suggest block in Song Lab theory panel --- */
+.chord-suggest {
+  margin-block-start: var(--space-2);
+}
+
+.chord-suggest h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 0.95rem;
+}
+
+.chord-suggest ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.chord-suggest li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.9rem;
+}
+
+.theory-context-panel__summary {
+  margin-block-start: var(--space-1);
+  font-style: italic;
+}
+
+/* --- V8: microphone tuner --- */
+.tuner-readout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+}
+
+.tuner-readout__note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0;
+}
+
+.tuner-readout__note strong {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.tuner-meter {
+  position: relative;
+  block-size: 1.25rem;
+  border-radius: var(--radius-full);
+  background: var(--surface-container-high);
+  overflow: hidden;
+}
+
+.tuner-meter__center {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 50%;
+  inline-size: 2px;
+  background: var(--outline);
+  transform: translateX(-50%);
+}
+
+.tuner-meter__needle {
+  position: absolute;
+  inset-block: 0.2rem;
+  inline-size: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--secondary);
+  transform: translateX(-50%);
+  transition: inset-inline-start 0.12s var(--ease-tactile);
+}
+
+.tuner-meter__needle[data-in-tune="true"] {
+  background: var(--tertiary);
+}
+
+.tuner-readout__hint {
+  margin: 0;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tuner-meter__needle {
+    transition: none;
+  }
+}
+
+/* --- V8 Wave 3: song arranger --- */
+.arranger {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.arranger__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.arranger__controls label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-inline-size: 320px;
+}
+
+.arranger__controls input {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: var(--border-card);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+}
+
+.arranger__add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.arranger__sections {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.arranger__section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border: var(--border-card);
+  background: var(--surface-container-low);
+}
+
+.arranger__section-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-full);
+  background: var(--surface-container-high);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.arranger__section-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.arranger__section-label small {
+  color: var(--on-surface-variant);
+  font-family: var(--font-mono);
+}
+
+.arranger__section-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.arranger__transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.arranger__summary {
+  margin: 0;
+  font-style: italic;
+}
+
+/* --- V8 Wave 4-7: journal, counterpoint --- */
+.practice-journal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.practice-journal ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.practice-journal li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: var(--space-1) 0;
+  border-block-end: var(--border-card);
+}
+
+.practice-journal small,
+.practice-journal span {
+  color: var(--on-surface-variant);
+}
+
+.counterpoint-issues {
+  list-style: none;
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.counterpoint-issues li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.counterpoint-issues li[data-severity="error"] {
+  color: var(--on-error-container, var(--error));
+}
+
+.counterpoint-issues li[data-severity="warning"] {
+  color: var(--on-surface-variant);
+}
+
+
+

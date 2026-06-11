@@ -598,6 +598,8 @@ Later possibilities:
 
 See:
 
+- [`docs/ROADMAP_V8.md`](docs/ROADMAP_V8.md)
+- [`docs/PROGRESS_V8.md`](docs/PROGRESS_V8.md)
 - [`docs/PLAN.md`](docs/PLAN.md)
 - [`docs/PROGRESS.md`](docs/PROGRESS.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)

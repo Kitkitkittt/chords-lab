@@ -359,6 +359,128 @@ export async function playPattern(
   }
 }
 
+/**
+ * Encode an AudioBuffer as 16-bit PCM WAV bytes (RIFF/WAVE). Pure byte work,
+ * returned as an ArrayBuffer so it is testable without a Blob. Interleaves
+ * channels and writes a standard 44-byte header.
+ */
+export function encodeWavBytes(buffer: AudioBuffer): ArrayBuffer {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const bytesPerSample = 2;
+  const frameCount = buffer.length;
+  const dataSize = frameCount * numChannels * bytesPerSample;
+  const bufferSize = 44 + dataSize;
+  const arrayBuffer = new ArrayBuffer(bufferSize);
+  const view = new DataView(arrayBuffer);
+
+  const writeString = (offset: number, text: string) => {
+    for (let i = 0; i < text.length; i += 1) {
+      view.setUint8(offset + i, text.charCodeAt(i));
+    }
+  };
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true); // PCM chunk size
+  view.setUint16(20, 1, true); // audio format = PCM
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * bytesPerSample, true); // byte rate
+  view.setUint16(32, numChannels * bytesPerSample, true); // block align
+  view.setUint16(34, 8 * bytesPerSample, true); // bits per sample
+  writeString(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  // Interleave channels and clamp to 16-bit signed range.
+  const channels: Float32Array[] = [];
+  for (let channel = 0; channel < numChannels; channel += 1) {
+    channels.push(buffer.getChannelData(channel));
+  }
+
+  let offset = 44;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    for (let channel = 0; channel < numChannels; channel += 1) {
+      const sample = Math.max(-1, Math.min(1, channels[channel][frame]));
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+      offset += 2;
+    }
+  }
+
+  return arrayBuffer;
+}
+
+/**
+ * Wrap the encoded WAV bytes in an audio/wav Blob for download.
+ */
+export function audioBufferToWav(buffer: AudioBuffer): Blob {
+  return new Blob([encodeWavBytes(buffer)], { type: "audio/wav" });
+}
+
+/**
+ * Render a Song Lab sketch offline into a WAV Blob using Tone.Offline. This is
+ * a one-shot, non-realtime render of one pass of the loop, so it is safe to
+ * call without affecting live playback. Returns null when audio is disabled or
+ * rendering is unavailable in the environment.
+ */
+export async function renderSongSketchToWav(
+  sketch: SongSketch,
+  options: { audioEnabled: boolean } = { audioEnabled: true }
+): Promise<Blob | null> {
+  if (!options.audioEnabled) {
+    return null;
+  }
+
+  try {
+    const Tone = await import("tone");
+    await Tone.start();
+    audioUnlockStatus = "unlocked";
+
+    const pattern = songSketchPattern(sketch);
+    const bpm = Math.max(40, pattern.bpm);
+    const secondsPerBeat = 60 / bpm;
+    const endBeat = pattern.events.reduce(
+      (end, event) => Math.max(end, event.startBeat + event.durationBeats),
+      0
+    );
+    // Add a short tail so release envelopes are captured.
+    const durationSeconds = endBeat * secondsPerBeat + 1.5;
+
+    const rendered = await Tone.Offline(() => {
+      const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+
+      pattern.events.forEach((event) => {
+        if (isRest(event) || !event.note) {
+          return;
+        }
+
+        synth.triggerAttackRelease(
+          normalizePlayableNotes(event.note),
+          Math.max(0.05, event.durationBeats * secondsPerBeat),
+          event.startBeat * secondsPerBeat,
+          event.velocity ?? 0.7
+        );
+      });
+    }, durationSeconds);
+
+    // Tone returns a ToneAudioBuffer wrapper; get the raw AudioBuffer.
+    const audioBuffer = (rendered as unknown as { get: () => AudioBuffer }).get
+      ? (rendered as unknown as { get: () => AudioBuffer }).get()
+      : (rendered as unknown as AudioBuffer);
+
+    if (!audioBuffer) {
+      return null;
+    }
+
+    return audioBufferToWav(audioBuffer);
+  } catch {
+    audioUnlockStatus = "blocked";
+    return null;
+  }
+}
+
 export async function playFeedbackTone(
   kind: "success" | "correction",
   options: Pick<PlaybackOptions, "audioEnabled" | "onStateChange"> = {

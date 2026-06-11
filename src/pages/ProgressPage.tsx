@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { ProgressBar } from "../components/ProgressBar";
 import { lessons, lessonsBySlug } from "../data/course";
 import { practiceModules, getPracticePrompts } from "../data/practice";
+import { buildInsights } from "../lib/insights";
+import { buildJournal, buildWeeklyDigest } from "../lib/practiceJournal";
 import { overallMastery, skillProgressList } from "../lib/learningPath";
 import { useProgress } from "../state/progress";
 
@@ -13,7 +15,10 @@ export function ProgressPage() {
     isLessonComplete,
     resetProgress,
     setAudioEnabled,
-    setReducedMotion
+    setReducedMotion,
+    setTheme,
+    setNoteNaming,
+    setColorBlindSafe
   } = useProgress();
 
   const bookmarkedLessons = progress.bookmarkedLessonSlugs
@@ -21,6 +26,9 @@ export function ProgressPage() {
     .filter(Boolean);
   const skillAreas = skillProgressList(progress);
   const masteryPercent = Math.round(overallMastery(progress) * 100);
+  const insights = buildInsights(progress);
+  const digest = buildWeeklyDigest(progress);
+  const journal = buildJournal(progress).slice(0, 7);
   const attemptedChecks = Object.values(progress.checkResults).reduce(
     (sum, result) => sum + result.attempted,
     0
@@ -48,6 +56,61 @@ export function ProgressPage() {
           this browser.
         </p>
       </section>
+
+      <section className="workspace-band" aria-labelledby="weekly-digest">
+        <div className="workspace-band__main">
+          <span className="eyebrow">This week</span>
+          <h2 id="weekly-digest">{digest.headline}</h2>
+          <p>
+            {digest.sessionCount} session{digest.sessionCount === 1 ? "" : "s"}{" "}
+            across {digest.activeDays} day{digest.activeDays === 1 ? "" : "s"}
+            {digest.attempted > 0
+              ? ` · ${Math.round(digest.accuracy * 100)}% correct`
+              : ""}
+            .
+          </p>
+        </div>
+        {journal.length > 0 ? (
+          <div className="practice-journal" aria-label="Recent practice journal">
+            <h3>Recent days</h3>
+            <ul>
+              {journal.map((entry) => (
+                <li key={entry.date}>
+                  <strong>{entry.date}</strong>
+                  <span>
+                    {entry.sessionCount} session
+                    {entry.sessionCount === 1 ? "" : "s"} · {entry.correct}/
+                    {entry.attempted} · {entry.modules.join(", ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </section>
+
+      {insights.length > 0 ? (
+        <section className="insight-cards" aria-labelledby="insights-title">
+          <h2 id="insights-title">What to look at next</h2>
+          <div className="insight-cards__grid">
+            {insights.map((card) => (
+              <article
+                key={card.id}
+                className="insight-card"
+                data-tone={card.tone}
+              >
+                <h3>{card.title}</h3>
+                <p>{card.body}</p>
+                {card.actionLabel && card.actionRoute ? (
+                  <Link className="text-button" to={card.actionRoute}>
+                    {card.actionLabel}
+                  </Link>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="workspace-band">
         <div className="workspace-band__main">
@@ -92,6 +155,44 @@ export function ProgressPage() {
               onChange={(event) => setReducedMotion(event.currentTarget.checked)}
             />
             Reduce motion
+          </label>
+          <label className="settings-panel__select">
+            Theme
+            <select
+              value={progress.settings.theme ?? "system"}
+              onChange={(event) =>
+                setTheme(
+                  event.currentTarget.value as "system" | "light" | "dark"
+                )
+              }
+            >
+              <option value="system">Match system</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark (night practice)</option>
+            </select>
+          </label>
+          <label className="settings-panel__select">
+            Note names
+            <select
+              value={progress.settings.noteNaming ?? "english"}
+              onChange={(event) =>
+                setNoteNaming(
+                  event.currentTarget.value as "english" | "fixed-do" | "german"
+                )
+              }
+            >
+              <option value="english">English (C D E)</option>
+              <option value="fixed-do">Solfège (Do Re Mi)</option>
+              <option value="german">German (C D E… H)</option>
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={progress.settings.colorBlindSafe ?? false}
+              onChange={(event) => setColorBlindSafe(event.currentTarget.checked)}
+            />
+            Color-blind-safe palette
           </label>
           <button className="button button--quiet" type="button" onClick={resetProgress}>
             <RotateCcw size={18} aria-hidden="true" />

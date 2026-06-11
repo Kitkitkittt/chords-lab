@@ -1,18 +1,23 @@
 import {
   BookOpen,
+  BookOpenCheck,
   CircleHelp,
   ClipboardList,
   Compass,
   Dumbbell,
+  Ear,
+  GitBranch,
   Guitar,
   GraduationCap,
   Info,
   Library,
+  ListChecks,
   type LucideIcon,
   Music2,
   Music3,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Waypoints
 } from "lucide-react";
 
 export type NavItem = {
@@ -41,10 +46,18 @@ export const moreNavGroups: NavGroup[] = [
   {
     heading: "Practice & play",
     items: [
+      { to: "/practice/smart", label: "Smart session", icon: Sparkles },
+      { to: "/practice/dictation", label: "Dictation", icon: Ear },
+      { to: "/practice/sight-reading", label: "Sight-reading", icon: BookOpenCheck },
+      { to: "/practice/advanced-harmony", label: "Advanced harmony", icon: Waypoints },
+      { to: "/practice/counterpoint", label: "Counterpoint", icon: GitBranch },
       { to: "/review", label: "Review", icon: RotateCcw },
+      { to: "/routines", label: "Routines", icon: ListChecks },
       { to: "/tools/circle", label: "Tools", icon: Compass },
       { to: "/instruments", label: "Instruments", icon: Guitar },
-      { to: "/lab/song", label: "Song Lab", icon: Music3 }
+      { to: "/lab/song", label: "Song Lab", icon: Music3 },
+      { to: "/lab/arrange", label: "Arranger", icon: Music3 },
+      { to: "/lab/repertoire", label: "Repertoire", icon: Library }
     ]
   },
   {

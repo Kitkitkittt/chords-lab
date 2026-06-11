@@ -1,5 +1,6 @@
 import { ArrowRight, Drum, Guitar, Mic2, Piano } from "lucide-react";
 import { Link } from "react-router-dom";
+import { MidiInputPanel } from "../components/MidiInputPanel";
 import { instrumentProfiles } from "../lib/instruments";
 import type { InstrumentId } from "../types/course";
 
@@ -52,6 +53,8 @@ export function InstrumentsPage() {
           );
         })}
       </section>
+
+      <MidiInputPanel />
 
       <section className="workspace-band" aria-label="Full-band learning map">
         <div className="workspace-band__main">

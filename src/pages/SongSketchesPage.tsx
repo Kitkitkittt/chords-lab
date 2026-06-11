@@ -1,5 +1,5 @@
-import { Copy, Plus, Trash2 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { Copy, Download, Link2, Plus, Trash2 } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   createDefaultSongSketch,
@@ -7,6 +7,13 @@ import {
   exportSongSketches,
   parseSongSketches
 } from "../lib/songSketches";
+import { downloadMidiBlob } from "../lib/midiFile";
+import {
+  buildShareUrl,
+  decodeTokenToSketch,
+  readSketchTokenFromHash
+} from "../lib/sketchShare";
+import type { SongSketch } from "../types/course";
 import { useProgress } from "../state/progress";
 
 export function SongSketchesPage() {
@@ -23,6 +30,32 @@ export function SongSketchesPage() {
     [progress.savedSongSketches]
   );
 
+  // Import-on-open: if the page is opened from a share link (#s=...), decode the
+  // sketch locally and save it. No network, no backend.
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const token = readSketchTokenFromHash(window.location.hash);
+
+    if (!token) {
+      return;
+    }
+
+    const shared = decodeTokenToSketch(token);
+
+    if (shared) {
+      saveSongSketch(shared);
+      setStatus(`Imported a shared sketch: "${shared.title}".`);
+    } else {
+      setStatus("That share link could not be read.");
+    }
+
+    // Clear the hash so a refresh doesn't re-import.
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [saveSongSketch]);
+
   function addSketch() {
     saveSongSketch(createDefaultSongSketch("New eight-bar loop"));
     setStatus("New sketch saved locally.");
@@ -34,6 +67,35 @@ export function SongSketchesPage() {
     if (sketch) {
       saveSongSketch(duplicateSongSketch(sketch));
       setStatus("Sketch duplicated.");
+    }
+  }
+
+  function downloadMidi(sketch: SongSketch) {
+    const blob = downloadMidiBlob(sketch);
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    const safeName =
+      sketch.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") ||
+      "chords-lab-loop";
+    anchor.href = url;
+    anchor.download = `${safeName}.mid`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    setStatus(`Exported "${sketch.title}" as a MIDI file.`);
+  }
+
+  async function shareSketch(sketch: SongSketch) {
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "https://chords.lab";
+    const shareUrl = buildShareUrl(sketch, origin);
+
+    try {
+      await navigator.clipboard?.writeText(shareUrl);
+      setStatus("Share link copied. It contains the whole loop, no account needed.");
+    } catch {
+      setStatus(shareUrl);
     }
   }
 
@@ -97,6 +159,22 @@ export function SongSketchesPage() {
                     onClick={() => duplicate(sketch.id)}
                   >
                     Duplicate
+                  </button>
+                  <button
+                    className="text-button"
+                    type="button"
+                    onClick={() => shareSketch(sketch)}
+                  >
+                    <Link2 size={15} aria-hidden="true" />
+                    Share link
+                  </button>
+                  <button
+                    className="text-button"
+                    type="button"
+                    onClick={() => downloadMidi(sketch)}
+                  >
+                    <Download size={15} aria-hidden="true" />
+                    MIDI
                   </button>
                   <button
                     className="text-button"

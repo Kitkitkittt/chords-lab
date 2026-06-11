@@ -1,4 +1,11 @@
 import type { AdaptiveSkillState, ProgressState } from "../types/course";
+import {
+  createCard,
+  intervalDays as fsrsIntervalDays,
+  reviewCard,
+  type FsrsCard,
+  type Rating
+} from "./fsrs";
 
 const defaultEase = 2.3;
 const minEase = 1.3;
@@ -19,14 +26,46 @@ function addDays(date: Date, days: number): string {
   return next.toISOString();
 }
 
+/**
+ * Recover an FsrsCard from a stored skill state. Older saved progress has no
+ * FSRS fields, so seed a fresh card and carry over the lapse count and last
+ * review time we already track. This keeps the migration lossless.
+ */
+function cardFromSkillState(state: AdaptiveSkillState): FsrsCard {
+  const base = createCard();
+
+  return {
+    stability:
+      typeof state.stability === "number" && Number.isFinite(state.stability)
+        ? state.stability
+        : base.stability,
+    difficulty:
+      typeof state.difficulty === "number" && Number.isFinite(state.difficulty)
+        ? state.difficulty
+        : base.difficulty,
+    reps:
+      typeof state.reps === "number" && Number.isFinite(state.reps)
+        ? state.reps
+        : state.attempted,
+    lapses: state.lapses,
+    lastReviewedAt: state.lastPracticedAt,
+    dueAt: state.dueAt
+  };
+}
+
 export function createDefaultAdaptiveSkillState(): AdaptiveSkillState {
+  const card = createCard();
+
   return {
     correct: 0,
     attempted: 0,
     ease: defaultEase,
     intervalDays: 1,
     lapses: 0,
-    reviewQueue: []
+    reviewQueue: [],
+    stability: card.stability,
+    difficulty: card.difficulty,
+    reps: card.reps
   };
 }
 
@@ -37,26 +76,37 @@ export function updateAdaptiveSkillState(
   practicedAt = new Date()
 ): AdaptiveSkillState {
   const current = previous ?? createDefaultAdaptiveSkillState();
+
+  // FSRS scheduling. A binary correct/incorrect attempt maps to a "good"/"again"
+  // rating; the optional Easy/Hard confidence signal refines it separately.
+  const rating: Rating = isCorrect ? "good" : "again";
+  const card = reviewCard(cardFromSkillState(current), rating, practicedAt);
+  const intervalDays = fsrsIntervalDays(card);
+
+  // Keep the legacy ease field roughly in sync so older readers and tests that
+  // inspect `ease` still see sensible, monotonic movement.
   const ease = Math.min(
     maxEase,
     Math.max(minEase, current.ease + (isCorrect ? 0.08 : -0.22))
   );
-  const intervalDays = isCorrect
-    ? Math.max(1, Math.round((current.intervalDays || 1) * ease))
-    : 0;
 
   return {
     correct: current.correct + (isCorrect ? 1 : 0),
     attempted: current.attempted + 1,
     ease,
-    intervalDays,
-    dueAt: isCorrect ? addDays(practicedAt, intervalDays) : practicedAt.toISOString(),
-    lapses: current.lapses + (isCorrect ? 0 : 1),
+    intervalDays: isCorrect ? intervalDays : 0,
+    // App convention: a missed prompt is due immediately, regardless of the
+    // FSRS card's own next-interval. A correct answer uses the FSRS schedule.
+    dueAt: isCorrect ? card.dueAt ?? practicedAt.toISOString() : practicedAt.toISOString(),
+    lapses: card.lapses,
     lastResult: isCorrect ? "correct" : "incorrect",
     lastPracticedAt: practicedAt.toISOString(),
     reviewQueue: isCorrect
       ? removeItem(current.reviewQueue, practiceId)
-      : uniqueAppend(current.reviewQueue, practiceId)
+      : uniqueAppend(current.reviewQueue, practiceId),
+    stability: card.stability,
+    difficulty: card.difficulty,
+    reps: card.reps
   };
 }
 

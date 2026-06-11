@@ -1,6 +1,7 @@
 import type { ProgressState } from "../types/course";
 import { songLabTrackTypes } from "./instruments";
 import { skillTrackIds } from "./skills";
+import { validateRoutine } from "./routines";
 
 export const PROGRESS_STORAGE_KEY = "chordslab.progress.v1";
 
@@ -23,7 +24,11 @@ export const defaultProgressState: ProgressState = {
   },
   settings: {
     audioEnabled: true,
-    reducedMotion: false
+    reducedMotion: false,
+    theme: "system",
+    noteNaming: "english",
+    colorBlindSafe: false,
+    routines: []
   }
 };
 
@@ -91,7 +96,22 @@ function normalizeSkillMasteryMap(
                   : undefined,
               reviewQueue: isStringArray(result.reviewQueue)
                 ? result.reviewQueue
-                : []
+                : [],
+              stability:
+                typeof result.stability === "number" &&
+                Number.isFinite(result.stability)
+                  ? result.stability
+                  : undefined,
+              difficulty:
+                typeof result.difficulty === "number" &&
+                Number.isFinite(result.difficulty)
+                  ? result.difficulty
+                  : undefined,
+              reps:
+                typeof result.reps === "number" &&
+                Number.isFinite(result.reps)
+                  ? result.reps
+                  : undefined
             }
           ])
       )
@@ -231,6 +251,18 @@ function normalizeReviewPromptState(
     : {};
 }
 
+function normalizeRoutines(
+  value: unknown
+): ProgressState["settings"]["routines"] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is NonNullable<ProgressState["settings"]["routines"]>[number] =>
+    validateRoutine(item)
+  );
+}
+
 export function normalizeProgressState(value: unknown): ProgressState {
   if (!value || typeof value !== "object") {
     return defaultProgressState;
@@ -284,7 +316,24 @@ export function normalizeProgressState(value: unknown): ProgressState {
         input.settings?.activeTrackId as string
       )
         ? input.settings?.activeTrackId
-        : undefined
+        : undefined,
+      theme:
+        input.settings?.theme === "light" ||
+        input.settings?.theme === "dark" ||
+        input.settings?.theme === "system"
+          ? input.settings.theme
+          : "system",
+      noteNaming:
+        input.settings?.noteNaming === "fixed-do" ||
+        input.settings?.noteNaming === "german" ||
+        input.settings?.noteNaming === "english"
+          ? input.settings.noteNaming
+          : "english",
+      colorBlindSafe:
+        typeof input.settings?.colorBlindSafe === "boolean"
+          ? input.settings.colorBlindSafe
+          : false,
+      routines: normalizeRoutines(input.settings?.routines)
     }
   };
 }

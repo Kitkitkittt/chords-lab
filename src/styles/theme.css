@@ -50,3 +50,71 @@
   --border-strong: 1px solid rgba(57, 81, 193, 0.28);
   --focus-ring: 3px solid rgba(57, 81, 193, 0.45);
 }
+
+/*
+ * Night practice (dark theme). Applied via [data-theme="dark"] on <html>, set by
+ * the progress provider from the user's theme setting (or the OS preference when
+ * the setting is "system"). Tokens mirror the light palette roles so every
+ * component restyles automatically with no per-component overrides.
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #14161a;
+  --surface-dim: #0f1115;
+  --surface-bright: #1b1e24;
+  --surface-container-lowest: #0f1115;
+  --surface-container-low: #181b21;
+  --surface-container: #1d2027;
+  --surface-container-high: #23262e;
+  --surface-container-highest: #2a2e37;
+  --on-surface: #e6e7ea;
+  --on-surface-variant: #b6b9c4;
+  --inverse-surface: #e1e3e4;
+  --inverse-on-surface: #1a1c1d;
+  --outline: #8a8c98;
+  --outline-variant: #3a3d47;
+  --surface-tint: #b9c3ff;
+  --primary: #b9c3ff;
+  --on-primary: #001258;
+  --primary-container: #1f3aab;
+  --on-primary-container: #dee1ff;
+  --secondary: #ffb68a;
+  --secondary-container: #713709;
+  --tertiary: #85d8a2;
+  --tertiary-container: #00522d;
+  --error: #ffb4ab;
+  --error-container: #93000a;
+  --background: #101216;
+  --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.45);
+  --shadow-press: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+  --border-card: 1px solid rgba(185, 195, 255, 0.16);
+  --border-strong: 1px solid rgba(185, 195, 255, 0.32);
+  --focus-ring: 3px solid rgba(185, 195, 255, 0.55);
+}
+
+/*
+ * Color-blind-safe palette. Opt-in via [data-color-blind="true"] on <html>,
+ * set by the progress provider. It remaps the three mnemonic role colors
+ * (primary = melody, secondary = rhythm, tertiary = harmony) and their
+ * containers to an Okabe-Ito-derived set that stays distinguishable across the
+ * common color-vision deficiencies. Works on top of either light or dark theme.
+ */
+[data-color-blind="true"] {
+  --primary: #0072b2; /* blue */
+  --primary-container: #cfe6f5;
+  --on-primary-container: #00263a;
+  --secondary: #d55e00; /* vermillion */
+  --secondary-container: #ffe0cc;
+  --tertiary: #009e73; /* bluish green */
+  --tertiary-container: #c8efe2;
+}
+
+[data-theme="dark"][data-color-blind="true"] {
+  --primary: #56b4e9;
+  --primary-container: #00405f;
+  --on-primary-container: #cfe6f5;
+  --secondary: #e69f54;
+  --secondary-container: #5a2a00;
+  --tertiary: #4fc3a1;
+  --tertiary-container: #00432f;
+}

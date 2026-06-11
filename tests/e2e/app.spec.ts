@@ -368,3 +368,94 @@ test("progress export and content review routes are reachable", async ({ page })
   await expect(page.getByRole("heading", { name: "Educator QA" })).toBeVisible();
   await expect(page.getByText("Lesson checks")).toBeVisible();
 });
+
+test("V8 studios, smart session, and dark mode are reachable", async ({
+  page
+}) => {
+  await page.goto("/practice/smart");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Smart session/i })
+  ).toBeVisible();
+
+  await page.goto("/practice/dictation");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Dictation/i })
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Check answer/i })).toBeVisible();
+
+  await page.goto("/practice/sight-reading");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Sight-reading/i })
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Check answer/i })).toBeVisible();
+
+  await page.goto("/tools/tuner");
+  await expect(
+    page.getByRole("heading", { name: /Microphone tuner/i })
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Start tuner/i })).toBeVisible();
+
+  await page.goto("/progress");
+  await page.getByLabel("Theme").selectOption("dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("V8 Wave 3 arranger and MIDI panel are reachable", async ({ page }) => {
+  await page.goto("/lab/arrange");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Arranger/i })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Play full song/i })
+  ).toBeVisible();
+
+  // Add a section and confirm the list grows.
+  await page.getByRole("button", { name: /Chorus/i }).click();
+  await expect(page.getByText(/bars total/i)).toBeVisible();
+
+  await page.goto("/instruments");
+  await expect(
+    page.getByRole("heading", { name: /MIDI keyboard/i })
+  ).toBeVisible();
+
+  await page.goto("/lab/song");
+  await expect(
+    page.getByRole("button", { name: /Export WAV/i })
+  ).toBeVisible();
+});
+
+test("V8 Wave 4-7 surfaces are reachable", async ({ page }) => {
+  await page.goto("/lab/repertoire");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Repertoire/i })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Progression spotter/i })
+  ).toBeVisible();
+
+  await page.goto("/practice/advanced-harmony");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Advanced harmony/i })
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Check answer/i })).toBeVisible();
+
+  await page.goto("/practice/counterpoint");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Counterpoint lab/i })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Play both voices/i })
+  ).toBeVisible();
+
+  await page.goto("/routines");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Routines/i })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Presets/i })).toBeVisible();
+
+  // Note-naming + color-blind settings apply to the document.
+  await page.goto("/progress");
+  await page.getByLabel("Note names").selectOption("fixed-do");
+  await page.getByLabel(/Color-blind-safe palette/i).check();
+  await expect(page.locator("html")).toHaveAttribute("data-color-blind", "true");
+});

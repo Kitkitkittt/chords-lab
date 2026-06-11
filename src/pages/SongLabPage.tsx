@@ -1,10 +1,11 @@
-import { Circle, Download, Music3, Pause, Play, Save, Square } from "lucide-react";
+import { Circle, Download, FileAudio, Layers, Music3, Pause, Play, Save, Square } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { KeyboardFigure } from "../components/LessonComponents";
 import {
   audioPlaybackLabel,
   playSongSketch,
+  renderSongSketchToWav,
   stopAudioPlayback
 } from "../lib/audioEngine";
 import type { AudioPlaybackState } from "../lib/audioEngine";
@@ -22,6 +23,7 @@ import { explainSongSketch, songLabTrackTypes } from "../lib/instruments";
 import { useProgress } from "../state/progress";
 import type { SongLabTrackType, SongSketch } from "../types/course";
 import { theoryContextForSongSketch } from "../lib/theoryContext";
+import { suggestNextChords, explainProgression } from "../lib/chordSuggest";
 
 function cycleValue(values: string[], value: string): string {
   return values[(values.indexOf(value) + 1) % values.length];
@@ -92,6 +94,19 @@ export function SongLabPage() {
   );
   const activeNotes = theoryContext.safeMelodyNotes;
 
+  const nextChordSuggestions = useMemo(
+    () => suggestNextChords(theoryContext.chord, sketch.mode === "minor" ? "minor" : "major"),
+    [theoryContext.chord, sketch.mode]
+  );
+  const progressionSummary = useMemo(
+    () =>
+      explainProgression(
+        sketch.tracks.chords,
+        sketch.mode === "minor" ? "minor" : "major"
+      ),
+    [sketch.tracks.chords, sketch.mode]
+  );
+
   useEffect(() => {
     return () => stopAudioPlayback();
   }, []);
@@ -150,6 +165,35 @@ export function SongLabPage() {
   async function exportCurrentSketch() {
     await navigator.clipboard?.writeText(exportSongSketches([sketch]));
     setStatus("exported");
+  }
+
+  async function exportWav() {
+    setStatus("loading");
+    const blob = await renderSongSketchToWav(sketch, {
+      audioEnabled: progress.settings.audioEnabled
+    });
+
+    if (!blob) {
+      setStatus("idle");
+      setLoopExplanation(
+        "WAV export needs audio enabled and a browser that supports offline rendering."
+      );
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    const safeName =
+      sketch.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") ||
+      "chords-lab-loop";
+    anchor.href = url;
+    anchor.download = `${safeName}.wav`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    setStatus("idle");
+    setLoopExplanation(`Exported "${sketch.title}" as a WAV audio file.`);
   }
 
   function toggleTrackList(field: "mutedTracks" | "soloTracks", track: SongLabTrackType) {
@@ -378,6 +422,10 @@ export function SongLabPage() {
               <Download size={18} aria-hidden="true" />
               Copy JSON
             </button>
+            <button className="button button--quiet" type="button" onClick={exportWav}>
+              <FileAudio size={18} aria-hidden="true" />
+              Export WAV
+            </button>
             <button className="button button--quiet" type="button" onClick={regeneratePattern}>
               Regenerate
             </button>
@@ -393,6 +441,10 @@ export function SongLabPage() {
             </button>
             <Link className="button button--quiet" to="/lab/song/sketches">
               Saved sketches
+            </Link>
+            <Link className="button button--quiet" to="/lab/arrange">
+              <Layers size={18} aria-hidden="true" />
+              Arranger
             </Link>
             <p role="status">
               {status === "playing" ? (
@@ -450,6 +502,20 @@ export function SongLabPage() {
                 <dd>{theoryContext.safeMelodyNotes.join(" ")}</dd>
               </div>
             </dl>
+            <p className="theory-context-panel__summary">{progressionSummary}</p>
+            <div className="chord-suggest" aria-label="Where this chord can go next">
+              <h3>Where {theoryContext.chord} can go next</h3>
+              <ul>
+                {nextChordSuggestions.map((suggestion) => (
+                  <li key={`${suggestion.numeral}-${suggestion.kind}`}>
+                    <span className="pill" data-kind={suggestion.kind}>
+                      {suggestion.numeral}
+                    </span>
+                    <span>{suggestion.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
 
           {loopExplanation ? (

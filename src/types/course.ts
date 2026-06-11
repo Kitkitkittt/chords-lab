@@ -51,6 +51,14 @@ export type SkillMastery = {
   lastResult?: "correct" | "incorrect";
   lastPracticedAt?: string;
   reviewQueue: string[];
+  /**
+   * Optional FSRS-style scheduling fields (additive, V8 Wave 2). When present,
+   * the adaptive scheduler uses a simplified FSRS model; when absent it falls
+   * back to the legacy ease-based math so older saved progress keeps working.
+   */
+  stability?: number;
+  difficulty?: number;
+  reps?: number;
 };
 
 export type AdaptiveSkillState = SkillMastery;
@@ -120,6 +128,23 @@ export type SongLabTrackType =
   | "voiceGuide";
 
 export type MidiAdapterStatus = "planned" | "unavailable" | "connected";
+
+export type ThemePreference = "system" | "light" | "dark";
+
+export type NoteNamingPreference = "english" | "fixed-do" | "german";
+
+export type RoutineStep = {
+  kind: "review" | "module" | "play";
+  moduleId?: string;
+  label: string;
+};
+
+export type Routine = {
+  id: string;
+  name: string;
+  steps: RoutineStep[];
+  createdAt: string;
+};
 
 export type AppMode =
   | "idle"
@@ -222,6 +247,14 @@ export type ProgressState = {
     reducedMotion: boolean;
     /** Optional active learning track id (additive). */
     activeTrackId?: string;
+    /** Color theme. "system" follows the OS preference. Defaults to "system". */
+    theme?: ThemePreference;
+    /** Preferred note-naming system. Defaults to "english". */
+    noteNaming?: NoteNamingPreference;
+    /** Use the color-blind-safe palette for mnemonic colors. Defaults to false. */
+    colorBlindSafe?: boolean;
+    /** Saved practice routines (Phase 5). */
+    routines?: Routine[];
   };
 };
 

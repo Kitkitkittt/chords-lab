@@ -111,7 +111,11 @@ describe("progress storage", () => {
     expect(normalized.settings).toEqual({
       audioEnabled: false,
       reducedMotion: true,
-      activeTrackId: "harmony-songwriting"
+      activeTrackId: "harmony-songwriting",
+      theme: "system",
+      noteNaming: "english",
+      colorBlindSafe: false,
+      routines: []
     });
   });
 

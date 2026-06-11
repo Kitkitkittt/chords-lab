@@ -5,21 +5,31 @@ import { CircleOfFifths } from "../components/CircleOfFifths";
 import { ChordProgressionPlayground } from "../components/ChordProgressionPlayground";
 import { VoicingDiagram } from "../components/VoicingDiagram";
 import { FretboardWorkbench } from "../components/InstrumentWorkbenches";
+import { TunerPanel } from "../components/TunerPanel";
 import { standardTunings } from "../lib/instruments";
 import { scaleNotes, voiceLeadProgression, progressionChords } from "../lib/theory";
 
 const SCALE_TONICS = ["C", "G", "D", "A", "E", "F"];
 const SCALE_TYPES = ["major", "natural minor", "major pentatonic", "dorian"];
 
-type ToolTab = "circle" | "progression";
+type ToolTab = "circle" | "progression" | "tuner";
 
 const TABS: { id: ToolTab; to: string; label: string }[] = [
   { id: "circle", to: "/tools/circle", label: "Circle & keys" },
-  { id: "progression", to: "/tools/progression", label: "Progressions" }
+  { id: "progression", to: "/tools/progression", label: "Progressions" },
+  { id: "tuner", to: "/tools/tuner", label: "Tuner" }
 ];
 
 function activeTabFromPath(pathname: string): ToolTab {
-  return pathname.includes("/tools/progression") ? "progression" : "circle";
+  if (pathname.includes("/tools/progression")) {
+    return "progression";
+  }
+
+  if (pathname.includes("/tools/tuner")) {
+    return "tuner";
+  }
+
+  return "circle";
 }
 
 export function ToolsPage() {
@@ -108,7 +118,9 @@ export function ToolsPage() {
             />
           </section>
         </>
-      ) : (
+      ) : null}
+
+      {activeTab === "progression" ? (
         <>
           <ChordProgressionPlayground />
 
@@ -121,7 +133,9 @@ export function ToolsPage() {
             <VoicingDiagram steps={demoVoicing} />
           </section>
         </>
-      )}
+      ) : null}
+
+      {activeTab === "tuner" ? <TunerPanel /> : null}
     </div>
   );
 }

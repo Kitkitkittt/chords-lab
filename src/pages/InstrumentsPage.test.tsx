@@ -9,7 +9,9 @@ describe("instrument pages", () => {
   it("renders the full-band instrument index", () => {
     render(
       <MemoryRouter>
-        <InstrumentsPage />
+        <ProgressProvider>
+          <InstrumentsPage />
+        </ProgressProvider>
       </MemoryRouter>
     );
 

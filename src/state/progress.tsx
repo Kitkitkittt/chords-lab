@@ -24,8 +24,11 @@ import {
 import type {
   PracticeSessionHistory,
   ProgressState,
-  SongSketch
+  Routine,
+  SongSketch,
+  ThemePreference
 } from "../types/course";
+import type { NoteNamingPreference } from "../types/course";
 
 type ProgressContextValue = {
   progress: ProgressState;
@@ -54,6 +57,11 @@ type ProgressContextValue = {
   setAudioEnabled: (enabled: boolean) => void;
   setReducedMotion: (enabled: boolean) => void;
   setActiveTrack: (trackId: string | undefined) => void;
+  setTheme: (theme: ThemePreference) => void;
+  setNoteNaming: (system: NoteNamingPreference) => void;
+  setColorBlindSafe: (enabled: boolean) => void;
+  saveRoutine: (routine: Routine) => void;
+  deleteRoutine: (routineId: string) => void;
   resetProgress: () => void;
 };
 
@@ -111,6 +119,42 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       ? "true"
       : "false";
   }, [progress.settings.reducedMotion]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const preference = progress.settings.theme ?? "system";
+
+    const apply = () => {
+      const prefersDark =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const resolved =
+        preference === "system"
+          ? prefersDark
+            ? "dark"
+            : "light"
+          : preference;
+      root.dataset.theme = resolved;
+    };
+
+    apply();
+
+    if (preference !== "system" || typeof window === "undefined") {
+      return;
+    }
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    media.addEventListener("change", apply);
+
+    return () => media.removeEventListener("change", apply);
+  }, [progress.settings.theme]);
+
+  useEffect(() => {
+    document.documentElement.dataset.colorBlind = progress.settings
+      .colorBlindSafe
+      ? "true"
+      : "false";
+  }, [progress.settings.colorBlindSafe]);
 
   const isLessonComplete = useCallback(
     (slug: string) => progress.completedLessonSlugs.includes(slug),
@@ -365,6 +409,54 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const setTheme = useCallback((theme: ThemePreference) => {
+    setProgress((current) => ({
+      ...current,
+      settings: { ...current.settings, theme }
+    }));
+  }, []);
+
+  const setNoteNaming = useCallback((system: NoteNamingPreference) => {
+    setProgress((current) => ({
+      ...current,
+      settings: { ...current.settings, noteNaming: system }
+    }));
+  }, []);
+
+  const setColorBlindSafe = useCallback((enabled: boolean) => {
+    setProgress((current) => ({
+      ...current,
+      settings: { ...current.settings, colorBlindSafe: enabled }
+    }));
+  }, []);
+
+  const saveRoutine = useCallback((routine: Routine) => {
+    setProgress((current) => ({
+      ...current,
+      settings: {
+        ...current.settings,
+        routines: [
+          routine,
+          ...(current.settings.routines ?? []).filter(
+            (item) => item.id !== routine.id
+          )
+        ]
+      }
+    }));
+  }, []);
+
+  const deleteRoutine = useCallback((routineId: string) => {
+    setProgress((current) => ({
+      ...current,
+      settings: {
+        ...current.settings,
+        routines: (current.settings.routines ?? []).filter(
+          (item) => item.id !== routineId
+        )
+      }
+    }));
+  }, []);
+
   const resetProgress = useCallback(() => {
     setProgress(fallbackProgress());
   }, []);
@@ -389,6 +481,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setAudioEnabled,
       setReducedMotion,
       setActiveTrack,
+      setTheme,
+      setNoteNaming,
+      setColorBlindSafe,
+      saveRoutine,
+      deleteRoutine,
       resetProgress
     }),
     [
@@ -409,6 +506,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setAudioEnabled,
       setReducedMotion,
       setActiveTrack,
+      setTheme,
+      setNoteNaming,
+      setColorBlindSafe,
+      saveRoutine,
+      deleteRoutine,
       resetProgress
     ]
   );
