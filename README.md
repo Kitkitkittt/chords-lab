@@ -9,6 +9,8 @@ spaced review, and a Song Lab for building musical patterns.
 The app is intentionally calm: no accounts, no timers, no autoplay, no backend,
 and no analytics. Progress stays in the learner's browser.
 
+Production: [https://chords-lab-app.netlify.app](https://chords-lab-app.netlify.app)
+
 ## Highlights
 
 - Derived music-theory engine built on Tonal (`src/lib/theory.ts`): notes,
