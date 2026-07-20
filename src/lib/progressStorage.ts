@@ -1,4 +1,4 @@
-import type { ProgressState } from "../types/course";
+import type { PracticeAttempt, ProgressState } from "../types/course";
 import { songLabTrackTypes } from "./instruments";
 import { skillTrackIds } from "./skills";
 import { validateRoutine } from "./routines";
@@ -17,6 +17,7 @@ export const defaultProgressState: ProgressState = {
   reviewPromptState: {},
   skillMastery: {},
   generatedSessionHistory: [],
+  practiceAttempts: [],
   savedSongSketches: [],
   sync: {
     enabled: false,
@@ -28,6 +29,7 @@ export const defaultProgressState: ProgressState = {
     theme: "system",
     noteNaming: "english",
     colorBlindSafe: false,
+    focusMode: false,
     routines: []
   }
 };
@@ -116,6 +118,35 @@ function normalizeSkillMasteryMap(
           ])
       )
     : {};
+}
+
+function normalizePracticeAttempts(value: unknown): PracticeAttempt[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((attempt): attempt is PracticeAttempt => {
+      const item = attempt as Partial<PracticeAttempt>;
+      return (
+        item &&
+        typeof item === "object" &&
+        typeof item.promptId === "string" &&
+        typeof item.moduleId === "string" &&
+        typeof item.isCorrect === "boolean" &&
+        isStringArray(item.expected) &&
+        isStringArray(item.selected) &&
+        typeof item.question === "string" &&
+        isStringArray(item.skillTargets) &&
+        typeof item.attemptedAt === "string" &&
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(
+          item.attemptedAt
+        ) &&
+        !Number.isNaN(Date.parse(item.attemptedAt)) &&
+        new Date(item.attemptedAt).toISOString() === item.attemptedAt
+      );
+    })
+    .slice(-250);
 }
 
 function normalizeSessionHistory(
@@ -294,6 +325,7 @@ export function normalizeProgressState(value: unknown): ProgressState {
     generatedSessionHistory: normalizeSessionHistory(
       input.generatedSessionHistory
     ),
+    practiceAttempts: normalizePracticeAttempts(input.practiceAttempts),
     savedSongSketches: normalizeSongSketches(input.savedSongSketches),
     sync: {
       enabled: typeof input.sync?.enabled === "boolean" ? input.sync.enabled : false,
@@ -332,6 +364,10 @@ export function normalizeProgressState(value: unknown): ProgressState {
       colorBlindSafe:
         typeof input.settings?.colorBlindSafe === "boolean"
           ? input.settings.colorBlindSafe
+          : false,
+      focusMode:
+        typeof input.settings?.focusMode === "boolean"
+          ? input.settings.focusMode
           : false,
       routines: normalizeRoutines(input.settings?.routines)
     }

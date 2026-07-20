@@ -15,6 +15,32 @@ describe("progress storage", () => {
     );
   });
 
+  it("migrates and strictly normalizes practice attempts", () => {
+    const attempts = Array.from({ length: 251 }, (_, index) => ({
+      promptId: `prompt-${index}`,
+      moduleId: "pitch",
+      isCorrect: index % 2 === 0,
+      expected: ["C"],
+      selected: ["D"],
+      question: "Name this note.",
+      skillTargets: ["note-reading"],
+      attemptedAt: new Date(Date.UTC(2026, 4, 31, 0, 0, index)).toISOString()
+    }));
+    const normalized = normalizeProgressState({
+      schemaVersion: 1,
+      practiceAttempts: [
+        ...attempts,
+        { ...attempts[0], selected: "D" },
+        { ...attempts[0], attemptedAt: 1 }
+      ]
+    });
+
+    expect(normalizeProgressState({ schemaVersion: 1 }).practiceAttempts).toEqual([]);
+    expect(normalized.practiceAttempts).toHaveLength(250);
+    expect(normalized.practiceAttempts?.[0].promptId).toBe("prompt-1");
+    expect(normalized.practiceAttempts?.at(-1)?.promptId).toBe("prompt-250");
+  });
+
   it("preserves valid local progress fields", () => {
     const normalized = normalizeProgressState({
       schemaVersion: 1,
@@ -115,8 +141,47 @@ describe("progress storage", () => {
       theme: "system",
       noteNaming: "english",
       colorBlindSafe: false,
+      focusMode: false,
       routines: []
     });
+  });
+
+  it("preserves a stored focus mode preference", () => {
+    const normalized = normalizeProgressState({
+      schemaVersion: 1,
+      settings: {
+        audioEnabled: true,
+        reducedMotion: false,
+        focusMode: true
+      }
+    });
+
+    expect(normalized.settings.focusMode).toBe(true);
+  });
+
+  it("defaults focus mode to false when absent", () => {
+    const normalized = normalizeProgressState({
+      schemaVersion: 1,
+      settings: {
+        audioEnabled: true,
+        reducedMotion: false
+      }
+    });
+
+    expect(normalized.settings.focusMode).toBe(false);
+  });
+
+  it("normalizes a non-boolean focus mode value to false", () => {
+    const normalized = normalizeProgressState({
+      schemaVersion: 1,
+      settings: {
+        audioEnabled: true,
+        reducedMotion: false,
+        focusMode: "yes"
+      }
+    });
+
+    expect(normalized.settings.focusMode).toBe(false);
   });
 
   it("writes and reads from browser storage", () => {

@@ -8,7 +8,8 @@ import {
   buildShareUrl,
   decodeTokenToSketch,
   encodeSketchToToken,
-  readSketchTokenFromHash
+  readSketchTokenFromHash,
+  readSketchTokenFromShareTarget
 } from "./sketchShare";
 
 describe("sketchShare codec", () => {
@@ -53,6 +54,21 @@ describe("sketchShare codec", () => {
   it("reads the token out of a location hash", () => {
     expect(readSketchTokenFromHash("#s=abc")).toBe("abc");
     expect(readSketchTokenFromHash("#other")).toBeNull();
+  });
+
+  it("reads a shared sketch token from url or text query parameters", () => {
+    expect(
+      readSketchTokenFromShareTarget("?url=https%3A%2F%2Fexample.test%2Flab%23s%3Dabc")
+    ).toBe("abc");
+    expect(readSketchTokenFromShareTarget("?text=Try%20this%20%23s%3Ddef")).toBe(
+      "def"
+    );
+  });
+
+  it("rejects empty or malformed share target values", () => {
+    expect(readSketchTokenFromShareTarget("")).toBeNull();
+    expect(readSketchTokenFromShareTarget("?url=https%3A%2F%2Fexample.test%2Flab")).toBeNull();
+    expect(readSketchTokenFromShareTarget("?text=%E0%A4%A")).toBeNull();
   });
 
   it("builds a share URL pointing at the sketches route", () => {

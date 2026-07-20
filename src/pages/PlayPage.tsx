@@ -1,6 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { JamRoom } from "../components/JamRoom";
 import { EarGames } from "../components/EarGames";
+import { CallResponseGames } from "../components/CallResponseGames";
 
 /**
  * Play hub: a low-pressure, no-scoring space built around the Jam Room. This is
@@ -23,6 +24,7 @@ export function PlayPage() {
 
       <JamRoom />
       <EarGames />
+      <CallResponseGames />
     </div>
   );
 }

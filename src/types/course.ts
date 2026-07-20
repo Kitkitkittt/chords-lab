@@ -216,6 +216,17 @@ export type SongSketch = {
   updatedAt: string;
 };
 
+export type PracticeAttempt = Readonly<{
+  promptId: string;
+  moduleId: string;
+  isCorrect: boolean;
+  expected: string[];
+  selected: string[];
+  question: string;
+  skillTargets: string[];
+  attemptedAt: string;
+}>;
+
 export type ProgressState = {
   schemaVersion: 1;
   completedLessonSlugs: string[];
@@ -236,6 +247,7 @@ export type ProgressState = {
   reviewPromptState: Record<string, ReviewPromptState>;
   skillMastery: Record<string, SkillMastery>;
   generatedSessionHistory: PracticeSessionHistory[];
+  practiceAttempts?: PracticeAttempt[];
   savedSongSketches: SongSketch[];
   sync: {
     enabled: boolean;
@@ -253,6 +265,8 @@ export type ProgressState = {
     noteNaming?: NoteNamingPreference;
     /** Use the color-blind-safe palette for mnemonic colors. Defaults to false. */
     colorBlindSafe?: boolean;
+    /** Focus mode dims app chrome for one-prompt-per-screen calm. Defaults to false. */
+    focusMode?: boolean;
     /** Saved practice routines (Phase 5). */
     routines?: Routine[];
   };

@@ -4,6 +4,7 @@ import { courseModules } from "./data/course";
 import { AboutPage } from "./pages/AboutPage";
 import { AdvancedHarmonyPage } from "./pages/AdvancedHarmonyPage";
 import { ArrangerPage } from "./pages/ArrangerPage";
+import { ConfusionDrillsPage } from "./pages/ConfusionDrillsPage";
 import { ContentReviewPage } from "./pages/ContentReviewPage";
 import { CounterpointPage } from "./pages/CounterpointPage";
 import { DictationPage } from "./pages/DictationPage";
@@ -14,6 +15,7 @@ import { InstrumentsPage } from "./pages/InstrumentsPage";
 import { LearnPage } from "./pages/LearnPage";
 import { LessonPage } from "./pages/LessonPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { PlacementPage } from "./pages/PlacementPage";
 import { PlayPage } from "./pages/PlayPage";
 import { PracticePage } from "./pages/PracticePage";
 import { PracticeSetupPage } from "./pages/PracticeSetupPage";
@@ -51,6 +53,8 @@ export function App() {
         <Route path="learn/:moduleSlug/:lessonSlug" element={<LessonPage />} />
         <Route path="play" element={<PlayPage />} />
         <Route path="practice" element={<PracticePage />} />
+        <Route path="practice/placement" element={<PlacementPage />} />
+        <Route path="practice/confusions" element={<ConfusionDrillsPage />} />
         <Route path="practice/smart" element={<SmartSessionPage />} />
         <Route path="practice/dictation" element={<DictationPage />} />
         <Route path="practice/sight-reading" element={<SightReadingPage />} />

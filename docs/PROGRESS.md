@@ -1,10 +1,17 @@
 # Chords Lab Progress
 
-Last updated: 2026-06-05
+Last updated: 2026-07-20
 
-# Chords Lab Progress
+## Digital Piano Studio (2026-07-20)
 
-Last updated: 2026-06-10
+Shipped one shared three-octave piano and input engine across three calm practice modes.
+- Chord Quest accepts pitch-class-equivalent inversions, identifies missing and extra notes, reports bass/inversion feedback, and unlocks four optional band layers.
+- Falling Notes provides untimed Step mode by default, optional user-started Beat mode, scale and melody sequences, explicit reference audio, retry summaries, and stable reduced-motion markup.
+- Progression Jam supports untimed chord advancement and opt-in Groove playback, releases stale notes between bars and modes, and sends C-major Roman numerals to Song Lab.
+- Shared input supports pointer and multi-touch, focus-scoped QWERTY mapping, sustain, octave shifting, Panic, optional Web MIDI note/velocity/CC64 input, disconnect cleanup, and blur/visibility/unmount stuck-note prevention.
+- Integrated only into the piano instrument route; existing guitar, drums, and voice workbenches remain unchanged. Practice completions use stable piano mode IDs and canonical skill targets.
+- Added responsive keybed scrolling without page overflow, text and border state cues, keyboard accessibility, MIDI fallback coverage, and desktop/mobile axe coverage.
+- Verified: lint completed with 0 errors and 21 pre-existing `react-hooks/exhaustive-deps` warnings in `src/state/progress.tsx`; typecheck passed; 81 unit/component files and 421 tests passed; production build passed; 34 Playwright desktop/mobile tests passed; desktop/mobile DOM geometry, reduced motion, and browser console QA passed.
 
 ## Play Room Expansion, Lesson Variety, and Play-First Landing (2026-06-10)
 

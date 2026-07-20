@@ -1,4 +1,15 @@
-import { Circle, Download, FileAudio, Layers, Music3, Pause, Play, Save, Square } from "lucide-react";
+import {
+  Circle,
+  Download,
+  FileAudio,
+  Layers,
+  Music3,
+  Pause,
+  Play,
+  Printer,
+  Save,
+  Square
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { KeyboardFigure } from "../components/LessonComponents";
@@ -24,6 +35,9 @@ import { useProgress } from "../state/progress";
 import type { SongLabTrackType, SongSketch } from "../types/course";
 import { theoryContextForSongSketch } from "../lib/theoryContext";
 import { suggestNextChords, explainProgression } from "../lib/chordSuggest";
+import { critiqueMelody } from "../lib/melodyCritique";
+import { reharmonizeChord } from "../lib/reharmonize";
+import { leadSheetHtmlFromSketch } from "../lib/leadSheet";
 
 function cycleValue(values: string[], value: string): string {
   return values[(values.indexOf(value) + 1) % values.length];
@@ -105,6 +119,26 @@ export function SongLabPage() {
         sketch.mode === "minor" ? "minor" : "major"
       ),
     [sketch.tracks.chords, sketch.mode]
+  );
+  const melodyCritique = useMemo(
+    () =>
+      critiqueMelody({
+        key: sketch.key,
+        mode: sketch.mode === "minor" ? "minor" : "major",
+        chords: sketch.tracks.chords,
+        melody: sketch.tracks.melody
+      }),
+    [sketch.key, sketch.mode, sketch.tracks.chords, sketch.tracks.melody]
+  );
+  const focusedBarIndex = playbackBar >= 0 ? playbackBar : 0;
+  const focusedNumeral = sketch.tracks.chords[focusedBarIndex] ?? "I";
+  const reharmonizeOptions = useMemo(
+    () =>
+      reharmonizeChord(
+        focusedNumeral,
+        sketch.mode === "minor" ? "minor" : "major"
+      ),
+    [focusedNumeral, sketch.mode]
   );
 
   useEffect(() => {
@@ -194,6 +228,21 @@ export function SongLabPage() {
     URL.revokeObjectURL(url);
     setStatus("idle");
     setLoopExplanation(`Exported "${sketch.title}" as a WAV audio file.`);
+  }
+
+  function printLeadSheet() {
+    const html = leadSheetHtmlFromSketch(sketch);
+    const win = window.open("", "_blank");
+
+    if (!win) {
+      setLoopExplanation("Allow pop-ups to print the lead sheet.");
+      return;
+    }
+
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
   }
 
   function toggleTrackList(field: "mutedTracks" | "soloTracks", track: SongLabTrackType) {
@@ -426,6 +475,10 @@ export function SongLabPage() {
               <FileAudio size={18} aria-hidden="true" />
               Export WAV
             </button>
+            <button className="button button--quiet" type="button" onClick={printLeadSheet}>
+              <Printer size={18} aria-hidden="true" />
+              Print lead sheet
+            </button>
             <button className="button button--quiet" type="button" onClick={regeneratePattern}>
               Regenerate
             </button>
@@ -516,6 +569,46 @@ export function SongLabPage() {
                 ))}
               </ul>
             </div>
+          </section>
+
+          <section className="melody-critique-panel" aria-labelledby="melody-critique-title">
+            <span className="eyebrow">Melody critique</span>
+            <h2 id="melody-critique-title">How the melody fits</h2>
+            <p className="melody-critique-panel__summary">
+              {melodyCritique.summary}
+            </p>
+            <ul className="melody-critique-list" aria-label="Bar-by-bar melody feedback">
+              {melodyCritique.notes.map((entry) => (
+                <li key={`${entry.barIndex}-${entry.note}-${entry.status}`}>
+                  <span className="melody-critique-list__bar">
+                    Bar {entry.barIndex + 1}
+                  </span>
+                  <span className="melody-critique-list__note">
+                    {entry.status === "rest" ? "rest" : entry.note}
+                  </span>
+                  <span className="pill" data-status={entry.status}>
+                    {entry.status.replace(/-/g, " ")}
+                  </span>
+                  <span>{entry.reason}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="reharmonize-panel chord-suggest" aria-labelledby="reharmonize-title">
+            <span className="eyebrow">Reharmonize</span>
+            <h2 id="reharmonize-title">Other colors for {focusedNumeral}</h2>
+            <ul aria-label={`Substitution options for ${focusedNumeral}`}>
+              {reharmonizeOptions.map((option) => (
+                <li key={`${option.numeral}-${option.technique}-${option.reason}`}>
+                  <strong className="reharmonize-panel__numeral">{option.numeral}</strong>
+                  <span className="pill" data-technique={option.technique}>
+                    {option.technique.replace(/-/g, " ")}
+                  </span>
+                  <span>{option.reason}</span>
+                </li>
+              ))}
+            </ul>
           </section>
 
           {loopExplanation ? (

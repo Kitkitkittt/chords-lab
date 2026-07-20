@@ -19,6 +19,12 @@ export default defineConfig({
         background_color: "#f8f9fa",
         display: "standalone",
         start_url: "/",
+        share_target: {
+          action: "/lab/song/sketches",
+          method: "GET",
+          enctype: "application/x-www-form-urlencoded",
+          params: { title: "title", text: "text", url: "url" }
+        },
         icons: [
           {
             src: "/icon-192.png",

@@ -1,6 +1,6 @@
 # Chords Lab Plan
 
-Last updated: 2026-06-05
+Last updated: 2026-07-20
 
 ## Product Goal
 
@@ -178,6 +178,54 @@ Future curriculum:
 - Figured bass.
 - Pop/rock harmony.
 - Post-tonal basics.
+
+## Digital Piano Studio Plan
+
+The piano instrument route becomes one shared three-mode studio instead of three
+separate keyboard implementations.
+
+### Shared foundation
+
+- A three-octave piano keybed supports pointer, multi-touch, computer keyboard,
+  and opt-in Web MIDI input.
+- Computer-keyboard capture is explicit and focus-scoped. `A W S E D F T G Y H
+  U J` plays chromatic notes, `Z/X` shifts octave, and Space controls sustain.
+- MIDI forwards note-on, note-off, velocity, and sustain pedal events. Disconnect,
+  blur, visibility changes, route changes, and the visible Panic action release
+  held notes.
+- All modes reuse the shared Tone.js live voice and theory engine. Nothing is
+  recorded or uploaded, and audio still requires a learner action.
+
+### Mode 1: Chord Quest
+
+- Learners build a target triad or seventh chord in any octave.
+- Feedback names missing and extra notes and accepts valid inversions.
+- Calm gamification builds a four-layer virtual band as quests are completed.
+- A completed quest records a normal local chord-practice result once.
+
+### Mode 2: Falling Notes
+
+- Step mode is the default: one note waits until the correct key is played.
+- Optional Beat mode advances at a learner-selected tempo and reports early,
+  close, or missed attempts without lives, countdown pressure, or forced failure.
+- Reduced motion replaces falling animation with stable note cards.
+
+### Mode 3: Progression Jam
+
+- Untimed mode waits for each target chord before moving through a progression.
+- Optional Groove mode advances with a user-triggered backing loop.
+- Chord completion adds drums, bass, and harmony layers and can seed Song Lab.
+
+### Acceptance
+
+- Every mode works with the on-screen keybed and computer keyboard; MIDI remains
+  an optional enhancement with a complete non-MIDI fallback.
+- Controls have visible labels, keyboard access, textual state, and non-color
+  cues. The keybed does not capture typing outside its focused region.
+- No mode autoplays, requires a timer, removes streaks, or introduces accounts,
+  analytics, cloud storage, or background permissions.
+- Pure evaluators, components, MIDI routing, typecheck, lint, build, desktop/mobile
+  Playwright, reduced-motion, and responsive visual checks pass.
 
 ## Implementation Plan
 

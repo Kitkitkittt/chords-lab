@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
+import { createDefaultSongSketch } from "../lib/songSketches";
+import { encodeSketchToToken } from "../lib/sketchShare";
 import { ProgressProvider } from "../state/progress";
 import { SongSketchesPage } from "./SongSketchesPage";
 
@@ -28,5 +30,27 @@ describe("SongSketchesPage", () => {
     expect(localStorage.getItem("chordslab.progress.v1")).toContain(
       "savedSongSketches"
     );
+  });
+
+  it("imports a shared query token once and clears the query", async () => {
+    localStorage.clear();
+    const sketch = createDefaultSongSketch("Shared query loop");
+    window.history.replaceState(
+      null,
+      "",
+      `/lab/song/sketches?text=${encodeURIComponent(`https://example.test/lab#s=${encodeSketchToToken(sketch)}`)}`
+    );
+
+    render(
+      <MemoryRouter>
+        <ProgressProvider>
+          <SongSketchesPage />
+        </ProgressProvider>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/Imported a shared sketch/)).toBeInTheDocument();
+    expect(screen.getByText(/Shared query loop/)).toBeInTheDocument();
+    expect(window.location.search).toBe("");
   });
 });

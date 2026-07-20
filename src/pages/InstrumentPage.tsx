@@ -4,9 +4,9 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   DrumPadWorkbench,
   FretboardWorkbench,
-  InteractivePianoWorkbench,
   VoiceRangeWorkbench
 } from "../components/InstrumentWorkbenches";
+import { PianoStudio } from "../components/PianoStudio";
 import {
   audioPlaybackLabel,
   playChord,
@@ -22,12 +22,9 @@ import {
   chordToneHighlights,
   drumGroovePresets,
   instrumentsById,
-  isInstrumentId,
-  scaleDegreeHighlights
+  isInstrumentId
 } from "../lib/instruments";
 import { useProgress } from "../state/progress";
-import { describeChordStack } from "../lib/interactionTools";
-import { ChordFlourish } from "../components/ChordFlourish";
 import type { InstrumentId } from "../types/course";
 
 const chordChoices = ["C", "G", "Am", "F", "G7"];
@@ -41,7 +38,7 @@ function notesWithOctave(notes: string[], octave = 4) {
 export function InstrumentPage() {
   const { instrumentId } = useParams();
   const navigate = useNavigate();
-  const { progress } = useProgress();
+  const { progress, recordPracticeResult } = useProgress();
   const audioEnabled = progress.settings.audioEnabled;
   const [symbol, setSymbol] = useState("C");
   const [tonic, setTonic] = useState("C");
@@ -49,7 +46,6 @@ export function InstrumentPage() {
   const [status, setStatus] = useState<AudioPlaybackState>("idle");
   const [drumPattern, setDrumPattern] = useState(drumGroovePresets.backbeat);
   const [drumCursor, setDrumCursor] = useState(-1);
-  const [playedNotes, setPlayedNotes] = useState<string[]>([]);
 
   useEffect(() => {
     return () => {
@@ -68,14 +64,9 @@ export function InstrumentPage() {
 
   const profile = instrumentsById.get(instrumentId)!;
   const chordHighlights = chordToneHighlights(symbol);
-  const scaleHighlights = scaleDegreeHighlights(tonic, scaleType);
   const activeChordNotes = chordHighlights.map((highlight) => highlight.note);
   const bassNotes = bassTargetsFor(symbol);
   const chordShape = chordShapeFor(profile.id, symbol);
-  const freePlayDetection = describeChordStack(playedNotes);
-  const freePlayChord = freePlayDetection.symbol
-    ? freePlayDetection.symbol.replace(/M$/, "")
-    : undefined;
 
   function toggleDrum(row: number, step: number) {
     setDrumPattern((current) =>
@@ -133,17 +124,31 @@ export function InstrumentPage() {
   function renderWorkbench(id: InstrumentId) {
     if (id === "piano") {
       return (
-        <InteractivePianoWorkbench
-          label="Piano chord and scale map"
-          highlights={[...chordHighlights, ...scaleHighlights]}
-          bassNote={symbol.includes("/") ? symbol.split("/")[1] : activeChordNotes[0]}
-          selectedNotes={activeChordNotes}
+        <PianoStudio
           audioEnabled={audioEnabled}
-          onToggle={(note) =>
-            setPlayedNotes((current) => {
-              const pc = note.replace(/[0-9]/g, "");
-              const next = [...current, pc];
-              return next.slice(-6);
+          reducedMotion={progress.settings.reducedMotion}
+          onComplete={(mode, detail) =>
+            recordPracticeResult(
+              `piano-${mode}:${detail.id}`,
+              "instruments",
+              true,
+              mode === "falling-notes"
+                ? ["instrument-application", "note-reading"]
+                : mode === "chord-quest"
+                  ? ["instrument-application", "chord-symbol"]
+                  : ["instrument-application", "voice-leading"],
+              detail
+            )
+          }
+          onSendProgression={(numerals) =>
+            navigate("/lab/song", {
+              state: {
+                seedProgression: {
+                  key: "C",
+                  mode: "major",
+                  numerals
+                }
+              }
             })
           }
         />
@@ -197,7 +202,7 @@ export function InstrumentPage() {
         <p>{profile.summary}</p>
       </section>
 
-      <section className="instrument-lab-layout" aria-label={`${profile.title} lab`}>
+      <div className="instrument-lab-layout">
         <aside className="instrument-inspector" aria-label="Concept inspector">
           <section>
             <h2>Chord</h2>
@@ -238,6 +243,7 @@ export function InstrumentPage() {
               ))}
             </div>
             <select
+              aria-label="Scale type"
               value={scaleType}
               onChange={(event) => setScaleType(event.currentTarget.value)}
             >
@@ -265,55 +271,12 @@ export function InstrumentPage() {
             </p>
           </section>
 
-          {profile.id === "piano" ? (
-            <section>
-              <h2>Free play</h2>
-              <ChordFlourish
-                symbol={freePlayDetection.symbol}
-                detail={
-                  playedNotes.length > 0
-                    ? `${playedNotes.join(" ")} \u2192 ${freePlayDetection.label}`
-                    : "Tap keys to hear what chord you are building."
-                }
-                placeholder={playedNotes.length > 0 ? "\u2026" : "\u2014"}
-              />
-              <button
-                className="button button--quiet"
-                type="button"
-                onClick={() => setPlayedNotes([])}
-                disabled={playedNotes.length === 0}
-              >
-                Clear notes
-              </button>
-              <button
-                className="button button--secondary"
-                type="button"
-                disabled={!freePlayChord}
-                onClick={() => {
-                  if (freePlayChord) {
-                    navigate("/lab/song", {
-                      state: {
-                        seedProgression: {
-                          key: tonic,
-                          mode: scaleType.includes("minor") ? "minor" : "major",
-                          numerals: [freePlayChord]
-                        }
-                      }
-                    });
-                  }
-                }}
-              >
-                <Music3 size={17} aria-hidden="true" />
-                Send to Song Lab
-              </button>
-            </section>
-          ) : null}
         </aside>
 
         <div className="instrument-lab-stage">
           {renderWorkbench(profile.id)}
         </div>
-      </section>
+      </div>
     </div>
   );
 }

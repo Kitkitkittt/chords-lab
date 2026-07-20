@@ -269,6 +269,34 @@ test("instrument lab opens full-band workbenches", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Piano/i })).toBeVisible();
   await expect(page.getByText("Ensemble Skills")).toBeVisible();
 
+  await page.goto("/instruments/piano");
+  await expect(page.getByRole("heading", { name: "One piano, three ways to practice" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "C4" })).toBeVisible();
+  await page.getByRole("button", { name: "E3" }).click();
+  await page.getByRole("button", { name: "G3" }).click();
+  await page.getByRole("button", { name: "C4" }).click();
+  await expect(page.getByText("Quest complete.")).toBeVisible();
+  await expect(page.getByText("Inversion: First inversion")).toBeVisible();
+
+  await page.getByRole("tab", { name: "Falling Notes" }).click();
+  await expect(page.getByText("Current: C4")).toBeVisible();
+  await page.getByRole("button", { name: "C4" }).click();
+  await expect(page.getByText("Current: D4")).toBeVisible();
+
+  await page.getByRole("tab", { name: "Progression Jam" }).click();
+  await page.getByRole("button", { name: "Send progression" }).click();
+  await expect(page).toHaveURL(/\/lab\/song$/);
+  const chordTrack = page.getByRole("heading", { name: "chords" }).locator("..");
+  for (const [index, chord] of ["I", "V", "vi", "IV"].entries()) {
+    await expect(chordTrack.getByRole("button").nth(index)).toHaveText(chord);
+  }
+
+  await page.goto("/instruments/piano");
+  const accessibilityScanResults = await new AxeBuilder({ page })
+    .disableRules(["color-contrast"])
+    .analyze();
+  expect(accessibilityScanResults.violations).toEqual([]);
+
   await page.goto("/instruments/guitar");
   await expect(
     page.getByRole("heading", { name: "Guitar", exact: true })

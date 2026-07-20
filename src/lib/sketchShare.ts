@@ -176,5 +176,29 @@ export function readSketchTokenFromHash(hash: string): string | null {
   }
 
   const match = hash.match(/[#&]s=([^&]+)/);
-  return match ? match[1] : null;
+  return match?.[1] ? match[1] : null;
+}
+
+export function readSketchTokenFromShareTarget(search: string): string | null {
+  if (typeof search !== "string") {
+    return null;
+  }
+
+  try {
+    const params = new URLSearchParams(search);
+    for (const name of ["url", "text"]) {
+      const value = params.get(name);
+      if (!value) {
+        continue;
+      }
+      const token = readSketchTokenFromHash(value.slice(value.indexOf("#")));
+      if (token) {
+        return token;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }

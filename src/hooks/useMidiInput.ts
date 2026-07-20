@@ -23,10 +23,10 @@ export type MidiConnectionStatus =
   | "denied";
 
 type UseMidiInputOptions = {
-  /** Called for every note-on (with a velocity > 0). */
   onNoteOn?: (note: string, velocity: number) => void;
-  /** Called for every note-off. */
   onNoteOff?: (note: string) => void;
+  onSustain?: (enabled: boolean) => void;
+  onDisconnect?: () => void;
 };
 
 type MidiAccessLike = {
@@ -50,7 +50,7 @@ function hasWebMidi(): boolean {
   );
 }
 
-export function useMidiInput({ onNoteOn, onNoteOff }: UseMidiInputOptions = {}) {
+export function useMidiInput({ onNoteOn, onNoteOff, onSustain, onDisconnect }: UseMidiInputOptions = {}) {
   const [status, setStatus] = useState<MidiConnectionStatus>("idle");
   const [deviceNames, setDeviceNames] = useState<string[]>([]);
   const [lastEvent, setLastEvent] = useState<MidiInputEvent | null>(null);
@@ -60,8 +60,12 @@ export function useMidiInput({ onNoteOn, onNoteOff }: UseMidiInputOptions = {}) 
   // Keep the latest callbacks without re-binding listeners.
   const onNoteOnRef = useRef(onNoteOn);
   const onNoteOffRef = useRef(onNoteOff);
+  const onSustainRef = useRef(onSustain);
+  const onDisconnectRef = useRef(onDisconnect);
   onNoteOnRef.current = onNoteOn;
   onNoteOffRef.current = onNoteOff;
+  onSustainRef.current = onSustain;
+  onDisconnectRef.current = onDisconnect;
 
   const detach = useCallback(() => {
     inputsRef.current.forEach((input) => {
@@ -77,6 +81,12 @@ export function useMidiInput({ onNoteOn, onNoteOff }: UseMidiInputOptions = {}) 
 
   const handleMessage = useCallback((data: Uint8Array) => {
     const event = parseMidiMessage(data);
+
+    if (event.type === "sustain") {
+      setLastEvent(event);
+      onSustainRef.current?.(event.sustainOn ?? false);
+      return;
+    }
 
     if (!isMusicalNoteEvent(event) || !event.note) {
       return;
@@ -94,8 +104,12 @@ export function useMidiInput({ onNoteOn, onNoteOff }: UseMidiInputOptions = {}) 
   const bindInputs = useCallback(
     (access: MidiAccessLike) => {
       const inputs = Array.from(access.inputs.values());
+      const hadInputs = inputsRef.current.length > 0;
       inputsRef.current = inputs;
       setDeviceNames(inputs.map((input) => input.name ?? "MIDI device"));
+      if (hadInputs && inputs.length === 0) {
+        onDisconnectRef.current?.();
+      }
 
       inputs.forEach((input) => {
         input.onmidimessage = (event) => handleMessage(event.data);
@@ -129,6 +143,7 @@ export function useMidiInput({ onNoteOn, onNoteOff }: UseMidiInputOptions = {}) 
 
   const disconnect = useCallback(() => {
     detach();
+    onDisconnectRef.current?.();
     setDeviceNames([]);
     setStatus("idle");
   }, [detach]);

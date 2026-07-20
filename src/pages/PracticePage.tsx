@@ -228,6 +228,9 @@ export function PracticePage() {
           Short untimed drills for naming, building, checking, and moving to
           the next prompt when ready.
         </p>
+        <Link className="button button--quiet" to="/practice/placement">
+          Optional placement check
+        </Link>
       </section>
 
       <section className="practice-layout" aria-label="Practice workspace">

@@ -4,6 +4,7 @@ import {
   scorePracticeAnswer
 } from "../lib/practiceEngine";
 import type { PracticeFeedback, PracticePrompt } from "../lib/practiceEngine";
+import type { PracticeAttempt } from "../types/course";
 
 type UsePracticeSessionOptions = {
   prompts: PracticePrompt[];
@@ -11,7 +12,8 @@ type UsePracticeSessionOptions = {
     promptId: string,
     moduleId: string,
     isCorrect: boolean,
-    skillTargets?: string[]
+    skillTargets?: string[],
+    detail?: Pick<PracticeAttempt, "expected" | "selected" | "question">
   ) => void;
 };
 
@@ -132,7 +134,12 @@ export function usePracticeSession({
       prompt.id,
       prompt.moduleId,
       result.status === "correct",
-      prompt.skillTargets
+      prompt.skillTargets,
+      {
+        expected: result.expected,
+        selected: result.selected,
+        question: prompt.question
+      }
     );
   }
 

@@ -3,25 +3,22 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
-  useRef,
-  useState
+  useMemo
 } from "react";
 import type { ReactNode } from "react";
 import {
   applyConfidenceToSkillState,
   updateAdaptiveSkillState
 } from "../lib/adaptiveReview";
-import {
-  fallbackProgress,
-  localProgressRepository
-} from "../lib/progressRepository";
+import { fallbackProgress } from "../lib/progressRepository";
+import { useProgressPersistence } from "../hooks/useProgressPersistence";
 import { updateReviewQueueForAttempt } from "../lib/reviewQueue";
 import {
   SKILL_LEVEL_RANK,
   skillLevelMap
 } from "../lib/learningPath";
 import type {
+  PracticeAttempt,
   PracticeSessionHistory,
   ProgressState,
   Routine,
@@ -43,7 +40,8 @@ type ProgressContextValue = {
     practiceId: string,
     moduleId: string,
     isCorrect: boolean,
-    skillTargets?: string[]
+    skillTargets?: string[],
+    detail?: Pick<PracticeAttempt, "expected" | "selected" | "question">
   ) => void;
   recordPracticeSession: (session: PracticeSessionHistory) => void;
   recordSkillConfidence: (
@@ -60,31 +58,13 @@ type ProgressContextValue = {
   setTheme: (theme: ThemePreference) => void;
   setNoteNaming: (system: NoteNamingPreference) => void;
   setColorBlindSafe: (enabled: boolean) => void;
+  setFocusMode: (enabled: boolean) => void;
   saveRoutine: (routine: Routine) => void;
   deleteRoutine: (routineId: string) => void;
   resetProgress: () => void;
 };
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
-
-function createInitialProgress(): ProgressState {
-  if (typeof window === "undefined") {
-    return fallbackProgress();
-  }
-
-  const stored = localProgressRepository.read(window.localStorage);
-  const prefersReducedMotion = window.matchMedia(
-    "(prefers-reduced-motion: reduce)"
-  ).matches;
-
-  return {
-    ...stored,
-    settings: {
-      ...stored.settings,
-      reducedMotion: stored.settings.reducedMotion || prefersReducedMotion
-    }
-  };
-}
 
 function uniqueAppend(items: string[], item: string): string[] {
   return items.includes(item) ? items : [...items, item];
@@ -99,19 +79,7 @@ function emitAppEvent(name: string, detail?: unknown): void {
 }
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
-  const [progress, setProgress] = useState<ProgressState>(createInitialProgress);
-  const hasWrittenInitialProgress = useRef(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localProgressRepository.write(window.localStorage, progress);
-      if (hasWrittenInitialProgress.current) {
-        emitAppEvent("chordslab:progress-saved");
-      } else {
-        hasWrittenInitialProgress.current = true;
-      }
-    }
-  }, [progress]);
+  const [progress, setProgress] = useProgressPersistence();
 
   useEffect(() => {
     document.documentElement.dataset.reducedMotion = progress.settings
@@ -155,6 +123,12 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       ? "true"
       : "false";
   }, [progress.settings.colorBlindSafe]);
+
+  useEffect(() => {
+    document.documentElement.dataset.focusMode = progress.settings.focusMode
+      ? "true"
+      : "false";
+  }, [progress.settings.focusMode]);
 
   const isLessonComplete = useCallback(
     (slug: string) => progress.completedLessonSlugs.includes(slug),
@@ -218,7 +192,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       practiceId: string,
       moduleId: string,
       isCorrect: boolean,
-      skillTargets: string[] = []
+      skillTargets: string[] = [],
+      detail?: Pick<PracticeAttempt, "expected" | "selected" | "question">
     ) => {
       setProgress((current) => {
         const previous = current.practiceResults[practiceId] ?? {
@@ -299,7 +274,22 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
             ...current.reviewPromptState,
             [practiceId]: reviewUpdate.state
           },
-          skillMastery: nextSkillMastery
+          skillMastery: nextSkillMastery,
+          practiceAttempts: detail
+            ? [
+                ...(current.practiceAttempts ?? []),
+                {
+                  promptId: practiceId,
+                  moduleId,
+                  isCorrect,
+                  expected: detail.expected,
+                  selected: detail.selected,
+                  question: detail.question,
+                  skillTargets,
+                  attemptedAt: practicedAtIso
+                }
+              ].slice(-250)
+            : current.practiceAttempts
         };
       });
     },
@@ -430,6 +420,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const setFocusMode = useCallback((enabled: boolean) => {
+    setProgress((current) => ({
+      ...current,
+      settings: { ...current.settings, focusMode: enabled }
+    }));
+  }, []);
+
   const saveRoutine = useCallback((routine: Routine) => {
     setProgress((current) => ({
       ...current,
@@ -484,6 +481,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setTheme,
       setNoteNaming,
       setColorBlindSafe,
+      setFocusMode,
       saveRoutine,
       deleteRoutine,
       resetProgress
@@ -509,6 +507,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setTheme,
       setNoteNaming,
       setColorBlindSafe,
+      setFocusMode,
       saveRoutine,
       deleteRoutine,
       resetProgress

@@ -1,18 +1,6 @@
-/**
- * Practice insights for Chords Lab.
- *
- * Pure, deterministic analysis that turns local progress data into a small set
- * of calm, encouraging insight cards: where things are getting confusing, which
- * skills are weakest or strongest, how much review is waiting, and recent
- * momentum. The copy is intentionally plain and non-judgmental: no streak
- * pressure, no scolding, no exclamation overload.
- *
- * This module is pure data and pure functions (no React, no storage, no DOM).
- * The `now` clock is injectable so callers and tests stay deterministic.
- */
-
 import type { ProgressState, SkillMastery } from "../types/course";
 import { getDueSkillIds } from "./adaptiveReview";
+import { topConfusionPair } from "./confusionPairs";
 import { skillsById, type SkillId } from "./skills";
 
 export type InsightCard = {
@@ -131,7 +119,8 @@ function hasAnyActivity(progress: ProgressState): boolean {
     Object.keys(progress.skillMastery).length > 0 ||
     Object.keys(progress.practiceMastery).length > 0 ||
     Object.keys(progress.practiceResults).length > 0 ||
-    progress.generatedSessionHistory.length > 0
+    progress.generatedSessionHistory.length > 0 ||
+    (progress.practiceAttempts?.length ?? 0) > 0
   );
 }
 
@@ -176,7 +165,20 @@ export function buildInsights(
     });
   }
 
-  // Weakest skill: a gentle place to focus next.
+  const pair = topConfusionPair(progress.practiceAttempts ?? []);
+
+  if (pair) {
+    const [first, second] = pair.tokens;
+    cards.push({
+      id: `confusion-focus-${pair.id}`,
+      tone: "focus",
+      title: `A useful contrast: ${first} and ${second}`,
+      body: `These were mixed up ${pair.count} times. A short contrast drill can help separate them.`,
+      actionLabel: "Practice this contrast",
+      actionRoute: `/practice/confusions?pair=${encodeURIComponent(pair.id)}`
+    });
+  }
+
   const weakest = weakestSkill(progress);
 
   if (weakest) {

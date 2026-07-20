@@ -11,7 +11,8 @@ import { downloadMidiBlob } from "../lib/midiFile";
 import {
   buildShareUrl,
   decodeTokenToSketch,
-  readSketchTokenFromHash
+  readSketchTokenFromHash,
+  readSketchTokenFromShareTarget
 } from "../lib/sketchShare";
 import type { SongSketch } from "../types/course";
 import { useProgress } from "../state/progress";
@@ -30,14 +31,14 @@ export function SongSketchesPage() {
     [progress.savedSongSketches]
   );
 
-  // Import-on-open: if the page is opened from a share link (#s=...), decode the
-  // sketch locally and save it. No network, no backend.
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    const token = readSketchTokenFromHash(window.location.hash);
+    const token =
+      readSketchTokenFromHash(window.location.hash) ??
+      readSketchTokenFromShareTarget(window.location.search);
 
     if (!token) {
       return;
@@ -52,7 +53,6 @@ export function SongSketchesPage() {
       setStatus("That share link could not be read.");
     }
 
-    // Clear the hash so a refresh doesn't re-import.
     window.history.replaceState(null, "", window.location.pathname);
   }, [saveSongSketch]);
 

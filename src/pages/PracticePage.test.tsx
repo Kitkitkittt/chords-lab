@@ -80,6 +80,15 @@ describe("PracticePage", () => {
     expect(screen.getByText(/Prompt 1 of 10/i)).toBeInTheDocument();
   });
 
+  it("links to the optional placement check", () => {
+    renderPracticePage();
+
+    expect(screen.getByRole("link", { name: "Optional placement check" })).toHaveAttribute(
+      "href",
+      "/practice/placement"
+    );
+  });
+
   it("supports ordered scale prompts through a module deep link", async () => {
     const user = userEvent.setup();
 

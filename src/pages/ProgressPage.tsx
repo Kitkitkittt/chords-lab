@@ -18,7 +18,8 @@ export function ProgressPage() {
     setReducedMotion,
     setTheme,
     setNoteNaming,
-    setColorBlindSafe
+    setColorBlindSafe,
+    setFocusMode
   } = useProgress();
 
   const bookmarkedLessons = progress.bookmarkedLessonSlugs
@@ -193,6 +194,14 @@ export function ProgressPage() {
               onChange={(event) => setColorBlindSafe(event.currentTarget.checked)}
             />
             Color-blind-safe palette
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={progress.settings.focusMode ?? false}
+              onChange={(event) => setFocusMode(event.currentTarget.checked)}
+            />
+            Focus mode (hide app chrome)
           </label>
           <button className="button button--quiet" type="button" onClick={resetProgress}>
             <RotateCcw size={18} aria-hidden="true" />

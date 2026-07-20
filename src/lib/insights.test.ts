@@ -143,6 +143,63 @@ describe("buildInsights", () => {
     expect(momentum?.body).toContain("1 session");
   });
 
+  it("adds a qualifying confusion focus card with an encoded route", () => {
+    const progress: ProgressState = {
+      ...defaultProgressState,
+      practiceAttempts: [
+        {
+          promptId: "pitch-1",
+          moduleId: "pitch",
+          isCorrect: false,
+          expected: ["C"],
+          selected: ["D"],
+          question: "Which note is shown?",
+          skillTargets: ["note-reading"],
+          attemptedAt: "2026-06-10T00:00:00.000Z"
+        },
+        {
+          promptId: "pitch-2",
+          moduleId: "pitch",
+          isCorrect: false,
+          expected: ["D"],
+          selected: ["C"],
+          question: "Which note is shown?",
+          skillTargets: ["note-reading"],
+          attemptedAt: "2026-06-11T00:00:00.000Z"
+        }
+      ]
+    };
+
+    const card = buildInsights(progress).find((item) => item.id.startsWith("confusion-"));
+
+    expect(card?.title).toBe("A useful contrast: C and D");
+    expect(card?.body).toContain("2 times");
+    expect(card?.actionLabel).toBe("Practice this contrast");
+    expect(card?.actionRoute).toBe(
+      "/practice/confusions?pair=confusion-%255B%2522C%2522%252C%2522D%2522%255D"
+    );
+  });
+
+  it("does not surface a single confusion occurrence", () => {
+    const progress: ProgressState = {
+      ...defaultProgressState,
+      practiceAttempts: [
+        {
+          promptId: "pitch-1",
+          moduleId: "pitch",
+          isCorrect: false,
+          expected: ["C"],
+          selected: ["D"],
+          question: "Which note is shown?",
+          skillTargets: ["note-reading"],
+          attemptedAt: "2026-06-10T00:00:00.000Z"
+        }
+      ]
+    };
+
+    expect(buildInsights(progress).some((card) => card.id.startsWith("confusion-"))).toBe(false);
+  });
+
   it("returns at most five cards", () => {
     const now = new Date("2026-06-10T00:00:00.000Z");
     const progress: ProgressState = {
@@ -173,11 +230,31 @@ describe("buildInsights", () => {
           missedPromptIds: [],
           completedAt: "2026-06-09T00:00:00.000Z"
         }
+      ],
+      practiceAttempts: [
+        {
+          promptId: "pitch-1",
+          moduleId: "pitch",
+          isCorrect: false,
+          expected: ["C"],
+          selected: ["D"],
+          question: "Which note is shown?",
+          skillTargets: ["note-reading"],
+          attemptedAt: "2026-06-09T00:00:00.000Z"
+        },
+        {
+          promptId: "pitch-2",
+          moduleId: "pitch",
+          isCorrect: false,
+          expected: ["D"],
+          selected: ["C"],
+          question: "Which note is shown?",
+          skillTargets: ["note-reading"],
+          attemptedAt: "2026-06-09T01:00:00.000Z"
+        }
       ]
     };
 
-    const cards = buildInsights(progress, now);
-
-    expect(cards.length).toBeLessThanOrEqual(5);
+    expect(buildInsights(progress, now).length).toBeLessThanOrEqual(5);
   });
 });
