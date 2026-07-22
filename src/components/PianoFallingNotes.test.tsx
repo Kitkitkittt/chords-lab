@@ -34,7 +34,7 @@ afterEach(() => {
 });
 
 describe("PianoFallingNotes", () => {
-  it("advances only correct step notes, reports mistakes, and completes once", () => {
+  it("records one incorrect attempt at retry and one correct completion", () => {
     const value = props();
     const view = render(<PianoFallingNotes {...value} />);
     const play = (note: string, id: number) =>
@@ -44,19 +44,27 @@ describe("PianoFallingNotes", () => {
     expect(screen.getByText("Current: D4")).toBeInTheDocument();
     play("F4", 2);
     expect(screen.getByRole("status")).toHaveTextContent("Wrong note");
-    ["D4", "E4", "F4", "G4", "A4", "B4", "C5"].forEach((note, index) => {
-      play(note, index + 3);
-    });
-
-    expect(value.onComplete).toHaveBeenCalledTimes(1);
     expect(value.onComplete).toHaveBeenCalledWith({
       id: "c-major",
       expected: ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"],
-      selected: ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"],
-      question: "Play C major ascending."
+      selected: ["C4", "F4"],
+      question: "Play C major ascending.",
+      isCorrect: false
     });
-    play("C5", 10);
-    expect(value.onComplete).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"].forEach((note, index) => {
+      play(note, index + 3);
+    });
+
+    expect(value.onComplete).toHaveBeenCalledTimes(2);
+    expect(value.onComplete).toHaveBeenLastCalledWith({
+      id: "c-major",
+      expected: ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"],
+      selected: ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"],
+      question: "Play C major ascending.",
+      isCorrect: true
+    });
   });
 
   it("does not run beat mode before Start, then advances missed beats", () => {
@@ -75,7 +83,39 @@ describe("PianoFallingNotes", () => {
     expect(screen.getByText("Current: D4")).toBeInTheDocument();
     act(() => vi.advanceTimersByTime(7000));
     expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    expect(value.onComplete).toHaveBeenCalledTimes(1);
+    expect(value.onComplete).toHaveBeenLastCalledWith(expect.objectContaining({
+      isCorrect: false,
+      selected: []
+    }));
+  });
+
+  it("ignores beat notes and Stop before Start", () => {
+    const value = props();
+    const view = render(<PianoFallingNotes {...value} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Beat" }));
+    view.rerender(<PianoFallingNotes {...value} lastPlayed={{ note: "C4", id: 1 }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Stop" }));
+
     expect(value.onComplete).not.toHaveBeenCalled();
+  });
+
+  it("records one incomplete result when stopped", () => {
+    const value = props();
+    const view = render(<PianoFallingNotes {...value} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Beat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+    view.rerender(<PianoFallingNotes {...value} lastPlayed={{ note: "C4", id: 1 }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Stop" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stop" }));
+
+    expect(value.onComplete).toHaveBeenCalledTimes(1);
+    expect(value.onComplete).toHaveBeenCalledWith(expect.objectContaining({
+      isCorrect: false,
+      selected: ["C4"]
+    }));
   });
 
   it("uses stable reduced-motion lane markup and hears only on request", () => {

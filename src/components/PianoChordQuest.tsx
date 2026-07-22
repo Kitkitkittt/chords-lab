@@ -3,12 +3,14 @@ import { playChord } from "../lib/audioEngine";
 import {
   bandLayerCount,
   evaluatePianoChord,
+  pianoMaterialForKey,
   progressionChordNotes
 } from "../lib/pianoPerformance";
 
 type PianoChordQuestProps = {
   activeNotes: string[];
   audioEnabled: boolean;
+  tonic?: string;
   onTargetNotesChange: (notes: string[]) => void;
   onReleaseAll: () => void;
   onComplete: (detail: {
@@ -16,23 +18,27 @@ type PianoChordQuestProps = {
     expected: string[];
     selected: string[];
     question: string;
+    isCorrect: boolean;
   }) => void;
 };
 
 type Quest = { id: string; symbol: string; question: string; notes: string[] };
 
-const QUEST_SYMBOLS = ["C", "Am", "F", "G7", "Dm", "Em"];
 const BAND_LAYERS = ["Drums", "Bass", "Harmony", "Melody"];
-const QUESTS: Quest[] = QUEST_SYMBOLS.map((symbol) => ({
-  id: symbol.toLowerCase(),
-  symbol,
-  question: `Build ${symbol}.`,
-  notes: progressionChordNotes([symbol])[0] ?? []
-}));
+
+function questsForKey(tonic: string): Quest[] {
+  return pianoMaterialForKey(tonic).quests.map((symbol) => ({
+    id: tonic === "C" ? symbol.toLowerCase() : `${tonic.toLowerCase()}-${symbol.toLowerCase()}`,
+    symbol,
+    question: `Build ${symbol}.`,
+    notes: progressionChordNotes([symbol])[0] ?? []
+  }));
+}
 
 export function PianoChordQuest({
   activeNotes,
   audioEnabled,
+  tonic = "C",
   onTargetNotesChange,
   onReleaseAll,
   onComplete
@@ -40,7 +46,8 @@ export function PianoChordQuest({
   const [questIndex, setQuestIndex] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const completedIds = useRef(new Set<string>());
-  const quest = QUESTS[questIndex];
+  const quests = useMemo(() => questsForKey(tonic), [tonic]);
+  const quest = quests[questIndex % quests.length];
   const evaluation = useMemo(
     () => evaluatePianoChord(quest.notes, activeNotes),
     [activeNotes, quest]
@@ -62,13 +69,14 @@ export function PianoChordQuest({
       id: quest.id,
       expected: quest.notes,
       selected: activeNotes,
-      question: quest.question
+      question: quest.question,
+      isCorrect: true
     });
   }, [activeNotes, evaluation.complete, onComplete, quest]);
 
   function nextQuest() {
     onReleaseAll();
-    setQuestIndex((current) => (current + 1) % QUESTS.length);
+    setQuestIndex((current) => (current + 1) % quests.length);
   }
 
   function playTarget() {

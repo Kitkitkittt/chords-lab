@@ -1,6 +1,68 @@
 # Chords Lab Progress
 
-Last updated: 2026-07-20
+Last updated: 2026-07-22
+
+## V8 Follow-on Quality and Practice Pass (2026-07-22)
+
+### Wave A: Piano input reliability
+
+- Hardened the shared piano input path with source-aware held notes, sustain,
+  optional Web MIDI connection state, device removal and disconnect cleanup,
+  and release on blur, hidden document, unmount, mode changes, and Panic.
+- The optional local-only microphone tuner rejects duplicate starts and cleans
+  up streams that resolve after unmount. Shared playback invalidates stale
+  in-flight requests when a newer disabled request wins.
+
+### Wave B: Piano studio accessibility and key-aware play
+
+- Added key selection for Chord Quest and Progression Jam, exact-octave Falling
+  Notes targets, key-aware Roman-numeral transfer to Song Lab, and corrected
+  full-bar pad duration in Groove mode.
+- Studio mode tabs use roving focus with Arrow keys, Home, and End. Input state
+  is text-first, and the mobile three-octave keybed scrolls horizontally without
+  shrinking black-key targets below the tested minimum.
+
+### Wave C: Calm session completion
+
+- Shared studio sessions allow Skip and End for today. Skipped prompts appear in
+  the review path without being recorded as answered attempts.
+- Smart Session runs one stable, generated five-prompt mixed session instead of
+  linking out per skill. Deterministic contrast prompts cover interval
+  inversion, clef transfer, and enharmonic register.
+
+### Wave D: Local guidance and scoped review
+
+- Optional placement produces local start-here and keep-warm suggestions, shown
+  after completion and on Home.
+- Review supports Mixed and This track scopes using canonical skills while
+  stating due work outside the selected track.
+
+### Wave E: Routines, persistence, and PWA polish
+
+- Routines can be created from up to three steps and run in-app with previous,
+  next, and finish controls; no streak or loss state is introduced.
+- Progress hydration preserves authoritative non-empty local state, migrates it
+  to IndexedDB when available, and falls back safely on storage failures.
+- The PWA uses automatic service-worker updates and declares a Song Sketch share
+  target. CI gates lint, typecheck, tests, production build, and Playwright.
+
+### Final quality gates
+
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+npm run e2e
+```
+
+- Playwright axe scans include color contrast. Mobile coverage verifies a
+  horizontally scrollable piano keybed and minimum black-key target width.
+- The production build uses a measured 1200 kB chunk-warning budget without
+  manual chunk configuration.
+- Verified 2026-07-22: lint and typecheck passed; 88 unit/component files and
+  474 tests passed; production build passed; 35 desktop/mobile Playwright tests
+  passed with one expected desktop skip for the mobile-only geometry check.
 
 ## Digital Piano Studio (2026-07-20)
 
@@ -515,18 +577,17 @@ npm run e2e
 
 Latest automated coverage:
 
-- Unit/component/content test files pass (now including `theory.test.ts`).
-- 68 unit/component/content tests passed.
-- Playwright tests pass across desktop and mobile projects.
-- Browser e2e covers the V7 launchpad, generated practice, review, Song Lab,
-  progress export/import route, content review route, accessibility scan, and
-  offline app shell.
+- Unit, component, content, lifecycle, persistence, adaptive-practice, piano,
+  Smart Session, and routine tests pass.
+- Playwright runs desktop and mobile projects across core learning, practice,
+  review, Song Lab, piano, V8 studio, PWA, and accessibility flows.
+- Axe scans include color contrast on representative routes. Mobile coverage
+  verifies piano keybed geometry and horizontal scrolling.
 
 Known build note:
 
-- Vite reports a chunk-size warning because VexFlow is large. VexFlow is already
-  dynamically imported and split into its own production chunk. This is not a
-  failing condition for V7.
+- The measured 1200 kB chunk-warning budget covers the current VexFlow bundle.
+  No manual chunk configuration is used.
 
 ## In Progress
 
@@ -540,7 +601,7 @@ Recommended next implementation order:
 1. Add more concrete prompt factories behind each generated template family.
 2. Deepen instrument-specific chord-shape, scale-box, bassline, and groove tasks.
 3. Add deeper cadence, progression, phrase, and harmonic-function templates.
-4. Add optional MIDI adapter after privacy and reliability UX are explicit.
+4. Deepen optional MIDI-driven practice while retaining complete non-MIDI fallbacks.
 5. Add optional cloud sync only after account/privacy decisions are explicit.
 
 ## Risks And Open Items

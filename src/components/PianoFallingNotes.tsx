@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { playSequence } from "../lib/audioEngine";
 import { evaluatePianoSequence } from "../lib/pianoPerformance";
 
@@ -8,7 +8,7 @@ type Props = {
   reducedMotion: boolean;
   onTargetNotesChange: (notes: string[]) => void;
   onReleaseAll: () => void;
-  onComplete: (detail: { id: string; expected: string[]; selected: string[]; question: string }) => void;
+  onComplete: (detail: { id: string; expected: string[]; selected: string[]; question: string; isCorrect: boolean }) => void;
 };
 
 type Sequence = { id: string; label: string; question: string; notes: string[] };
@@ -54,21 +54,45 @@ export function PianoFallingNotes({
   const sequenceRef = useRef(sequence);
   const indexRef = useRef(0);
   const selectedRef = useRef<string[]>([]);
+  const playedRef = useRef<string[]>([]);
   const beatHitRef = useRef(false);
   const handledIdRef = useRef<number | null>(null);
   const completeRef = useRef(false);
+  const outcomeReportedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   const onReleaseAllRef = useRef(onReleaseAll);
   sequenceRef.current = sequence;
   onCompleteRef.current = onComplete;
   onReleaseAllRef.current = onReleaseAll;
 
-  const reset = (nextSequence = sequence) => {
+  const reportOutcome = useCallback(
+    (isCorrect: boolean, current = sequenceRef.current) => {
+      if (outcomeReportedRef.current) {
+        return;
+      }
+      outcomeReportedRef.current = true;
+      onCompleteRef.current({
+        id: current.id,
+        expected: current.notes,
+        selected: playedRef.current,
+        question: current.question,
+        isCorrect
+      });
+    },
+    []
+  );
+
+  const reset = (nextSequence = sequence, recordFailure = false) => {
+    if (recordFailure && (running || playedRef.current.length > 0)) {
+      reportOutcome(false);
+    }
     onReleaseAll();
     indexRef.current = 0;
     selectedRef.current = [];
+    playedRef.current = [];
     beatHitRef.current = false;
     completeRef.current = false;
+    outcomeReportedRef.current = false;
     setIndex(0);
     setRunning(false);
     setStatus(nextSequence.question);
@@ -101,14 +125,10 @@ export function PianoFallingNotes({
         setRunning(false);
         if (matched && selectedRef.current.length === current.notes.length && !completeRef.current) {
           completeRef.current = true;
-          onCompleteRef.current({
-            id: current.id,
-            expected: current.notes,
-            selected: selectedRef.current,
-            question: current.question
-          });
+          reportOutcome(true, current);
           setStatus("Sequence complete.");
         } else {
+          reportOutcome(false, current);
           setRetry(true);
           setStatus("Sequence finished with misses. Try again.");
         }
@@ -119,7 +139,7 @@ export function PianoFallingNotes({
       setIndex(nextIndex);
     }, 60000 / tempo);
     return () => window.clearInterval(timer);
-  }, [running, tempo]);
+  }, [reportOutcome, running, tempo]);
 
   useEffect(() => {
     if (!lastPlayed || handledIdRef.current === lastPlayed.id || retry) {
@@ -131,17 +151,21 @@ export function PianoFallingNotes({
     if (mode === "step") {
       const result = evaluatePianoSequence(current.notes, [...selectedRef.current, lastPlayed.note]);
       if (result.mistake) {
-        setStatus(`Wrong note: ${result.mistake}. Try ${expected}.`);
+        playedRef.current = [...playedRef.current, lastPlayed.note];
+        reportOutcome(false, current);
+        setRetry(true);
+        setStatus(`Wrong note: ${result.mistake}. Try again.`);
         setSummary((value) => ({ ...value, missed: value.missed + 1 }));
         return;
       }
       selectedRef.current = [...selectedRef.current, lastPlayed.note];
+      playedRef.current = [...playedRef.current, lastPlayed.note];
       setSummary((value) => ({ ...value, correct: value.correct + 1 }));
       if (result.complete && !completeRef.current) {
         completeRef.current = true;
         setRetry(true);
         setStatus("Sequence complete.");
-        onComplete({ id: current.id, expected: current.notes, selected: selectedRef.current, question: current.question });
+        reportOutcome(true, current);
         return;
       }
       indexRef.current += 1;
@@ -152,6 +176,7 @@ export function PianoFallingNotes({
     if (!running || beatHitRef.current) {
       return;
     }
+    playedRef.current = [...playedRef.current, lastPlayed.note];
     if (evaluatePianoSequence([expected], [lastPlayed.note]).complete) {
       beatHitRef.current = true;
       selectedRef.current = [...selectedRef.current, lastPlayed.note];
@@ -160,7 +185,7 @@ export function PianoFallingNotes({
     } else {
       setStatus(`Wrong note: ${lastPlayed.note}. Try ${expected}.`);
     }
-  }, [lastPlayed, mode, onComplete, retry, running]);
+  }, [lastPlayed, mode, reportOutcome, retry, running]);
 
   const chooseSequence = (id: string) => {
     const next = SEQUENCES.find((item) => item.id === id) ?? SEQUENCES[0];
@@ -172,8 +197,7 @@ export function PianoFallingNotes({
     reset();
   };
   const stop = () => {
-    onReleaseAll();
-    reset();
+    reset(sequence, true);
     setStatus("Stopped.");
   };
   const current = sequence.notes[index];

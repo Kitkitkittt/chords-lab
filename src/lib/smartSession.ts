@@ -1,21 +1,6 @@
-/**
- * Smart Session planner for Chords Lab.
- *
- * Composes a balanced practice plan from local progress by blending three kinds
- * of work: due-review skills (spaced repetition), weak skills (low accuracy),
- * and new material (never attempted). The planner is pure: it reads only the
- * skill graph, the adaptive-review helper, and the progress snapshot. No React,
- * no storage, no DOM.
- *
- * Target mix is ~60% due, ~25% weak, ~15% new, but the planner gracefully fills
- * from whatever is available so the plan always reaches `min(size, universe)`
- * slots when any skill exists. Ordering is deterministic (stable sorts, no
- * randomness) so the same progress always yields the same plan.
- */
-
 import type { ProgressState, SkillMastery } from "../types/course";
 import { getDueSkillIds } from "./adaptiveReview";
-import { skillMetas, skillsById } from "./skills";
+import { skillIdForTargets, skillMetas, skillsById } from "./skills";
 import type { SkillId } from "./skills";
 
 export type SessionReason = "due" | "weak" | "new";
@@ -31,212 +16,138 @@ export type SmartSessionPlan = {
   summary: string;
 };
 
-const DEFAULT_SIZE = 10;
-const DUE_RATIO = 0.6;
-const WEAK_RATIO = 0.25;
-const NEW_RATIO = 0.15;
+const DEFAULT_SIZE = 5;
 const WEAK_MIN_ATTEMPTS = 3;
 
-function isSkillId(value: string): value is SkillId {
-  return skillsById.has(value as SkillId);
+function canonicalSkillId(value: string): SkillId | undefined {
+  return skillsById.has(value as SkillId)
+    ? (value as SkillId)
+    : skillIdForTargets([value]);
+}
+
+export function canonicalSkillMastery(
+  skillMastery: ProgressState["skillMastery"]
+): Record<SkillId, SkillMastery> {
+  const result = {} as Record<SkillId, SkillMastery>;
+
+  for (const [token, mastery] of Object.entries(skillMastery)) {
+    const skillId = canonicalSkillId(token);
+
+    if (!skillId) {
+      continue;
+    }
+
+    const current = result[skillId];
+    result[skillId] = current
+      ? {
+          ...current,
+          correct: current.correct + mastery.correct,
+          attempted: current.attempted + mastery.attempted,
+          lapses: current.lapses + mastery.lapses,
+          reviewQueue: Array.from(new Set([...current.reviewQueue, ...mastery.reviewQueue])),
+          dueAt:
+            !current.dueAt || (mastery.dueAt && mastery.dueAt < current.dueAt)
+              ? mastery.dueAt
+              : current.dueAt,
+          lastPracticedAt:
+            !current.lastPracticedAt ||
+            (mastery.lastPracticedAt && mastery.lastPracticedAt > current.lastPracticedAt)
+              ? mastery.lastPracticedAt
+              : current.lastPracticedAt
+        }
+      : { ...mastery, reviewQueue: [...mastery.reviewQueue] };
+  }
+
+  return result;
+}
+
+export function smartSessionSnapshot(progress: ProgressState): string {
+  return JSON.stringify(
+    Object.entries(canonicalSkillMastery(progress.skillMastery))
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([skillId, mastery]) => [
+        skillId,
+        mastery.correct,
+        mastery.attempted,
+        mastery.dueAt ?? "",
+        mastery.lastPracticedAt ?? "",
+        mastery.reviewQueue.slice().sort()
+      ])
+  );
 }
 
 function toSlot(skillId: SkillId, reason: SessionReason): SessionSlot {
-  const meta = skillsById.get(skillId);
-
-  return {
-    skillId,
-    moduleId: meta ? meta.moduleId : "",
-    reason
-  };
+  return { skillId, moduleId: skillsById.get(skillId)?.moduleId ?? "", reason };
 }
 
 function accuracy(mastery: SkillMastery): number {
   return mastery.attempted > 0 ? mastery.correct / mastery.attempted : 0;
 }
 
-/**
- * Skills with no mastery entry or zero attempts, ordered so foundational skills
- * (no prerequisites) come first, then by their stable position in the graph.
- */
-function newCandidates(
-  skillMastery: ProgressState["skillMastery"]
-): SkillId[] {
+function newCandidates(skillMastery: Record<SkillId, SkillMastery>): SkillId[] {
   return skillMetas
-    .filter((skill) => {
-      const mastery = skillMastery[skill.id];
-
-      return !mastery || mastery.attempted === 0;
-    })
+    .filter((skill) => !skillMastery[skill.id] || skillMastery[skill.id].attempted === 0)
     .slice()
     .sort((left, right) => left.prerequisites.length - right.prerequisites.length)
     .map((skill) => skill.id);
 }
 
-/**
- * Skills practiced at least `WEAK_MIN_ATTEMPTS` times, ordered by ascending
- * accuracy (weakest first), tie-broken by more attempts then stable id order.
- */
-function weakCandidates(
-  skillMastery: ProgressState["skillMastery"]
-): SkillId[] {
+function weakCandidates(skillMastery: Record<SkillId, SkillMastery>): SkillId[] {
   const order = new Map(skillMetas.map((skill, index) => [skill.id, index]));
 
   return Object.entries(skillMastery)
-    .filter(([id, mastery]) => isSkillId(id) && mastery.attempted >= WEAK_MIN_ATTEMPTS)
-    .sort(([leftId, left], [rightId, right]) => {
-      const byAccuracy = accuracy(left) - accuracy(right);
-
-      if (byAccuracy !== 0) {
-        return byAccuracy;
-      }
-
-      const byAttempts = right.attempted - left.attempted;
-
-      if (byAttempts !== 0) {
-        return byAttempts;
-      }
-
-      return (order.get(leftId as SkillId) ?? 0) - (order.get(rightId as SkillId) ?? 0);
-    })
+    .filter(([, mastery]) => mastery.attempted >= WEAK_MIN_ATTEMPTS)
+    .sort(([leftId, left], [rightId, right]) =>
+      accuracy(left) - accuracy(right) ||
+      right.attempted - left.attempted ||
+      (order.get(leftId as SkillId) ?? 0) - (order.get(rightId as SkillId) ?? 0)
+    )
     .map(([id]) => id as SkillId);
 }
 
-/** Due skills from the adaptive scheduler that exist in the skill graph. */
-function dueCandidates(
-  skillMastery: ProgressState["skillMastery"],
-  now: Date
-): SkillId[] {
-  return getDueSkillIds(skillMastery, now).filter(isSkillId);
-}
-
-/**
- * Human-readable one-line summary of a plan, counting slots by reason.
- * Example: "10 prompts: 6 review, 2 focus, 2 new."
- */
 export function describePlan(plan: SmartSessionPlan): string {
-  let due = 0;
-  let weak = 0;
-  let fresh = 0;
-
-  for (const slot of plan.slots) {
-    if (slot.reason === "due") {
-      due += 1;
-    } else if (slot.reason === "weak") {
-      weak += 1;
-    } else {
-      fresh += 1;
-    }
-  }
-
+  const counts = { due: 0, weak: 0, new: 0 };
+  plan.slots.forEach((slot) => {
+    counts[slot.reason] += 1;
+  });
   const total = plan.slots.length;
-  const noun = total === 1 ? "prompt" : "prompts";
 
-  return `${total} ${noun}: ${due} review, ${weak} focus, ${fresh} new.`;
+  return `${total} ${total === 1 ? "prompt" : "prompts"}: ${counts.due} review, ${counts.weak} focus, ${counts.new} new.`;
 }
 
-/**
- * Compose a balanced practice plan from local progress.
- *
- * @param progress current progress snapshot
- * @param size     target number of slots (default 10)
- * @param now      reference time for due calculation (default current time)
- */
 export function planSmartSession(
   progress: ProgressState,
-  size: number = DEFAULT_SIZE,
-  now: Date = new Date()
+  size = DEFAULT_SIZE,
+  now = new Date()
 ): SmartSessionPlan {
   const slots: SessionSlot[] = [];
+  const targetSize = Math.min(5, Math.max(0, Math.floor(size) || 0));
 
-  if (size <= 0) {
+  if (targetSize === 0) {
     return { slots, summary: describePlan({ slots, summary: "" }) };
   }
 
-  const skillMastery = progress.skillMastery ?? {};
+  const mastery = canonicalSkillMastery(progress.skillMastery);
+  const queues: Array<[SessionReason, SkillId[]]> = [
+    ["due", getDueSkillIds(mastery, now).filter((id): id is SkillId => skillsById.has(id as SkillId))],
+    ["weak", weakCandidates(mastery)],
+    ["new", newCandidates(mastery)]
+  ];
   const chosen = new Set<SkillId>();
 
-  const due = dueCandidates(skillMastery, now);
-  const weak = weakCandidates(skillMastery).filter((id) => !chosen.has(id));
-
-  const dueQueue = due.filter((id) => {
-    if (chosen.has(id)) {
-      return false;
-    }
-
-    chosen.add(id);
-
-    return true;
-  });
-
-  const weakQueue = weak.filter((id) => {
-    if (chosen.has(id)) {
-      return false;
-    }
-
-    chosen.add(id);
-
-    return true;
-  });
-
-  const newQueue = newCandidates(skillMastery).filter((id) => {
-    if (chosen.has(id)) {
-      return false;
-    }
-
-    chosen.add(id);
-
-    return true;
-  });
-
-  // Reset selection so target-ratio fill controls how many of each reason land
-  // in the plan; the queues above are already deduplicated and ordered.
-  chosen.clear();
-
-  const targets: Array<{ reason: SessionReason; queue: SkillId[]; cap: number }> = [
-    { reason: "due", queue: dueQueue, cap: Math.round(size * DUE_RATIO) },
-    { reason: "weak", queue: weakQueue, cap: Math.round(size * WEAK_RATIO) },
-    { reason: "new", queue: newQueue, cap: Math.round(size * NEW_RATIO) }
-  ];
-
-  // First pass: take up to each reason's fair-share cap.
-  for (const target of targets) {
-    let taken = 0;
-
-    for (const id of target.queue) {
-      if (slots.length >= size || taken >= target.cap) {
-        break;
-      }
-
-      if (chosen.has(id)) {
+  while (slots.length < targetSize) {
+    let added = false;
+    for (const [reason, queue] of queues) {
+      const skillId = queue.find((id) => !chosen.has(id));
+      if (!skillId || slots.length >= targetSize) {
         continue;
       }
-
-      chosen.add(id);
-      slots.push(toSlot(id, target.reason));
-      taken += 1;
+      chosen.add(skillId);
+      slots.push(toSlot(skillId, reason));
+      added = true;
     }
-  }
-
-  // Second pass: round-robin fill from leftover candidates of any reason so the
-  // plan reaches `size` when material exists.
-  let progressed = true;
-
-  while (slots.length < size && progressed) {
-    progressed = false;
-
-    for (const target of targets) {
-      if (slots.length >= size) {
-        break;
-      }
-
-      const next = target.queue.find((id) => !chosen.has(id));
-
-      if (next) {
-        chosen.add(next);
-        slots.push(toSlot(next, target.reason));
-        progressed = true;
-      }
+    if (!added) {
+      break;
     }
   }
 

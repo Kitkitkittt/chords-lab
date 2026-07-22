@@ -3782,11 +3782,9 @@ html[data-focus-mode="true"] .app-main {
 
 @keyframes rise-in {
   from {
-    opacity: 0;
     transform: translateY(18px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -6274,6 +6272,16 @@ html[data-focus-mode="true"] .app-main {
 @media (prefers-reduced-motion: no-preference) {
   html:not([data-reduced-motion="true"]) .falling-notes--falling .is-current {
     animation: piano-note-arrival 480ms var(--ease-tactile) both;
+  }
+}
+
+@media (pointer: coarse) {
+  .digital-piano {
+    min-inline-size: 52rem;
+  }
+
+  .digital-piano__key--black {
+    min-inline-size: 1.5rem;
   }
 }
 

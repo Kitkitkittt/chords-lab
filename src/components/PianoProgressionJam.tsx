@@ -3,6 +3,7 @@ import { playLoop, stopLoop, type PlaybackPattern } from "../lib/audioEngine";
 import {
   bandLayerCount,
   evaluatePianoChord,
+  pianoMaterialForKey,
   progressionChordNotes
 } from "../lib/pianoPerformance";
 
@@ -10,6 +11,7 @@ type Progression = { id: string; symbols: string[] };
 type PianoProgressionJamProps = {
   activeNotes: string[];
   audioEnabled: boolean;
+  tonic?: string;
   onTargetNotesChange: (notes: string[]) => void;
   onReleaseAll: () => void;
   onComplete: (detail: {
@@ -17,15 +19,17 @@ type PianoProgressionJamProps = {
     expected: string[];
     selected: string[];
     question: string;
+    isCorrect: boolean;
   }) => void;
   onSendProgression: (symbols: string[]) => void;
 };
 
-const PROGRESSIONS: Progression[] = [
-  { id: "c-g-am-f", symbols: ["C", "G", "Am", "F"] },
-  { id: "dm-g7-c-c", symbols: ["Dm", "G7", "C", "C"] },
-  { id: "am-f-c-g", symbols: ["Am", "F", "C", "G"] }
-];
+function progressionsForKey(tonic: string): Progression[] {
+  return pianoMaterialForKey(tonic).progressions.map((symbols) => ({
+    id: symbols.join("-").toLowerCase(),
+    symbols
+  }));
+}
 
 function label(symbols: string[]) {
   return symbols.join(" – ");
@@ -40,8 +44,8 @@ function groovePattern(symbols: string[], notes: string[][], completedBars: numb
     return [
       { note: "C2", startBeat, durationBeats: 0.12, track: "drums", voice: "kick" as const },
       { note: "C2", startBeat: startBeat + 2, durationBeats: 0.12, track: "drums", voice: "kick" as const },
-      ...(layers > 0 ? [{ note: bass, startBeat, durationBeats: 1, track: "bass" }] : []),
-      ...(layers > 1 ? [{ note: notes[index], startBeat, durationBeats: 3.5, track: "pad" }] : [])
+       ...(layers > 0 ? [{ note: bass, startBeat, durationBeats: 1, track: "bass" }] : []),
+       ...(layers > 1 ? [{ note: notes[index], startBeat, durationBeats: 4, track: "pad" }] : [])
     ];
   });
   return { label: `${label(symbols)} groove`, bpm: 88, meter: "4/4", mode: "song", events };
@@ -50,12 +54,14 @@ function groovePattern(symbols: string[], notes: string[][], completedBars: numb
 export function PianoProgressionJam({
   activeNotes,
   audioEnabled,
+  tonic = "C",
   onTargetNotesChange,
   onReleaseAll,
   onComplete,
   onSendProgression
 }: PianoProgressionJamProps) {
-  const [progression, setProgression] = useState(PROGRESSIONS[0]);
+  const progressions = useMemo(() => progressionsForKey(tonic), [tonic]);
+  const [progression, setProgression] = useState(() => progressions[0]);
   const [mode, setMode] = useState<"untimed" | "groove">("untimed");
   const [targetIndex, setTargetIndex] = useState(0);
   const [completedBars, setCompletedBars] = useState(0);
@@ -63,10 +69,13 @@ export function PianoProgressionJam({
   const [message, setMessage] = useState("");
   const [grooveRunning, setGrooveRunning] = useState(false);
   const completed = useRef(false);
+  const failureRecorded = useRef(false);
   const barStarted = useRef(false);
   const barMatched = useRef(false);
   const cycle = useRef<boolean[]>([]);
   const targetIndexRef = useRef(0);
+  const sessionRef = useRef(0);
+  const completionRef = useRef({ progression, expected: [] as string[], activeNotes: [] as string[] });
   const targets = useMemo(() => progressionChordNotes(progression.symbols), [progression]);
   const expected = useMemo(() => targets[targetIndex] ?? [], [targetIndex, targets]);
   const evaluation = useMemo(
@@ -76,8 +85,9 @@ export function PianoProgressionJam({
 
   useEffect(() => {
     targetIndexRef.current = targetIndex;
+    completionRef.current = { progression, expected, activeNotes };
     onTargetNotesChange(expected);
-  }, [expected, onTargetNotesChange, targetIndex]);
+  }, [activeNotes, expected, onTargetNotesChange, progression, targetIndex]);
 
   useEffect(() => {
     if (mode === "groove" && grooveRunning && evaluation.complete) {
@@ -85,13 +95,18 @@ export function PianoProgressionJam({
     }
   }, [evaluation.complete, grooveRunning, mode]);
 
-  useEffect(() => () => stopLoop(), []);
+  useEffect(() => () => {
+    sessionRef.current += 1;
+    stopLoop();
+  }, []);
 
   function reset(nextMode = mode) {
+    sessionRef.current += 1;
     stopLoop();
     onReleaseAll();
-    completed.current = false;
-    barStarted.current = false;
+     completed.current = false;
+     failureRecorded.current = false;
+     barStarted.current = false;
     barMatched.current = false;
     cycle.current = [];
     targetIndexRef.current = 0;
@@ -107,14 +122,18 @@ export function PianoProgressionJam({
     if (completed.current) {
       return;
     }
+
     completed.current = true;
+    sessionRef.current += 1;
     stopLoop();
     setGrooveRunning(false);
+    const completion = completionRef.current;
     onComplete({
-      id: progression.id,
-      expected,
-      selected: activeNotes,
-      question: `Play ${label(progression.symbols)}`
+      id: completion.progression.id,
+      expected: completion.expected,
+      selected: completion.activeNotes,
+      question: `Play ${label(completion.progression.symbols)}`,
+      isCorrect: true
     });
     setMessage("Progression complete.");
   }
@@ -147,12 +166,25 @@ export function PianoProgressionJam({
       finish();
       return;
     }
+    if (!failureRecorded.current) {
+      failureRecorded.current = true;
+      const completion = completionRef.current;
+      onComplete({
+        id: completion.progression.id,
+        expected: completion.expected,
+        selected: completion.activeNotes,
+        question: `Play ${label(completion.progression.symbols)}`,
+        isCorrect: false
+      });
+    }
     cycle.current = [];
     setMessage("Try again. Keep playing; no penalty for a missed bar.");
   }
 
   function startGroove() {
     stopLoop();
+    const session = sessionRef.current + 1;
+    sessionRef.current = session;
     onReleaseAll();
     barStarted.current = false;
     barMatched.current = false;
@@ -162,7 +194,11 @@ export function PianoProgressionJam({
     void playLoop(groovePattern(progression.symbols, targets, completedBars), {
       audioEnabled,
       onStep: (event) => {
-        if (event.track !== "drums" || event.startBeat % 4 !== 0) {
+        if (
+          session !== sessionRef.current ||
+          event.track !== "drums" ||
+          event.startBeat % 4 !== 0
+        ) {
           return;
         }
         const next = Math.floor(event.startBeat / 4) % progression.symbols.length;
@@ -177,6 +213,7 @@ export function PianoProgressionJam({
   }
 
   function stopGroove() {
+    sessionRef.current += 1;
     stopLoop();
     onReleaseAll();
     setGrooveRunning(false);
@@ -197,7 +234,7 @@ export function PianoProgressionJam({
         <button type="button" aria-pressed={mode === "groove"} onClick={() => reset("groove")}>Groove</button>
       </div>
       <div role="group" aria-label="Progression choice">
-        {PROGRESSIONS.map((choice) => (
+        {progressions.map((choice) => (
           <button key={choice.id} type="button" onClick={() => { setProgression(choice); reset(); }}>
             {label(choice.symbols)}
           </button>

@@ -2,7 +2,7 @@ import type { ProgressState } from "../types/course";
 import {
   defaultProgressState,
   normalizeProgressState,
-  readProgressState,
+  PROGRESS_STORAGE_KEY,
   writeProgressState
 } from "./progressStorage";
 
@@ -20,11 +20,26 @@ export function fallbackProgress(): ProgressState {
   return defaultProgressState;
 }
 
-function readFallback(storage: Storage): ProgressState {
+function readFallback(storage: Storage): { progress: ProgressState; isAuthoritative: boolean } {
   try {
-    return readProgressState(storage);
+    const raw = storage.getItem(PROGRESS_STORAGE_KEY);
+    if (!raw) {
+      return { progress: fallbackProgress(), isAuthoritative: false };
+    }
+
+    const stored = JSON.parse(raw);
+    if (!stored || typeof stored !== "object" || stored.schemaVersion !== 1) {
+      return { progress: fallbackProgress(), isAuthoritative: false };
+    }
+
+    const progress = normalizeProgressState(stored);
+    return {
+      progress,
+      isAuthoritative:
+        JSON.stringify(progress) !== JSON.stringify(fallbackProgress())
+    };
   } catch {
-    return fallbackProgress();
+    return { progress: fallbackProgress(), isAuthoritative: false };
   }
 }
 
@@ -54,7 +69,12 @@ export function createProgressRepository(
     async hydrate(fallback) {
       const local = readFallback(fallback);
       if (!primary) {
-        return local;
+        return local.progress;
+      }
+
+      if (local.isAuthoritative) {
+        void writePrimary(local.progress);
+        return local.progress;
       }
 
       try {
@@ -64,12 +84,12 @@ export function createProgressRepository(
           writeFallback(fallback, progress);
           return progress;
         }
-        await writePrimary(local);
+        await writePrimary(local.progress);
       } catch {
-        return local;
+        return local.progress;
       }
 
-      return local;
+      return local.progress;
     },
     async persist(fallback, progress) {
       writeFallback(fallback, progress);

@@ -1,5 +1,6 @@
 import { Note } from "tonal";
 import { triadNotes } from "./music";
+import { chordsToRomanNumerals, progressionChords } from "./theory";
 
 export type ChordEvaluation = {
   complete: boolean;
@@ -21,15 +22,6 @@ const CHROMATIC = [
 ];
 const KEYBOARD = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];
 const INVERSIONS = ["Root position", "First inversion", "Second inversion", "Third inversion"];
-const C_MAJOR_NUMERAL_BY_SYMBOL: Record<string, string> = {
-  C: "I",
-  G: "V",
-  Am: "vi",
-  F: "IV",
-  Dm: "ii",
-  G7: "V7"
-};
-
 type ParsedNote = { chroma: number; pitchClass: string; midi: number | null };
 
 function parseNote(note: string): ParsedNote | null {
@@ -105,7 +97,7 @@ export function evaluatePianoSequence(
 
   for (const note of played) {
     const expected = targets[matched];
-    if (!expected || !note || note.chroma !== expected.chroma) {
+    if (!expected || !note || note.midi === null || expected.midi === null || note.midi !== expected.midi) {
       mistake = note?.pitchClass ?? null;
       break;
     }
@@ -149,8 +141,31 @@ export function progressionChordNotes(symbols: string[], octave = 4): string[][]
   });
 }
 
-export function progressionSymbolsToNumerals(symbols: string[]): string[] {
-  return symbols.map((symbol) => C_MAJOR_NUMERAL_BY_SYMBOL[symbol] ?? symbol);
+export function pianoMaterialForKey(tonic: string): {
+  quests: string[];
+  progressions: string[][];
+} {
+  const questNumerals = ["I", "vi", "IV", "V7", "ii", "iii"];
+  const progressionNumerals = [
+    ["I", "V", "vi", "IV"],
+    ["ii", "V7", "I", "I"],
+    ["vi", "IV", "I", "V"]
+  ];
+
+  return {
+    quests: progressionChords(questNumerals, tonic),
+    progressions: progressionNumerals.map((numerals) => progressionChords(numerals, tonic))
+  };
+}
+
+export function progressionSymbolsToNumerals(symbols: string[], tonic = "C"): string[] {
+  const numerals = ["I", "ii", "iii", "IV", "V", "vi", "vii°", "V7"];
+  const bySymbol = new Map(
+    progressionChords(numerals, tonic).map((symbol, index) => [symbol, numerals[index]])
+  );
+  const fallback = chordsToRomanNumerals(symbols, tonic);
+
+  return symbols.map((symbol, index) => bySymbol.get(symbol) ?? fallback[index] ?? symbol);
 }
 
 export function bandLayerCount(completedTasks: number): number {

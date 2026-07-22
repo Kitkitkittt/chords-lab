@@ -8,6 +8,7 @@
  */
 
 const STEP_KINDS = ["review", "module", "play"] as const;
+export const MAX_ROUTINE_STEPS = 3;
 
 export type RoutineStepKind = (typeof STEP_KINDS)[number];
 
@@ -27,12 +28,13 @@ export type Routine = {
 /** Create a routine with a generated id and ISO timestamp. */
 export function createRoutine(name: string, steps: RoutineStep[]): Routine {
   const ts = Date.now();
+  const cleanSteps = steps.slice(0, MAX_ROUTINE_STEPS);
   const rand = Math.random().toString(36).slice(2, 8);
 
   return {
     id: `routine-${ts}-${rand}`,
-    name,
-    steps,
+    name: name.trim().slice(0, 60) || "Routine",
+    steps: cleanSteps,
     createdAt: new Date(ts).toISOString()
   };
 }
@@ -117,6 +119,8 @@ export function validateRoutine(routine: unknown): routine is Routine {
     typeof candidate.name === "string" &&
     typeof candidate.createdAt === "string" &&
     Array.isArray(candidate.steps) &&
+    candidate.steps.length > 0 &&
+    candidate.steps.length <= MAX_ROUTINE_STEPS &&
     candidate.steps.every(isRoutineStep)
   );
 }

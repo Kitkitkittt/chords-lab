@@ -56,3 +56,15 @@ Object.defineProperty(window, "ResizeObserver", {
   writable: true,
   value: ResizeObserverMock
 });
+
+Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+  writable: true,
+  value: vi.fn(() => ({
+    font: "",
+    measureText: (text: string) => ({
+      width: text.length * 8,
+      actualBoundingBoxAscent: 8,
+      actualBoundingBoxDescent: 2
+    })
+  }))
+});

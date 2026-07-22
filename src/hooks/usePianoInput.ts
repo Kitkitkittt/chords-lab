@@ -32,6 +32,10 @@ function clampOctave(octave: number): number {
   return Math.min(7, Math.max(1, octave));
 }
 
+function matchesSourceScope(source: string, scope: string): boolean {
+  return source === scope || source.startsWith(`${scope}:`);
+}
+
 export function usePianoInput({
   audioEnabled,
   onNoteOn,
@@ -43,8 +47,9 @@ export function usePianoInput({
   const [sustain, setSustain] = useState(false);
   const [keyboardEnabled, setKeyboardEnabled] = useState(true);
   const activeNotesRef = useRef(new Set<string>());
-  const sustainedNotesRef = useRef(new Set<string>());
-  const sustainRef = useRef(false);
+  const noteSourcesRef = useRef(new Map<string, Set<string>>());
+  const sustainedNoteSourcesRef = useRef(new Map<string, Set<string>>());
+  const sustainSourcesRef = useRef(new Set<string>());
   const audioEnabledRef = useRef(audioEnabled);
   const onNoteOnRef = useRef(onNoteOn);
   const onNoteOffRef = useRef(onNoteOff);
@@ -57,13 +62,29 @@ export function usePianoInput({
   }, []);
 
   const noteOn = useCallback(
-    (note: string, velocity = 0.8) => {
-      if (activeNotesRef.current.has(note)) {
+    (note: string, velocity = 0.8, source = "manual") => {
+      const sources = noteSourcesRef.current.get(note) ?? new Set<string>();
+      if (sources.has(source)) {
+        return;
+      }
+
+      const alreadyHeld = sources.size > 0;
+      sources.add(source);
+      noteSourcesRef.current.set(note, sources);
+      const sustainedSources = sustainedNoteSourcesRef.current.get(note);
+      sustainedSources?.forEach((sustainSource) => {
+        if (source === sustainSource || source.startsWith(`${sustainSource}:`)) {
+          sustainedSources.delete(sustainSource);
+        }
+      });
+      if (sustainedSources?.size === 0) {
+        sustainedNoteSourcesRef.current.delete(note);
+      }
+      if (alreadyHeld) {
         return;
       }
 
       activeNotesRef.current.add(note);
-      sustainedNotesRef.current.delete(note);
       syncActiveNotes();
       void triggerNoteAttack(note, {
         voiceId: "keys",
@@ -76,14 +97,28 @@ export function usePianoInput({
   );
 
   const noteOff = useCallback(
-    (note: string) => {
-      if (!activeNotesRef.current.has(note)) {
+    (note: string, source = "manual") => {
+      const sources = noteSourcesRef.current.get(note);
+      if (!sources?.delete(source)) {
         return;
       }
 
+      const sustainedSources = sustainedNoteSourcesRef.current.get(note) ?? new Set<string>();
+      sustainSourcesRef.current.forEach((sustainSource) => {
+        if (matchesSourceScope(source, sustainSource)) {
+          sustainedSources.add(sustainSource);
+        }
+      });
+      if (sustainedSources.size > 0) {
+        sustainedNoteSourcesRef.current.set(note, sustainedSources);
+      }
+      if (sources.size > 0) {
+        return;
+      }
+
+      noteSourcesRef.current.delete(note);
       onNoteOffRef.current?.(note);
-      if (sustainRef.current) {
-        sustainedNotesRef.current.add(note);
+      if ((sustainedNoteSourcesRef.current.get(note)?.size ?? 0) > 0) {
         return;
       }
 
@@ -94,27 +129,99 @@ export function usePianoInput({
     [syncActiveNotes]
   );
 
-  const sustainOn = useCallback(() => {
-    sustainRef.current = true;
+  const sustainOn = useCallback((source = "manual") => {
+    sustainSourcesRef.current.add(source);
     setSustain(true);
   }, []);
 
-  const sustainOff = useCallback(() => {
-    sustainRef.current = false;
-    setSustain(false);
-    sustainedNotesRef.current.forEach((note) => {
+  const sustainOff = useCallback((source = "manual") => {
+    sustainSourcesRef.current.delete(source);
+    setSustain(sustainSourcesRef.current.size > 0);
+    let changed = false;
+    sustainedNoteSourcesRef.current.forEach((sources, note) => {
+      sources.delete(source);
+      if (sources.size > 0) {
+        return;
+      }
+
+      sustainedNoteSourcesRef.current.delete(note);
+      if ((noteSourcesRef.current.get(note)?.size ?? 0) > 0) {
+        return;
+      }
+
       activeNotesRef.current.delete(note);
       triggerNoteRelease(note, { voiceId: "keys" });
+      changed = true;
     });
-    sustainedNotesRef.current.clear();
-    syncActiveNotes();
+    if (changed) {
+      syncActiveNotes();
+    }
   }, [syncActiveNotes]);
+
+  const releaseSource = useCallback(
+    (source: string) => {
+      let changed = false;
+      let sustainChanged = false;
+
+      sustainSourcesRef.current.forEach((candidate) => {
+        if (matchesSourceScope(candidate, source)) {
+          sustainSourcesRef.current.delete(candidate);
+          sustainChanged = true;
+        }
+      });
+      sustainedNoteSourcesRef.current.forEach((sources, note) => {
+        sources.forEach((candidate) => {
+          if (matchesSourceScope(candidate, source)) {
+            sources.delete(candidate);
+          }
+        });
+        if (sources.size === 0) {
+          sustainedNoteSourcesRef.current.delete(note);
+        }
+      });
+      noteSourcesRef.current.forEach((sources, note) => {
+        let removed = false;
+        sources.forEach((candidate) => {
+          if (matchesSourceScope(candidate, source)) {
+            sources.delete(candidate);
+            removed = true;
+          }
+        });
+        if (!removed || sources.size > 0) {
+          return;
+        }
+
+        noteSourcesRef.current.delete(note);
+        onNoteOffRef.current?.(note);
+      });
+      activeNotesRef.current.forEach((note) => {
+        if (
+          (noteSourcesRef.current.get(note)?.size ?? 0) > 0 ||
+          (sustainedNoteSourcesRef.current.get(note)?.size ?? 0) > 0
+        ) {
+          return;
+        }
+
+        activeNotesRef.current.delete(note);
+        triggerNoteRelease(note, { voiceId: "keys" });
+        changed = true;
+      });
+      if (sustainChanged) {
+        setSustain(sustainSourcesRef.current.size > 0);
+      }
+      if (changed) {
+        syncActiveNotes();
+      }
+    },
+    [syncActiveNotes]
+  );
 
   const releaseAll = useCallback(() => {
     releaseAllLiveNotes();
     activeNotesRef.current.clear();
-    sustainedNotesRef.current.clear();
-    sustainRef.current = false;
+    noteSourcesRef.current.clear();
+    sustainedNoteSourcesRef.current.clear();
+    sustainSourcesRef.current.clear();
     setSustain(false);
     syncActiveNotes();
   }, [syncActiveNotes]);
@@ -128,25 +235,25 @@ export function usePianoInput({
   );
 
   const toggleNote = useCallback(
-    (note: string) => {
-      if (activeNotesRef.current.has(note)) {
-        noteOff(note);
+    (note: string, source = "manual") => {
+      if (noteSourcesRef.current.get(note)?.has(source)) {
+        noteOff(note, source);
       } else {
-        noteOn(note);
+        noteOn(note, 0.8, source);
       }
     },
     [noteOff, noteOn]
   );
 
   const midi = useMidiInput({
-    onNoteOn: noteOn,
-    onNoteOff: noteOff,
-    onDisconnect: releaseAll,
-    onSustain: (enabled) => {
+    onNoteOn: (note, velocity, source) => noteOn(note, velocity, source),
+    onNoteOff: (note, source) => noteOff(note, source),
+    onDisconnect: releaseSource,
+    onSustain: (enabled, source) => {
       if (enabled) {
-        sustainOn();
+        sustainOn(source);
       } else {
-        sustainOff();
+        sustainOff(source);
       }
     }
   });
@@ -161,7 +268,7 @@ export function usePianoInput({
       const pitchClass = KEY_NOTES[key];
       if (pitchClass) {
         event.preventDefault();
-        noteOn(`${pitchClass}${octave}`);
+        noteOn(`${pitchClass}${octave}`, 0.8, `qwerty:${key}`);
       } else if (key === "z") {
         event.preventDefault();
         shiftOctave(-1);
@@ -170,7 +277,7 @@ export function usePianoInput({
         shiftOctave(1);
       } else if (event.key === " " && event.target === event.currentTarget) {
         event.preventDefault();
-        sustainOn();
+        sustainOn("qwerty");
       }
     },
     onKeyUp(event: KeyboardEvent<HTMLElement>) {
@@ -182,12 +289,12 @@ export function usePianoInput({
       const pitchClass = KEY_NOTES[key];
       if (pitchClass) {
         event.preventDefault();
-        noteOff(`${pitchClass}${octave}`);
+        noteOff(`${pitchClass}${octave}`, `qwerty:${key}`);
       } else if (key === "z" || key === "x") {
         event.preventDefault();
       } else if (event.key === " " && event.target === event.currentTarget) {
         event.preventDefault();
-        sustainOff();
+        sustainOff("qwerty");
       }
     },
     onBlur(event: FocusEvent<HTMLElement>) {

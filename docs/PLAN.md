@@ -1,10 +1,10 @@
 # Chords Lab Plan
 
-Last updated: 2026-07-20
+Last updated: 2026-07-22
 
 ## Product Goal
 
-Build Chords Lab as a V7 beginner-to-early-intermediate interactive music theory
+Build Chords Lab as a beginner-to-early-intermediate interactive music theory
 PWA for learners who need short, low-noise, repeatable study loops. The app
 should feel like a calm learning workspace, not a dense textbook or timed drill
 clone.
@@ -22,11 +22,11 @@ Design implications:
 - Avoid timed tasks and autoplay audio.
 - Let learners complete, bookmark, review, and resume without accounts.
 
-## V7 Scope
+## Current Scope
 
-V7 keeps the full-band V6 workspace and upgrades flow polish: spatial course
-navigation, global feedback, lesson checkpoints, stricter review mastery,
-tap-first workbench feedback, and Song Lab theory-sync.
+The current V8 follow-on scope keeps the full-band workspace and upgrades flow
+polish, adaptive practice, piano input reliability, local persistence, calm
+routines, accessibility, and release hygiene.
 
 Included:
 
@@ -102,11 +102,10 @@ Not included:
 - Teacher dashboards.
 - Payments.
 - Analytics.
-- MIDI keyboard input.
 - Fretboard view.
 - Full Teoria-style exercise clone.
-- Advanced curriculum such as modulation, counterpoint, figured bass, and
-  post-tonal analysis.
+- Advanced curriculum beyond the current counterpoint lab, such as modulation,
+  figured bass, and post-tonal analysis.
 
 ## Interactive Expansion Goals
 
@@ -137,7 +136,7 @@ Next goals:
 - Add richer harmonic-function review.
 - Add more generated Song Lab patterns.
 - Expand concrete prompt factories behind the generated templates.
-- Add optional fretboard or MIDI input after core modules are stable.
+- Add an optional fretboard after core modules are stable and deepen MIDI-driven practice.
 
 Detailed goals live in `docs/INTERACTIVE_ROADMAP.md`.
 
@@ -174,7 +173,7 @@ Future curriculum:
 - Dictation and ear training.
 - More melody and bassline writing.
 - More form and phrase structure.
-- Counterpoint and voice-leading.
+- Deeper counterpoint and voice-leading.
 - Figured bass.
 - Pop/rock harmony.
 - Post-tonal basics.
@@ -186,19 +185,22 @@ separate keyboard implementations.
 
 ### Shared foundation
 
-- A three-octave piano keybed supports pointer, multi-touch, computer keyboard,
-  and opt-in Web MIDI input.
+- A three-octave piano keybed supports pointer, multi-touch, focused computer
+  keyboard, and opt-in Web MIDI input.
 - Computer-keyboard capture is explicit and focus-scoped. `A W S E D F T G Y H
   U J` plays chromatic notes, `Z/X` shifts octave, and Space controls sustain.
-- MIDI forwards note-on, note-off, velocity, and sustain pedal events. Disconnect,
-  blur, visibility changes, route changes, and the visible Panic action release
-  held notes.
+- Source-aware note ownership prevents one input source from releasing a note
+  still held by another. MIDI forwards note-on, note-off, velocity, and sustain.
+- Blur, hidden-document changes, disconnect, unmount, mode changes, and the
+  visible Panic action release held notes.
+- Studio tabs use roving focus with Arrow keys, Home, and End. On mobile, the
+  keybed scrolls horizontally without shrinking its tested key targets.
 - All modes reuse the shared Tone.js live voice and theory engine. Nothing is
   recorded or uploaded, and audio still requires a learner action.
 
 ### Mode 1: Chord Quest
 
-- Learners build a target triad or seventh chord in any octave.
+- Learners choose a key and build a target triad or seventh chord in any octave.
 - Feedback names missing and extra notes and accepts valid inversions.
 - Calm gamification builds a four-layer virtual band as quests are completed.
 - A completed quest records a normal local chord-practice result once.
@@ -214,7 +216,8 @@ separate keyboard implementations.
 
 - Untimed mode waits for each target chord before moving through a progression.
 - Optional Groove mode advances with a user-triggered backing loop.
-- Chord completion adds drums, bass, and harmony layers and can seed Song Lab.
+- Chord completion adds drums, bass, and harmony layers and can seed Song Lab
+  with key-aware canonical Roman numerals.
 
 ### Acceptance
 
@@ -266,9 +269,10 @@ Data model:
 
 Persistence:
 
-- Browser localStorage only.
+- Browser-local persistence uses IndexedDB with `localStorage` fallback.
 - Storage key: `chordslab.progress.v1`.
-- Invalid or unsupported stored state falls back to defaults.
+- Authoritative non-empty local state wins over stale IndexedDB state; invalid or
+  unsupported state falls back safely.
 
 ## Acceptance Criteria
 
@@ -297,7 +301,9 @@ V7 is acceptable when:
   stopped/disabled/error states.
 - Song Lab supports voice guide, mute/solo, regenerate, duplicate section,
   explain loop, and playback cursor state.
-- No microphone permission is requested, and MIDI remains a future adapter only.
+- The optional tuner requests microphone permission only after an explicit
+  learner action. Web MIDI is feature-detected, off by default, and connected
+  explicitly.
 - A learner can configure `/practice/:moduleId/setup` and run a generated
   session.
 - A learner can use `/review` to revisit due skills and missed prompts.
@@ -316,3 +322,7 @@ V7 is acceptable when:
 - The app shell loads offline after the first successful visit.
 - Typecheck, lint, unit/component tests, production build, and Playwright
   desktop/mobile smoke tests pass.
+- Axe scans run with color contrast enabled on representative home, piano,
+  Smart Session, routines, and tools surfaces.
+- Mobile browser coverage verifies horizontal piano scrolling and minimum
+  black-key target width.

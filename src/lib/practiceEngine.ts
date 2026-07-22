@@ -136,6 +136,7 @@ export type PracticePrompt = {
   topicTags?: string[];
   sourceLabels?: string[];
   skillTargets?: string[];
+  reviewPromptId?: string;
   inputMode?: PracticeInputMode;
   renderSpec?: PracticeRenderSpec;
   notation?: string;

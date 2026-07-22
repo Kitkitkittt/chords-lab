@@ -10,6 +10,9 @@ coverage/
 playwright-report/
 test-results/
 .playwright-cli/
+.omo/
+.playwright-mcp/
+output/
 
 # Logs
 *.log

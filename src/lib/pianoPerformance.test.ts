@@ -4,6 +4,7 @@ import {
   computerKeyToNote,
   evaluatePianoChord,
   evaluatePianoSequence,
+  pianoMaterialForKey,
   pianoNotes,
   progressionChordNotes,
   progressionSymbolsToNumerals
@@ -55,14 +56,14 @@ describe("evaluatePianoChord", () => {
 });
 
 describe("evaluatePianoSequence", () => {
-  it("tracks ordered pitch-class progress and first mistakes", () => {
-    expect(evaluatePianoSequence(["C", "D", "E"], ["C4", "D5"])).toEqual({
+  it("requires ordered exact-octave progress and reports first mistakes", () => {
+    expect(evaluatePianoSequence(["C4", "D4", "E4"], ["C4", "D5"])).toEqual({
       complete: false,
-      matched: 2,
-      nextNote: "E",
-      mistake: null
+      matched: 1,
+      nextNote: "D",
+      mistake: "D"
     });
-    expect(evaluatePianoSequence(["C", "D", "E"], ["C4", "Eb4", "E4"])).toEqual({
+    expect(evaluatePianoSequence(["C4", "D4", "E4"], ["C4", "Eb4", "E4"])).toEqual({
       complete: false,
       matched: 1,
       nextNote: "D",
@@ -71,7 +72,7 @@ describe("evaluatePianoSequence", () => {
   });
 
   it("requires each repeated event and completes exact sequences", () => {
-    expect(evaluatePianoSequence(["C", "C", "E"], ["C3", "C5", "E4"])).toEqual({
+    expect(evaluatePianoSequence(["C3", "C5", "E4"], ["C3", "C5", "E4"])).toEqual({
       complete: true,
       matched: 3,
       nextNote: null,
@@ -89,8 +90,11 @@ describe("piano performance utilities", () => {
     expect(progressionChordNotes(["invalid"])).toEqual([[]]);
   });
 
-  it("maps the studio's C-major symbols to Song Lab numerals", () => {
-    expect(progressionSymbolsToNumerals(["C", "G", "Am", "F"])).toEqual(["I", "V", "vi", "IV"]);
+  it("builds key-aware studio material and maps it to Song Lab numerals", () => {
+    expect(pianoMaterialForKey("G").quests.slice(0, 4)).toEqual(["G", "Em", "C", "D7"]);
+    const progression = pianoMaterialForKey("G").progressions[0];
+    expect(progression).toEqual(["G", "D", "Em", "C"]);
+    expect(progressionSymbolsToNumerals(progression, "G")).toEqual(["I", "V", "vi", "IV"]);
     expect(progressionSymbolsToNumerals(["Dm", "G7", "C"])).toEqual(["ii", "V7", "I"]);
   });
 

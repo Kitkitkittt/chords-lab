@@ -4,6 +4,9 @@ import { defineConfig } from "vitest/config";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  build: {
+    chunkSizeWarningLimit: 1200
+  },
   plugins: [
     mdx({ providerImportSource: "@mdx-js/react" }),
     react(),

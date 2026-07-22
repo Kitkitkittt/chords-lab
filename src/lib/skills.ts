@@ -140,6 +140,7 @@ export const skillsById = new Map(skillMetas.map((skill) => [skill.id, skill]));
  */
 const primarySkillByToken: Record<string, SkillId> = {
   "note-reading": "note-reading",
+  "staff-position": "staff-position",
   "staff-click": "staff-position",
   "scale-spelling": "scale-spelling",
   "interval-quality": "interval-quality",

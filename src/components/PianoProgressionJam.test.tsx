@@ -100,6 +100,49 @@ describe("PianoProgressionJam", () => {
     });
   });
 
+  it("records one incorrect groove cycle before retrying", async () => {
+    const user = userEvent.setup();
+    const { props } = setup();
+
+    await user.click(screen.getByRole("button", { name: "Groove" }));
+    await user.click(screen.getByRole("button", { name: "Start groove" }));
+    const [pattern, options] = playLoop.mock.calls.at(-1) as [
+      { events: { startBeat: number; track?: string }[] },
+      { onStep: (event: { startBeat: number; track?: string }) => void }
+    ];
+
+    const bars = pattern.events.filter(
+      (event) => event.track === "drums" && event.startBeat % 4 === 0
+    );
+    bars.forEach(options.onStep);
+    options.onStep(bars[0]);
+
+    await waitFor(() => {
+      expect(props.onComplete).toHaveBeenCalledWith(expect.objectContaining({
+        isCorrect: false,
+        selected: []
+      }));
+    });
+    expect(props.onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores stale groove callbacks after stopping", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole("button", { name: "Groove" }));
+    await user.click(screen.getByRole("button", { name: "Start groove" }));
+    const [, options] = playLoop.mock.calls.at(-1) as [
+      unknown,
+      { onStep: (event: { startBeat: number; track?: string }) => void }
+    ];
+
+    await user.click(screen.getByRole("button", { name: "Stop groove" }));
+    options.onStep({ track: "drums", startBeat: 4 });
+
+    expect(screen.getByText("Current chord: C")).toBeInTheDocument();
+  });
+
   it("stops the loop on cleanup", () => {
     const { unmount } = setup();
     stopLoop.mockClear();

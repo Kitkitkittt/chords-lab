@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Eraser, Sparkles, Volume2 } from "lucide-react";
 import { Note } from "tonal";
 import {
   triggerNote,
   triggerNoteAttack,
-  triggerNoteRelease
+  triggerNoteRelease,
+  releaseAllLiveNotes
 } from "../lib/audioEngine";
 import { describeChordStack } from "../lib/interactionTools";
 import { ChordFlourish } from "./ChordFlourish";
@@ -49,6 +50,28 @@ export function HeroChordPlay() {
   const { progress } = useProgress();
   const audioEnabled = progress.settings.audioEnabled;
   const [held, setHeld] = useState<string[]>([]);
+  const pressedNotes = useRef(new Set<string>());
+  const presetTimers = useRef<number[]>([]);
+
+  function cancelPreset() {
+    presetTimers.current.forEach((timer) => window.clearTimeout(timer));
+    presetTimers.current = [];
+  }
+
+  function releasePressedNotes() {
+    pressedNotes.current.forEach((note) =>
+      triggerNoteRelease(note, { voiceId: "keys" })
+    );
+    pressedNotes.current.clear();
+  }
+
+  useEffect(() => () => {
+    presetTimers.current.forEach((timer) => window.clearTimeout(timer));
+    pressedNotes.current.forEach((note) =>
+      triggerNoteRelease(note, { voiceId: "keys" })
+    );
+    releaseAllLiveNotes();
+  }, []);
 
   const heldPitchClasses = useMemo(
     () => new Set(held.map(pitchClassOf)),
@@ -57,6 +80,12 @@ export function HeroChordPlay() {
   const detection = useMemo(() => describeChordStack(held), [held]);
 
   function press(note: string) {
+    if (pressedNotes.current.has(note)) {
+      return;
+    }
+
+    cancelPreset();
+    pressedNotes.current.add(note);
     void triggerNoteAttack(note, { voiceId: "keys", audioEnabled });
     setHeld((current) =>
       current.includes(note) ? current : [...current, note]
@@ -64,19 +93,27 @@ export function HeroChordPlay() {
   }
 
   function release(note: string) {
+    if (!pressedNotes.current.delete(note)) {
+      return;
+    }
+
     triggerNoteRelease(note, { voiceId: "keys" });
   }
 
   function playPreset(notes: string[]) {
+    cancelPreset();
+    releasePressedNotes();
     setHeld(notes);
-    notes.forEach((note, index) => {
+    presetTimers.current = notes.map((note, index) =>
       window.setTimeout(() => {
         void triggerNote(note, { voiceId: "keys", audioEnabled, durationMs: 900 });
-      }, index * 70);
-    });
+      }, index * 70)
+    );
   }
 
   function clear() {
+    cancelPreset();
+    releasePressedNotes();
     setHeld([]);
   }
 
@@ -132,17 +169,19 @@ export function HeroChordPlay() {
                   onPointerUp={() => release(note)}
                   onPointerLeave={() => release(note)}
                   onPointerCancel={() => release(note)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      void triggerNote(note, { voiceId: "keys", audioEnabled });
-                      setHeld((current) =>
-                        current.includes(note)
-                          ? current
-                          : [...current, note]
-                      );
-                    }
-                  }}
+                   onKeyDown={(event) => {
+                     if (event.repeat || (event.key !== "Enter" && event.key !== " ")) {
+                       return;
+                     }
+
+                     event.preventDefault();
+                     void triggerNote(note, { voiceId: "keys", audioEnabled });
+                     setHeld((current) =>
+                       current.includes(note)
+                         ? current
+                         : [...current, note]
+                     );
+                   }}
                 />
               );
             })}

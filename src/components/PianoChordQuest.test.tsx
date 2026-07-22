@@ -64,7 +64,8 @@ describe("PianoChordQuest", () => {
       id: "c",
       expected: ["C4", "E4", "G4"],
       selected: ["E3", "G3", "C4"],
-      question: "Build C."
+      question: "Build C.",
+      isCorrect: true
     });
     expect(screen.getByText("Drums: active")).toBeInTheDocument();
     expect(screen.getByText("Bass: locked")).toBeInTheDocument();

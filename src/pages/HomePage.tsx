@@ -15,6 +15,8 @@ import { courseModules, getFirstIncompleteLesson, lessons, lessonsBySlug } from 
 import { practiceModules } from "../data/practice";
 import { getAdaptiveReviewSummary } from "../lib/adaptiveReview";
 import { recommendSkills, trackProgressList } from "../lib/learningPath";
+import { placementResultFromProgress } from "../lib/placementResults";
+import { skillsById } from "../lib/skills";
 import { useProgress } from "../state/progress";
 import { HomeInteractiveLab } from "../components/HomeInteractiveLab";
 import { HeroChordPlay } from "../components/HeroChordPlay";
@@ -42,6 +44,7 @@ export function HomePage() {
     progress.settings.activeTrackId
   );
   const tracks = trackProgressList(progress);
+  const placement = placementResultFromProgress(progress.placementResults);
   const activeTrackId = progress.settings.activeTrackId;
   const isFirstVisit =
     progress.completedLessonSlugs.length === 0 && !progress.lastLessonSlug;
@@ -188,6 +191,16 @@ export function HomePage() {
         </Link>
         </div>
       </section>
+
+      {placement ? (
+        <section className="workspace-band" aria-label="Placement suggestions">
+          <div className="workspace-band__main">
+            <span className="eyebrow">Placement suggestions</span>
+            <p><strong>Start here:</strong> {skillsById.get(placement.startHere)?.title ?? placement.startHere} · <strong>Keep warm:</strong> {skillsById.get(placement.keepWarm)?.title ?? placement.keepWarm}</p>
+          </div>
+          <Link className="button button--quiet" to={`/practice/${skillsById.get(placement.startHere)?.moduleId ?? "pitch"}`}>Practice</Link>
+        </section>
+      ) : null}
 
       {skillRecommendations.length > 0 ? (
         <section className="skill-recommendations" aria-label="Suggested focus">

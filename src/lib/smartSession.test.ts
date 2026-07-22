@@ -6,7 +6,13 @@
 import { describe, expect, it } from "vitest";
 import type { ProgressState, SkillMastery } from "../types/course";
 import { defaultProgressState } from "./progressStorage";
-import { describePlan, planSmartSession } from "./smartSession";
+import { generateSmartSessionPrompts } from "./smartSessionPrompts";
+import {
+  canonicalSkillMastery,
+  describePlan,
+  planSmartSession,
+  smartSessionSnapshot
+} from "./smartSession";
 
 function mastery(overrides: Partial<SkillMastery>): SkillMastery {
   return {
@@ -69,10 +75,9 @@ describe("planSmartSession", () => {
     expect(weak?.reason).toBe("weak");
   });
 
-  it("never exceeds the requested size", () => {
-    const plan = planSmartSession(defaultProgressState, 3);
-
-    expect(plan.slots.length).toBeLessThanOrEqual(3);
+  it("uses five prompts by default and caps larger requests at five", () => {
+    expect(planSmartSession(defaultProgressState).slots).toHaveLength(5);
+    expect(planSmartSession(defaultProgressState, 10).slots).toHaveLength(5);
   });
 
   it("never duplicates a skill id", () => {
@@ -90,6 +95,30 @@ describe("planSmartSession", () => {
     const skillIds = plan.slots.map((slot) => slot.skillId);
 
     expect(new Set(skillIds).size).toBe(skillIds.length);
+  });
+});
+
+describe("generateSmartSessionPrompts", () => {
+  it("keeps each generated prompt's own review identity", () => {
+    const prompts = generateSmartSessionPrompts(planSmartSession(defaultProgressState));
+
+    expect(prompts.every((prompt) => prompt.id.startsWith("smart-"))).toBe(true);
+    expect(new Set(prompts.map((prompt) => prompt.id)).size).toBe(prompts.length);
+  });
+});
+
+describe("canonicalSkillMastery", () => {
+  it("rolls raw planner tokens into canonical skills with a stable snapshot", () => {
+    const progress = withMastery({
+      "staff-click": mastery({ correct: 2, attempted: 3 }),
+      "note-reading": mastery({ correct: 1, attempted: 2 })
+    });
+
+    expect(canonicalSkillMastery(progress.skillMastery)["staff-position"]).toMatchObject({
+      correct: 2,
+      attempted: 3
+    });
+    expect(smartSessionSnapshot(progress)).toBe(smartSessionSnapshot(progress));
   });
 });
 

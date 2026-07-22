@@ -12,6 +12,8 @@ import {
 } from "../lib/adaptiveReview";
 import { fallbackProgress } from "../lib/progressRepository";
 import { useProgressPersistence } from "../hooks/useProgressPersistence";
+import { clearPlacementProgress } from "../lib/placementResults";
+import type { PracticePrompt } from "../lib/practiceEngine";
 import { updateReviewQueueForAttempt } from "../lib/reviewQueue";
 import {
   SKILL_LEVEL_RANK,
@@ -23,6 +25,7 @@ import type {
   ProgressState,
   Routine,
   SongSketch,
+  StoredReviewPrompt,
   ThemePreference
 } from "../types/course";
 import type { NoteNamingPreference } from "../types/course";
@@ -41,9 +44,17 @@ type ProgressContextValue = {
     moduleId: string,
     isCorrect: boolean,
     skillTargets?: string[],
-    detail?: Pick<PracticeAttempt, "expected" | "selected" | "question">
+    detail?: Pick<PracticeAttempt, "expected" | "selected" | "question">,
+    prompt?: PracticePrompt
   ) => void;
   recordPracticeSession: (session: PracticeSessionHistory) => void;
+  queuePracticeReview: (
+    practiceId: string,
+    moduleId: string,
+    prompt?: PracticePrompt
+  ) => void;
+  recordPlacementResult: (practiceId: string, isCorrect: boolean) => void;
+  resetPlacementResults: () => void;
   recordSkillConfidence: (
     skillTargets: string[],
     confidence: "easy" | "hard"
@@ -70,6 +81,74 @@ function uniqueAppend(items: string[], item: string): string[] {
   return items.includes(item) ? items : [...items, item];
 }
 
+function storedReviewPrompt(prompt: PracticePrompt, id: string): StoredReviewPrompt {
+  const {
+    moduleId,
+    kind,
+    question,
+    choices,
+    answer,
+    explanation,
+    citationLabel,
+    topicTags,
+    sourceLabels,
+    skillTargets,
+    inputMode,
+    notation,
+    clef,
+    timeSignature,
+    keyboardNotes,
+    audioNotes,
+    visualLabel
+  } = prompt;
+  const audioMode = prompt.playbackPattern?.mode;
+  const rhythmTokens = prompt.renderSpec?.type === "rhythm"
+    ? prompt.renderSpec.beats
+    : prompt.renderSpec?.type === "instrument"
+      ? prompt.renderSpec.rhythmPattern
+      : audioMode === "rhythm"
+        ? prompt.answer
+        : undefined;
+
+  return {
+    id,
+    moduleId,
+    kind,
+    question,
+    choices,
+    answer,
+    explanation,
+    citationLabel,
+    topicTags,
+    sourceLabels,
+    skillTargets,
+    inputMode,
+    notation,
+    clef,
+    timeSignature,
+    keyboardNotes,
+    audioNotes,
+    audioMode: audioMode === "song" ? undefined : audioMode,
+    rhythmTokens,
+    visualLabel
+  };
+}
+
+function reviewPromptKey(prompt: PracticePrompt, id: string): string {
+  if (prompt.reviewPromptId) {
+    return prompt.reviewPromptId;
+  }
+
+  const value = JSON.stringify(storedReviewPrompt(prompt, id));
+  let hash = 14695981039346656037n;
+  for (const character of value) {
+    hash ^= BigInt(character.codePointAt(0) ?? 0);
+    hash = BigInt.asUintN(64, hash * 1099511628211n);
+  }
+
+  return `${id}-${hash.toString(36)}`;
+}
+
 function emitAppEvent(name: string, detail?: unknown): void {
   if (typeof window === "undefined") {
     return;
@@ -79,7 +158,7 @@ function emitAppEvent(name: string, detail?: unknown): void {
 }
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
-  const [progress, setProgress] = useProgressPersistence();
+  const [progress, setProgress, isHydrated] = useProgressPersistence();
 
   useEffect(() => {
     document.documentElement.dataset.reducedMotion = progress.settings
@@ -146,7 +225,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       completedLessonSlugs: uniqueAppend(current.completedLessonSlugs, slug),
       lastLessonSlug: slug
     }));
-  }, []);
+  }, [setProgress]);
 
   const toggleBookmark = useCallback((slug: string) => {
     setProgress((current) => ({
@@ -155,14 +234,14 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         ? current.bookmarkedLessonSlugs.filter((item) => item !== slug)
         : [...current.bookmarkedLessonSlugs, slug]
     }));
-  }, []);
+  }, [setProgress]);
 
   const setLastLesson = useCallback((slug: string) => {
     setProgress((current) => ({
       ...current,
       lastLessonSlug: slug
     }));
-  }, []);
+  }, [setProgress]);
 
   const recordCheckResult = useCallback(
     (checkId: string, isCorrect: boolean) => {
@@ -184,23 +263,25 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         };
       });
     },
-    []
+    [setProgress]
   );
 
   const recordPracticeResult = useCallback(
     (
       practiceId: string,
       moduleId: string,
-      isCorrect: boolean,
-      skillTargets: string[] = [],
-      detail?: Pick<PracticeAttempt, "expected" | "selected" | "question">
-    ) => {
-      setProgress((current) => {
-        const previous = current.practiceResults[practiceId] ?? {
-          correct: 0,
-          attempted: 0
-        };
-        const previousMastery = current.practiceMastery[moduleId] ?? {
+       isCorrect: boolean,
+       skillTargets: string[] = [],
+       detail?: Pick<PracticeAttempt, "expected" | "selected" | "question">,
+       prompt?: PracticePrompt
+     ) => {
+       setProgress((current) => {
+         const promptKey = prompt ? reviewPromptKey(prompt, practiceId) : practiceId;
+         const previous = current.practiceResults[practiceId] ?? {
+           correct: 0,
+           attempted: 0
+         };
+         const previousMastery = current.practiceMastery[moduleId] ?? {
           correct: 0,
           attempted: 0,
           streak: 0,
@@ -208,22 +289,28 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         };
         const practicedAt = new Date();
         const practicedAtIso = practicedAt.toISOString();
-        const reviewUpdate = updateReviewQueueForAttempt({
-          queue: previousMastery.reviewQueue,
-          previous: current.reviewPromptState[practiceId],
-          promptId: practiceId,
-          isCorrect,
-          attemptedAt: practicedAtIso
-        });
-        const nextSkillMastery = skillTargets.reduce(
+         const reviewUpdate = updateReviewQueueForAttempt({
+           queue: previousMastery.reviewQueue,
+           previous: current.reviewPromptState[promptKey],
+           promptId: promptKey,
+           isCorrect,
+           attemptedAt: practicedAtIso
+         });
+         const nextReviewPrompts = { ...current.reviewPrompts };
+         if (!isCorrect && prompt && !nextReviewPrompts[promptKey]) {
+           nextReviewPrompts[promptKey] = storedReviewPrompt(prompt, promptKey);
+         } else if (reviewUpdate.cleared) {
+           delete nextReviewPrompts[promptKey];
+         }
+         const nextSkillMastery = skillTargets.reduce(
           (mastery, skill) => {
             return {
               ...mastery,
               [skill]: updateAdaptiveSkillState(
                 mastery[skill],
-                practiceId,
-                isCorrect,
-                practicedAt
+                 promptKey,
+                 isCorrect,
+                 practicedAt
               )
             };
           },
@@ -270,11 +357,12 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
               reviewQueue: reviewUpdate.queue
             }
           },
-          reviewPromptState: {
-            ...current.reviewPromptState,
-            [practiceId]: reviewUpdate.state
-          },
-          skillMastery: nextSkillMastery,
+           reviewPromptState: {
+             ...current.reviewPromptState,
+             [promptKey]: reviewUpdate.state
+           },
+           reviewPrompts: nextReviewPrompts,
+           skillMastery: nextSkillMastery,
           practiceAttempts: detail
             ? [
                 ...(current.practiceAttempts ?? []),
@@ -293,8 +381,67 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         };
       });
     },
-    []
+    [setProgress]
   );
+
+  const queuePracticeReview = useCallback(
+    (practiceId: string, moduleId: string, prompt?: PracticePrompt) => {
+      setProgress((current) => {
+        const promptKey = prompt ? reviewPromptKey(prompt, practiceId) : practiceId;
+        const previousMastery = current.practiceMastery[moduleId] ?? {
+          correct: 0,
+          attempted: 0,
+          streak: 0,
+          reviewQueue: []
+        };
+
+        return {
+          ...current,
+          practiceMastery: {
+            ...current.practiceMastery,
+            [moduleId]: {
+              ...previousMastery,
+              reviewQueue: uniqueAppend(previousMastery.reviewQueue, promptKey)
+            }
+          },
+          reviewPrompts: prompt && !current.reviewPrompts[promptKey]
+            ? {
+                ...current.reviewPrompts,
+                [promptKey]: storedReviewPrompt(prompt, promptKey)
+              }
+            : current.reviewPrompts
+        };
+      });
+    },
+    [setProgress]
+  );
+
+  const recordPlacementResult = useCallback(
+    (practiceId: string, isCorrect: boolean) => {
+      setProgress((current) => {
+        const previous = current.placementResults[practiceId] ?? {
+          correct: 0,
+          attempted: 0
+        };
+
+        return {
+          ...current,
+          placementResults: {
+            ...current.placementResults,
+            [practiceId]: {
+              correct: previous.correct + (isCorrect ? 1 : 0),
+              attempted: previous.attempted + 1
+            }
+          }
+        };
+      });
+    },
+    [setProgress]
+  );
+
+  const resetPlacementResults = useCallback(() => {
+    setProgress(clearPlacementProgress);
+  }, [setProgress]);
 
   const recordSkillConfidence = useCallback(
     (skillTargets: string[], confidence: "easy" | "hard") => {
@@ -322,7 +469,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         return { ...current, skillMastery: nextSkillMastery };
       });
     },
-    []
+    [setProgress]
   );
 
   const recordPracticeSession = useCallback((session: PracticeSessionHistory) => {
@@ -333,7 +480,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         ...current.generatedSessionHistory.filter((item) => item.id !== session.id)
       ].slice(0, 30)
     }));
-  }, []);
+  }, [setProgress]);
 
   const saveSongSketch = useCallback((sketch: SongSketch) => {
     setProgress((current) => ({
@@ -345,7 +492,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         right.updatedAt.localeCompare(left.updatedAt)
       )
     }));
-  }, []);
+  }, [setProgress]);
 
   const deleteSongSketch = useCallback((sketchId: string) => {
     setProgress((current) => ({
@@ -354,7 +501,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         (sketch) => sketch.id !== sketchId
       )
     }));
-  }, []);
+  }, [setProgress]);
 
   const importSongSketches = useCallback((sketches: SongSketch[]) => {
     setProgress((current) => {
@@ -372,60 +519,60 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         )
       };
     });
-  }, []);
+  }, [setProgress]);
 
   const importProgress = useCallback((nextProgress: ProgressState) => {
     setProgress(nextProgress);
-  }, []);
+  }, [setProgress]);
 
   const setAudioEnabled = useCallback((enabled: boolean) => {
     setProgress((current) => ({
       ...current,
       settings: { ...current.settings, audioEnabled: enabled }
     }));
-  }, []);
+  }, [setProgress]);
 
   const setReducedMotion = useCallback((enabled: boolean) => {
     setProgress((current) => ({
       ...current,
       settings: { ...current.settings, reducedMotion: enabled }
     }));
-  }, []);
+  }, [setProgress]);
 
   const setActiveTrack = useCallback((trackId: string | undefined) => {
     setProgress((current) => ({
       ...current,
       settings: { ...current.settings, activeTrackId: trackId }
     }));
-  }, []);
+  }, [setProgress]);
 
   const setTheme = useCallback((theme: ThemePreference) => {
     setProgress((current) => ({
       ...current,
       settings: { ...current.settings, theme }
     }));
-  }, []);
+  }, [setProgress]);
 
   const setNoteNaming = useCallback((system: NoteNamingPreference) => {
     setProgress((current) => ({
       ...current,
       settings: { ...current.settings, noteNaming: system }
     }));
-  }, []);
+  }, [setProgress]);
 
   const setColorBlindSafe = useCallback((enabled: boolean) => {
     setProgress((current) => ({
       ...current,
       settings: { ...current.settings, colorBlindSafe: enabled }
     }));
-  }, []);
+  }, [setProgress]);
 
   const setFocusMode = useCallback((enabled: boolean) => {
     setProgress((current) => ({
       ...current,
       settings: { ...current.settings, focusMode: enabled }
     }));
-  }, []);
+  }, [setProgress]);
 
   const saveRoutine = useCallback((routine: Routine) => {
     setProgress((current) => ({
@@ -440,7 +587,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         ]
       }
     }));
-  }, []);
+  }, [setProgress]);
 
   const deleteRoutine = useCallback((routineId: string) => {
     setProgress((current) => ({
@@ -452,25 +599,28 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         )
       }
     }));
-  }, []);
+  }, [setProgress]);
 
   const resetProgress = useCallback(() => {
     setProgress(fallbackProgress());
-  }, []);
+  }, [setProgress]);
 
   const value = useMemo<ProgressContextValue>(
     () => ({
-      progress,
-      completedCount: progress.completedLessonSlugs.length,
+       progress,
+       completedCount: progress.completedLessonSlugs.length,
       isLessonComplete,
       isLessonBookmarked,
       markLessonComplete,
       toggleBookmark,
       setLastLesson,
       recordCheckResult,
-      recordPracticeResult,
-      recordPracticeSession,
-      recordSkillConfidence,
+       recordPracticeResult,
+       recordPracticeSession,
+       queuePracticeReview,
+       recordPlacementResult,
+       resetPlacementResults,
+       recordSkillConfidence,
       saveSongSketch,
       deleteSongSketch,
       importSongSketches,
@@ -486,17 +636,20 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       deleteRoutine,
       resetProgress
     }),
-    [
-      progress,
-      isLessonComplete,
+     [
+       progress,
+       isLessonComplete,
       isLessonBookmarked,
       markLessonComplete,
       toggleBookmark,
       setLastLesson,
       recordCheckResult,
-      recordPracticeResult,
-      recordPracticeSession,
-      recordSkillConfidence,
+       recordPracticeResult,
+       recordPracticeSession,
+       queuePracticeReview,
+       recordPlacementResult,
+       resetPlacementResults,
+       recordSkillConfidence,
       saveSongSketch,
       deleteSongSketch,
       importSongSketches,
@@ -513,6 +666,10 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       resetProgress
     ]
   );
+
+  if (!isHydrated) {
+    return <p role="status">Loading local progress…</p>;
+  }
 
   return (
     <ProgressContext.Provider value={value}>

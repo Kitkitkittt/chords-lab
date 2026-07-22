@@ -27,9 +27,7 @@ test("home, lesson completion, progress persistence, and accessibility", async (
     page.getByRole("link", { name: /Open the Jam Room/i })
   ).toBeVisible();
 
-  const accessibilityScanResults = await new AxeBuilder({ page })
-    .disableRules(["color-contrast"])
-    .analyze();
+  const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
   expect(accessibilityScanResults.violations).toEqual([]);
 
   await page.getByRole("link", { name: /Start learning|Continue lesson/ }).click();
@@ -292,9 +290,7 @@ test("instrument lab opens full-band workbenches", async ({ page }) => {
   }
 
   await page.goto("/instruments/piano");
-  const accessibilityScanResults = await new AxeBuilder({ page })
-    .disableRules(["color-contrast"])
-    .analyze();
+  const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
   expect(accessibilityScanResults.violations).toEqual([]);
 
   await page.goto("/instruments/guitar");
@@ -314,6 +310,16 @@ test("instrument lab opens full-band workbenches", async ({ page }) => {
     page.getByRole("heading", { name: "Voice", exact: true })
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "do 1 C4" })).toBeVisible();
+});
+
+test("mobile piano keys retain targets inside a horizontal window", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 1024) > 760, "Mobile project only");
+  await page.goto("/instruments/piano");
+
+  const keybed = page.locator(".piano-studio__keybed");
+  const blackKey = page.locator(".digital-piano__key--black").first();
+  expect(await keybed.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  expect(await blackKey.evaluate((element) => element.getBoundingClientRect().width >= 24)).toBe(true);
 });
 
 test("theory tools routes switch between circle and progression tools", async ({
@@ -350,7 +356,7 @@ test("practice setup starts a generated harmony session", async ({ page }) => {
   await expect(page.getByText(/3 generated prompts/)).toBeVisible();
 });
 
-test("offline app shell is served after first load", async ({ page, context }) => {
+test("PWA auto-update lifecycle serves the offline app shell", async ({ page, context }) => {
   test.setTimeout(60000);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Chords Lab" })).toBeVisible();
@@ -404,6 +410,7 @@ test("V8 studios, smart session, and dark mode are reachable", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: /Smart session/i })
   ).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.goto("/practice/dictation");
   await expect(
@@ -480,6 +487,7 @@ test("V8 Wave 4-7 surfaces are reachable", async ({ page }) => {
     page.getByRole("heading", { level: 1, name: /Routines/i })
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: /Presets/i })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   // Note-naming + color-blind settings apply to the document.
   await page.goto("/progress");

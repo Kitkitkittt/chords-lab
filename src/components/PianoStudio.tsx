@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { DigitalPiano } from "./DigitalPiano";
 import { PianoChordQuest } from "./PianoChordQuest";
 import { PianoFallingNotes } from "./PianoFallingNotes";
@@ -13,13 +13,14 @@ type CompletionDetail = {
   expected: string[];
   selected: string[];
   question: string;
+  isCorrect: boolean;
 };
 
 type PianoStudioProps = {
   audioEnabled: boolean;
   reducedMotion: boolean;
   onComplete: (mode: StudioMode, detail: CompletionDetail) => void;
-  onSendProgression: (numerals: string[]) => void;
+  onSendProgression: (numerals: string[], tonic: string) => void;
 };
 
 const MODES: { id: StudioMode; label: string; summary: string }[] = [
@@ -35,6 +36,7 @@ export function PianoStudio({
   onSendProgression
 }: PianoStudioProps) {
   const [mode, setMode] = useState<StudioMode>("chord-quest");
+  const [tonic, setTonic] = useState("C");
   const [targetNotes, setTargetNotes] = useState<string[]>([]);
   const [lastPlayed, setLastPlayed] = useState<{ note: string; id: number } | null>(null);
   const playedId = useRef(0);
@@ -55,6 +57,33 @@ export function PianoStudio({
     setMode(nextMode);
   }
 
+  function handleModeKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+    if (!keys.includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? MODES.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + MODES.length) % MODES.length;
+    const nextMode = MODES[nextIndex];
+    chooseMode(nextMode.id);
+    document.getElementById(`piano-mode-tab-${nextMode.id}`)?.focus();
+  }
+
+  const midiStatus = piano.midi.status === "connected"
+    ? piano.midi.deviceNames.length > 0
+      ? `MIDI connected: ${piano.midi.deviceNames.join(", ")}`
+      : "MIDI connected: no input devices detected"
+    : piano.midi.status === "connecting"
+      ? "Connecting to MIDI devices"
+      : piano.midi.status === "denied"
+        ? "MIDI access was denied"
+        : "MIDI not connected";
+
   return (
     <section className="piano-studio" aria-labelledby="piano-studio-title">
       <header className="piano-studio__header">
@@ -68,18 +97,27 @@ export function PianoStudio({
           <strong>QWERTY octave {piano.octave}</strong>
           <button type="button" onClick={() => piano.shiftOctave(1)} aria-label="Shift octave up">X +</button>
           <button type="button" onClick={piano.releaseAll}>Panic</button>
+          <label>
+            Key
+            <select value={tonic} onChange={(event) => { piano.releaseAll(); setTargetNotes([]); setLastPlayed(null); setTonic(event.currentTarget.value); }}>
+              {["C", "G", "D", "F", "Bb", "Eb", "A", "E"].map((key) => <option key={key} value={key}>{key} major</option>)}
+            </select>
+          </label>
         </div>
       </header>
 
-      <div className="piano-studio__modes" role="tablist" aria-label="Piano studio mode">
-        {MODES.map((choice) => (
+      <div className="piano-studio__modes" role="tablist" aria-labelledby="piano-studio-title">
+        {MODES.map((choice, index) => (
           <button
             key={choice.id}
+            id={`piano-mode-tab-${choice.id}`}
             type="button"
             role="tab"
+            tabIndex={mode === choice.id ? 0 : -1}
             aria-selected={mode === choice.id}
             aria-controls={`piano-mode-${choice.id}`}
             onClick={() => chooseMode(choice.id)}
+            onKeyDown={(event) => handleModeKeyDown(event, index)}
           >
             {choice.label}
           </button>
@@ -94,8 +132,9 @@ export function PianoStudio({
       >
         <DigitalPiano
           activeNotes={piano.activeNotes}
-          targetNotes={targetNotes}
-          nextNote={mode === "falling-notes" ? targetNotes[0] : null}
+           targetNotes={targetNotes}
+           exactTargetNotes={mode === "falling-notes"}
+           nextNote={mode === "falling-notes" ? targetNotes[0] : null}
           startOctave={startOctave}
           qwertyOctave={piano.octave}
           latch={mode !== "falling-notes"}
@@ -104,9 +143,9 @@ export function PianoStudio({
           onNoteOff={piano.noteOff}
           onToggle={piano.toggleNote}
         />
-        <div className="piano-studio__input-status" aria-live="polite">
-          <span>{piano.activeNotes.length > 0 ? `Playing: ${piano.activeNotes.join(", ")}` : "Keys ready"}</span>
-          <span>{piano.sustain ? "Sustain on" : "Sustain off"}</span>
+        <div className="piano-studio__input-status">
+          <span role="status" aria-atomic="true">{piano.activeNotes.length > 0 ? `Playing: ${piano.activeNotes.join(", ")}` : "Keys ready"}</span>
+          <span role="status" aria-atomic="true">{piano.sustain ? "Sustain on" : "Sustain off"}</span>
           <label>
             <input
               type="checkbox"
@@ -116,21 +155,32 @@ export function PianoStudio({
             QWERTY input
           </label>
           {piano.midi.isSupported ? (
-            <button
-              type="button"
-              onClick={piano.midi.status === "connected" ? piano.midi.disconnect : piano.midi.connect}
-            >
-              {piano.midi.status === "connected" ? "Disconnect MIDI" : piano.midi.status === "connecting" ? "Connecting MIDI…" : "Connect MIDI"}
-            </button>
+            <>
+              <button
+                type="button"
+                disabled={piano.midi.status === "connecting"}
+                onClick={piano.midi.status === "connected" ? piano.midi.disconnect : piano.midi.connect}
+              >
+                {piano.midi.status === "connected" ? "Disconnect MIDI" : piano.midi.status === "connecting" ? "Connecting MIDI…" : "Connect MIDI"}
+              </button>
+              <span>{midiStatus}</span>
+            </>
           ) : <span>Web MIDI unavailable</span>}
         </div>
       </div>
 
-      <div className="piano-studio__activity" id={`piano-mode-${mode}`} role="tabpanel">
+      <div
+        className="piano-studio__activity"
+        id={`piano-mode-${mode}`}
+        role="tabpanel"
+        aria-labelledby={`piano-mode-tab-${mode}`}
+      >
         {mode === "chord-quest" ? (
           <PianoChordQuest
+            key={tonic}
             activeNotes={piano.activeNotes}
             audioEnabled={audioEnabled}
+            tonic={tonic}
             onTargetNotesChange={setTargetNotes}
             onReleaseAll={piano.releaseAll}
             onComplete={(detail) => onComplete(mode, detail)}
@@ -146,12 +196,14 @@ export function PianoStudio({
           />
         ) : (
           <PianoProgressionJam
+            key={tonic}
             activeNotes={piano.activeNotes}
             audioEnabled={audioEnabled}
+            tonic={tonic}
             onTargetNotesChange={setTargetNotes}
             onReleaseAll={piano.releaseAll}
             onComplete={(detail) => onComplete(mode, detail)}
-            onSendProgression={(symbols) => onSendProgression(progressionSymbolsToNumerals(symbols))}
+            onSendProgression={(symbols) => onSendProgression(progressionSymbolsToNumerals(symbols, tonic), tonic)}
           />
         )}
       </div>

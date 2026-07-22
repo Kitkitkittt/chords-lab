@@ -60,8 +60,14 @@ describe("validateRoutine", () => {
     expect(validateRoutine(routine)).toBe(true);
   });
 
-  it("rejects an empty object", () => {
+  it("rejects an empty object and a zero-step routine", () => {
     expect(validateRoutine({})).toBe(false);
+    expect(validateRoutine({
+      id: "routine-empty",
+      name: "Empty",
+      createdAt: "2026-06-11T00:00:00.000Z",
+      steps: []
+    })).toBe(false);
   });
 
   it("rejects a routine with a bad step kind", () => {

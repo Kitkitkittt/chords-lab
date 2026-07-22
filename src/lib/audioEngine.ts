@@ -73,6 +73,7 @@ export const romanChordNotes: Record<string, string[]> = {
 
 let activePlayback: ActivePlayback | undefined;
 let playbackId = 0;
+let playbackGeneration = 0;
 let audioUnlockStatus: AudioUnlockStatus = "unknown";
 
 function emitAudioState(state: AudioPlaybackState): void {
@@ -272,6 +273,7 @@ export function getAudioUnlockStatus(): AudioUnlockStatus {
 export function stopAudioPlayback(
   onStateChange?: (state: AudioPlaybackState) => void
 ): void {
+  playbackGeneration += 1;
   if (!activePlayback) {
     onStateChange?.("stopped");
     return;
@@ -292,20 +294,32 @@ export async function playPattern(
   pattern: PlaybackPattern,
   options: PlaybackOptions
 ): Promise<AudioPlaybackState> {
+  stopAudioPlayback();
+  stopLoop();
+  const generation = playbackGeneration;
+
   if (!options.audioEnabled) {
     options.onStateChange?.("disabled");
     emitAudioState("disabled");
     return "disabled";
   }
 
-  stopAudioPlayback();
   options.onStateChange?.("loading");
 
   try {
     const Tone = await import("tone");
     await Tone.start();
+    if (generation !== playbackGeneration) {
+      return "stopped";
+    }
+
     audioUnlockStatus = "unlocked";
     const synth = new Tone.PolySynth(Tone.Synth).toDestination() as ManagedSynth;
+    if (generation !== playbackGeneration) {
+      synth.dispose();
+      return "stopped";
+    }
+
     const id = playbackId + 1;
     playbackId = id;
     const now = Tone.now() + 0.04;
@@ -352,6 +366,10 @@ export async function playPattern(
     options.onStateChange?.("playing");
     return "playing";
   } catch {
+    if (generation !== playbackGeneration) {
+      return "stopped";
+    }
+
     audioUnlockStatus = "blocked";
     options.onStateChange?.("error");
     emitAudioState("error");
@@ -600,9 +618,11 @@ function loopVoiceForTrack(track: string | undefined): LiveVoiceId {
 
 let activeLoop: { id: number; dispose: () => void } | undefined;
 let loopId = 0;
+let loopGeneration = 0;
 
 /** Stop any running backing loop. Safe to call when nothing is playing. */
 export function stopLoop(onStateChange?: (state: AudioPlaybackState) => void): void {
+  loopGeneration += 1;
   if (activeLoop) {
     activeLoop.dispose();
     activeLoop = undefined;
@@ -623,19 +643,25 @@ export async function playLoop(
 ): Promise<LoopHandle> {
   const noop: LoopHandle = { stop: () => {} };
 
+  stopLoop();
+  stopAudioPlayback();
+  const generation = loopGeneration;
+
   if (!options.audioEnabled) {
     options.onStateChange?.("disabled");
     emitAudioState("disabled");
     return noop;
   }
 
-  stopLoop();
-  stopAudioPlayback();
   options.onStateChange?.("loading");
 
   try {
     const Tone = await import("tone");
     await Tone.start();
+    if (generation !== loopGeneration) {
+      return noop;
+    }
+
     audioUnlockStatus = "unlocked";
 
     const bpm = Math.max(40, options.bpm ?? pattern.bpm);
@@ -659,6 +685,14 @@ export async function playLoop(
     for (const voiceId of neededVoices) {
       const voice = createVoice(Tone, voiceId);
       loopVoices.set(voiceId, voice);
+    }
+
+    if (generation !== loopGeneration) {
+      loopVoices.forEach((voice) => {
+        voice.releaseAll?.();
+        voice.dispose();
+      });
+      return noop;
     }
 
     const mixForTrack = (track: string | undefined) =>
@@ -760,9 +794,17 @@ export async function playLoop(
     options.onStateChange?.("playing");
 
     return {
-      stop: () => stopLoop(options.onStateChange)
+      stop: () => {
+        if (activeLoop?.id === id) {
+          stopLoop(options.onStateChange);
+        }
+      }
     };
   } catch {
+    if (generation !== loopGeneration) {
+      return noop;
+    }
+
     audioUnlockStatus = "blocked";
     options.onStateChange?.("error");
     emitAudioState("error");
@@ -808,6 +850,8 @@ let liveTone: ToneModule | undefined;
 const liveVoices = new Map<LiveVoiceId, LiveVoice>();
 /** Tracks which notes are currently held per voice for clean release. */
 const heldNotes = new Map<LiveVoiceId, Set<string>>();
+const attackGenerations = new Map<string, number>();
+let liveReleaseGeneration = 0;
 
 /** Map an on-screen instrument to its pitched live voice. */
 export function liveVoiceForInstrument(instrumentId?: InstrumentId): LiveVoiceId {
@@ -872,13 +916,22 @@ const PERCUSSION_NOTE: Record<string, string> = {
   clap: "8n"
 };
 
-async function ensureVoice(voiceId: LiveVoiceId): Promise<LiveVoice | undefined> {
+async function ensureVoice(
+  voiceId: LiveVoiceId,
+  expectedReleaseGeneration?: number
+): Promise<LiveVoice | undefined> {
   try {
     if (!liveTone) {
       liveTone = await import("tone");
     }
 
     await liveTone.start();
+    if (
+      expectedReleaseGeneration !== undefined &&
+      liveReleaseGeneration !== expectedReleaseGeneration
+    ) {
+      return undefined;
+    }
     audioUnlockStatus = "unlocked";
 
     let voice = liveVoices.get(voiceId);
@@ -910,20 +963,31 @@ export async function triggerNoteAttack(
   }
 
   const voiceId = options.voiceId ?? "keys";
-
-  // Percussion has no sustain; fall back to a one-shot hit.
-  if (isPercussion(voiceId)) {
-    await triggerNote(note, options);
-    return;
-  }
-
-  const voice = await ensureVoice(voiceId);
-
-  if (!voice) {
-    return;
-  }
-
   const playable = normalizeNoteForPlayback(note);
+  const attackKey = `${voiceId}:${playable}`;
+  const generation = (attackGenerations.get(attackKey) ?? 0) + 1;
+  const releaseGeneration = liveReleaseGeneration;
+  attackGenerations.set(attackKey, generation);
+
+  const voice = await ensureVoice(voiceId, releaseGeneration);
+
+  if (
+    !voice ||
+    liveReleaseGeneration !== releaseGeneration ||
+    attackGenerations.get(attackKey) !== generation
+  ) {
+    return;
+  }
+
+  if (isPercussion(voiceId)) {
+    voice.triggerAttackRelease(
+      PERCUSSION_NOTE[voiceId] ?? "8n",
+      "16n",
+      undefined,
+      options.velocity ?? 0.8
+    );
+    return;
+  }
 
   if (voice.triggerAttack) {
     voice.triggerAttack(playable, undefined, options.velocity ?? 0.8);
@@ -940,13 +1004,15 @@ export function triggerNoteRelease(
   options: { voiceId?: LiveVoiceId } = {}
 ): void {
   const voiceId = options.voiceId ?? "keys";
+  const playable = normalizeNoteForPlayback(note);
+  const attackKey = `${voiceId}:${playable}`;
+  attackGenerations.set(attackKey, (attackGenerations.get(attackKey) ?? 0) + 1);
   const voice = liveVoices.get(voiceId);
 
   if (!voice || !voice.triggerRelease) {
     return;
   }
 
-  const playable = normalizeNoteForPlayback(note);
   voice.triggerRelease(playable);
   heldNotes.get(voiceId)?.delete(playable);
 }
@@ -991,6 +1057,7 @@ export async function triggerNote(
 
 /** Release all held live notes (call on unmount or route change). */
 export function releaseAllLiveNotes(): void {
+  liveReleaseGeneration += 1;
   for (const [voiceId, voice] of liveVoices) {
     voice.releaseAll?.();
     heldNotes.get(voiceId)?.clear();
@@ -999,6 +1066,7 @@ export function releaseAllLiveNotes(): void {
 
 /** Dispose every live voice (full teardown). */
 export function disposeLiveVoices(): void {
+  liveReleaseGeneration += 1;
   for (const voice of liveVoices.values()) {
     voice.releaseAll?.();
     voice.dispose();

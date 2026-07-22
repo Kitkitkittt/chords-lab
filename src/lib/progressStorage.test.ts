@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { generatePlacementPrompts } from "./placement";
 import {
   PROGRESS_STORAGE_KEY,
   defaultProgressState,
@@ -41,6 +42,112 @@ describe("progress storage", () => {
     expect(normalized.practiceAttempts?.at(-1)?.promptId).toBe("prompt-250");
   });
 
+  it("preserves every queued generated prompt snapshot", () => {
+    const reviewQueue = Array.from({ length: 251 }, (_, index) => `generated-${index}`);
+    const reviewPrompts = Object.fromEntries(
+      reviewQueue.map((id) => [
+        id,
+        {
+          id,
+          moduleId: "ear",
+          kind: "single",
+          question: `Generated prompt ${id}`,
+          choices: ["major", "minor"],
+          answer: ["major"],
+          explanation: "It was major."
+        }
+      ])
+    );
+    const normalized = normalizeProgressState({
+      schemaVersion: 1,
+      practiceMastery: {
+        ear: {
+          correct: 0,
+          attempted: 251,
+          streak: 0,
+          reviewQueue
+        }
+      },
+      reviewPrompts
+    });
+
+    expect(Object.keys(normalized.reviewPrompts)).toHaveLength(251);
+    expect(normalized.practiceMastery.ear.reviewQueue).toEqual(reviewQueue);
+    expect(normalized.reviewPrompts[reviewQueue[0]].id).toBe(reviewQueue[0]);
+  });
+
+  it("migrates placement results out of regular practice state", () => {
+    const placementId = generatePlacementPrompts()[0].id;
+    const normalized = normalizeProgressState({
+      schemaVersion: 1,
+      practiceResults: {
+        [placementId]: { correct: 0, attempted: 1 },
+        "pitch-note-c4": { correct: 2, attempted: 3 }
+      },
+      placementResults: {
+        [placementId]: { correct: 1, attempted: 1 },
+        unknown: { correct: 1, attempted: 1 }
+      },
+      practiceMastery: {
+        pitch: {
+          correct: 2,
+          attempted: 3,
+          streak: 1,
+          reviewQueue: [placementId, "pitch-note-c4"]
+        }
+      },
+      reviewPromptState: {
+        [placementId]: {
+          consecutiveCorrect: 0,
+          lastResult: "incorrect",
+          lastAttemptedAt: "2026-05-31T00:00:00.000Z"
+        }
+      },
+      reviewPrompts: {
+        [placementId]: {
+          id: placementId,
+          moduleId: "pitch",
+          kind: "single",
+          question: "Placement note.",
+          choices: ["C", "D"],
+          answer: ["C"],
+          explanation: "C."
+        }
+      },
+      skillMastery: {
+        "note-reading": {
+          correct: 2,
+          attempted: 3,
+          reviewQueue: [placementId, "pitch-note-c4"]
+        }
+      },
+      practiceAttempts: [
+        {
+          promptId: placementId,
+          moduleId: "pitch",
+          isCorrect: false,
+          expected: ["C"],
+          selected: ["D"],
+          question: "Placement note.",
+          skillTargets: ["note-reading"],
+          attemptedAt: "2026-05-31T00:00:00.000Z"
+        }
+      ]
+    });
+
+    expect(normalized.placementResults).toEqual({
+      [placementId]: { correct: 1, attempted: 1 }
+    });
+    expect(normalized.practiceResults).toEqual({
+      "pitch-note-c4": { correct: 2, attempted: 3 }
+    });
+    expect(normalized.practiceMastery.pitch.reviewQueue).toEqual(["pitch-note-c4"]);
+    expect(normalized.skillMastery["note-reading"].reviewQueue).toEqual(["pitch-note-c4"]);
+    expect(normalized.reviewPromptState).toEqual({});
+    expect(normalized.reviewPrompts).toEqual({});
+    expect(normalized.practiceAttempts).toEqual([]);
+  });
+
   it("preserves valid local progress fields", () => {
     const normalized = normalizeProgressState({
       schemaVersion: 1,
@@ -63,6 +170,19 @@ describe("progress storage", () => {
           consecutiveCorrect: 1,
           lastResult: "correct",
           lastAttemptedAt: "2026-05-31T00:00:00.000Z"
+        }
+      },
+      reviewPrompts: {
+        "generated-ear-1": {
+          id: "generated-ear-1",
+          moduleId: "ear",
+          kind: "single",
+          question: "What did you hear?",
+          choices: ["major", "minor"],
+          answer: ["major"],
+          explanation: "It was major.",
+          skillTargets: ["ear-training"],
+          rhythmTokens: ["hit", "rest", "hit", "rest"]
         }
       },
       skillMastery: {
@@ -128,6 +248,13 @@ describe("progress storage", () => {
       lastResult: "correct",
       lastAttemptedAt: "2026-05-31T00:00:00.000Z"
     });
+    expect(normalized.reviewPrompts["generated-ear-1"].question).toBe("What did you hear?");
+    expect(normalized.reviewPrompts["generated-ear-1"].rhythmTokens).toEqual([
+      "hit",
+      "rest",
+      "hit",
+      "rest"
+    ]);
     expect(normalized.skillMastery["note-reading"].attempted).toBe(3);
     expect(normalized.generatedSessionHistory[0].id).toBe("session-1");
     expect(normalized.savedSongSketches[0].title).toBe("Loop");

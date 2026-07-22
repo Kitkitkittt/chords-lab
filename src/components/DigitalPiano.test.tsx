@@ -52,8 +52,8 @@ describe("DigitalPiano", () => {
     fireEvent.pointerUp(heldKey, { pointerId: 4 });
 
     expect(capture).toHaveBeenCalled();
-    expect(held.props.onNoteOn).toHaveBeenCalledWith("C3", 0.8);
-    expect(held.props.onNoteOff).toHaveBeenCalledWith("C3");
+    expect(held.props.onNoteOn).toHaveBeenCalledWith("C3", 0.8, "pointer:undefined");
+    expect(held.props.onNoteOff).toHaveBeenCalledWith("C3", "pointer:undefined");
 
     const latched = renderPiano({ latch: true });
     const latchedKey = latched.container.querySelector<HTMLButtonElement>("button[aria-label='C3']");
@@ -62,7 +62,7 @@ describe("DigitalPiano", () => {
     fireEvent.pointerUp(latchedKey!, { pointerId: 5 });
 
     expect(latched.props.onToggle).toHaveBeenCalledTimes(1);
-    expect(latched.props.onToggle).toHaveBeenCalledWith("C3");
+    expect(latched.props.onToggle).toHaveBeenCalledWith("C3", "pointer:latch");
     expect(latched.props.onNoteOff).not.toHaveBeenCalled();
   });
 
@@ -94,5 +94,26 @@ describe("DigitalPiano", () => {
     expect(getByRole("button", { name: "C3" })).toHaveAttribute("data-target", "true");
     expect(getByRole("button", { name: "E5" })).toHaveAttribute("data-target", "true");
     expect(getByRole("button", { name: "D4" })).toHaveAttribute("data-target", "false");
+  });
+
+  it("highlights flat targets on their sharp-rendered keyboard keys", () => {
+    const { getByRole } = renderPiano({ targetNotes: ["Bb4", "Eb4"] });
+
+    expect(getByRole("button", { name: "A#3" })).toHaveAttribute("data-target", "true");
+    expect(getByRole("button", { name: "D#5" })).toHaveAttribute("data-target", "true");
+    expect(getByRole("button", { name: "B4" })).toHaveAttribute("data-target", "false");
+  });
+
+  it("highlights only the exact Falling Notes octave", () => {
+    const { getByRole } = renderPiano({
+      targetNotes: ["C4"],
+      exactTargetNotes: true,
+      nextNote: "C4"
+    });
+
+    expect(getByRole("button", { name: "C4" })).toHaveAttribute("data-target", "true");
+    expect(getByRole("button", { name: "C4" })).toHaveAttribute("data-next", "true");
+    expect(getByRole("button", { name: "C3" })).toHaveAttribute("data-target", "false");
+    expect(getByRole("button", { name: "C5" })).toHaveAttribute("data-target", "false");
   });
 });

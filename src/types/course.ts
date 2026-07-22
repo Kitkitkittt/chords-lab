@@ -185,6 +185,49 @@ export type ReviewPromptState = {
   lastAttemptedAt: string;
 };
 
+export type StoredReviewPrompt = {
+  id: string;
+  moduleId: string;
+  kind:
+    | "single"
+    | "multi"
+    | "ordered"
+    | "grid"
+    | "note-builder"
+    | "chord-builder"
+    | "listening";
+  question: string;
+  choices: string[];
+  answer: string[];
+  explanation: string;
+  citationLabel?: string;
+  topicTags?: string[];
+  sourceLabels?: string[];
+  skillTargets?: string[];
+  inputMode?:
+    | "choice"
+    | "sequence"
+    | "staff-click"
+    | "rhythm-grid"
+    | "piano-roll"
+    | "listening"
+    | "harmony-board"
+    | "analysis-board"
+    | "instrument-board"
+    | "fretboard"
+    | "drum-pad"
+    | "voice-range"
+    | "song-arranger";
+  notation?: string;
+  clef?: "treble" | "bass";
+  timeSignature?: string;
+  keyboardNotes?: string[];
+  audioNotes?: string[];
+  audioMode?: "sequence" | "chord" | "rhythm";
+  rhythmTokens?: string[];
+  visualLabel?: string;
+};
+
 export type TheoryContext = {
   key: string;
   chord: string;
@@ -234,6 +277,7 @@ export type ProgressState = {
   lastLessonSlug?: string;
   checkResults: Record<string, { correct: number; attempted: number }>;
   practiceResults: Record<string, { correct: number; attempted: number }>;
+  placementResults: Record<string, { correct: number; attempted: number }>;
   practiceMastery: Record<
     string,
     {
@@ -245,6 +289,7 @@ export type ProgressState = {
     }
   >;
   reviewPromptState: Record<string, ReviewPromptState>;
+  reviewPrompts: Record<string, StoredReviewPrompt>;
   skillMastery: Record<string, SkillMastery>;
   generatedSessionHistory: PracticeSessionHistory[];
   practiceAttempts?: PracticeAttempt[];

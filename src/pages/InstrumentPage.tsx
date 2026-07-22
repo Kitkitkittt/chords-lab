@@ -129,9 +129,9 @@ export function InstrumentPage() {
           reducedMotion={progress.settings.reducedMotion}
           onComplete={(mode, detail) =>
             recordPracticeResult(
-              `piano-${mode}:${detail.id}`,
-              "instruments",
-              true,
+               `piano-${mode}:${detail.id}`,
+               "instruments",
+               detail.isCorrect,
               mode === "falling-notes"
                 ? ["instrument-application", "note-reading"]
                 : mode === "chord-quest"
@@ -140,11 +140,11 @@ export function InstrumentPage() {
               detail
             )
           }
-          onSendProgression={(numerals) =>
-            navigate("/lab/song", {
+           onSendProgression={(numerals, key) =>
+             navigate("/lab/song", {
               state: {
                 seedProgression: {
-                  key: "C",
+                  key,
                   mode: "major",
                   numerals
                 }

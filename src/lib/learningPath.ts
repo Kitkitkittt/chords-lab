@@ -7,6 +7,7 @@
  * respect the app's calm, no-pressure design.
  */
 import { getDueSkillIds } from "./adaptiveReview";
+import { placementResultFromProgress } from "./placementResults";
 import {
   skillIdForTargets,
   skillMetas,
@@ -118,7 +119,7 @@ export function rollUpSkillMastery(
 
 export type SkillRecommendation = {
   skill: SkillMeta;
-  reason: "review-due" | "shore-up" | "ready" | "next-up";
+  reason: "review-due" | "placement-start" | "placement-warm" | "shore-up" | "ready" | "next-up";
   detail: string;
 };
 
@@ -169,6 +170,18 @@ export function recommendSkills(
     }
   }
 
+  const placement = placementResultFromProgress(progress.placementResults);
+  if (placement) {
+    const startHere = skillsById.get(placement.startHere);
+    const keepWarm = skillsById.get(placement.keepWarm);
+    if (startHere) {
+      push(startHere, "placement-start", "Placement suggests starting here.");
+    }
+    if (keepWarm) {
+      push(keepWarm, "placement-warm", "Placement suggests keeping this skill warm.");
+    }
+  }
+
   for (const progressEntry of rollup.values()) {
     if (progressEntry.level === "learning") {
       push(
@@ -193,6 +206,12 @@ export function recommendSkills(
 
   const ordered = activeTrackId
     ? [...recommendations].sort((left, right) => {
+        const reviewPriority = Number(left.reason !== "review-due") -
+          Number(right.reason !== "review-due");
+        if (reviewPriority !== 0) {
+          return reviewPriority;
+        }
+
         const leftIn = left.skill.tracks.includes(
           activeTrackId as SkillTrackId
         )

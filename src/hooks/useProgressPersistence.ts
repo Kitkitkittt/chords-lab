@@ -41,9 +41,13 @@ function emitSaved(): void {
 
 export function useProgressPersistence(): [
   ProgressState,
-  Dispatch<SetStateAction<ProgressState>>
+  Dispatch<SetStateAction<ProgressState>>,
+  boolean
 ] {
   const [progress, setState] = useState<ProgressState>(initialProgress);
+  const [isHydrated, setIsHydrated] = useState(
+    () => typeof indexedDB === "undefined"
+  );
   const progressRef = useRef(progress);
   const revisionRef = useRef(0);
   const hydratedRef = useRef(false);
@@ -60,7 +64,7 @@ export function useProgressPersistence(): [
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || !hydratedRef.current) {
       return;
     }
 
@@ -103,6 +107,7 @@ export function useProgressPersistence(): [
       } else {
         void repositoryRef.current.persist(window.localStorage, progressRef.current);
       }
+      setIsHydrated(true);
     });
 
     return () => {
@@ -110,5 +115,5 @@ export function useProgressPersistence(): [
     };
   }, []);
 
-  return [progress, setProgress];
+  return [progress, setProgress, isHydrated];
 }

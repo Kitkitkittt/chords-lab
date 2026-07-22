@@ -1,5 +1,10 @@
-import type { PracticeAttempt, ProgressState } from "../types/course";
+import type {
+  PracticeAttempt,
+  ProgressState,
+  StoredReviewPrompt
+} from "../types/course";
 import { songLabTrackTypes } from "./instruments";
+import { generatePlacementPrompts } from "./placement";
 import { skillTrackIds } from "./skills";
 import { validateRoutine } from "./routines";
 
@@ -13,8 +18,10 @@ export const defaultProgressState: ProgressState = {
   bookmarkedLessonSlugs: [],
   checkResults: {},
   practiceResults: {},
+  placementResults: {},
   practiceMastery: {},
   reviewPromptState: {},
+  reviewPrompts: {},
   skillMastery: {},
   generatedSessionHistory: [],
   practiceAttempts: [],
@@ -36,6 +43,32 @@ export const defaultProgressState: ProgressState = {
 
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === "string");
+
+const reviewPromptKinds: StoredReviewPrompt["kind"][] = [
+  "single",
+  "multi",
+  "ordered",
+  "grid",
+  "note-builder",
+  "chord-builder",
+  "listening"
+];
+
+const reviewInputModes: NonNullable<StoredReviewPrompt["inputMode"]>[] = [
+  "choice",
+  "sequence",
+  "staff-click",
+  "rhythm-grid",
+  "piano-roll",
+  "listening",
+  "harmony-board",
+  "analysis-board",
+  "instrument-board",
+  "fretboard",
+  "drum-pad",
+  "voice-range",
+  "song-arranger"
+];
 
 function normalizeResultMap(
   value: ProgressState["checkResults"] | ProgressState["practiceResults"] | undefined
@@ -282,6 +315,47 @@ function normalizeReviewPromptState(
     : {};
 }
 
+function normalizeReviewPrompts(value: unknown): ProgressState["reviewPrompts"] {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, StoredReviewPrompt] => {
+        const [id, prompt] = entry;
+        return Boolean(
+          prompt &&
+          typeof prompt === "object" &&
+          typeof prompt.id === "string" &&
+          prompt.id === id &&
+          typeof prompt.moduleId === "string" &&
+          reviewPromptKinds.includes(prompt.kind) &&
+          typeof prompt.question === "string" &&
+          isStringArray(prompt.choices) &&
+          isStringArray(prompt.answer) &&
+          typeof prompt.explanation === "string" &&
+          (prompt.citationLabel === undefined || typeof prompt.citationLabel === "string") &&
+          (prompt.inputMode === undefined || reviewInputModes.includes(prompt.inputMode)) &&
+          (prompt.notation === undefined || typeof prompt.notation === "string") &&
+          (prompt.clef === undefined || prompt.clef === "treble" || prompt.clef === "bass") &&
+          (prompt.timeSignature === undefined || typeof prompt.timeSignature === "string") &&
+          (prompt.visualLabel === undefined || typeof prompt.visualLabel === "string") &&
+          (prompt.topicTags === undefined || isStringArray(prompt.topicTags)) &&
+          (prompt.sourceLabels === undefined || isStringArray(prompt.sourceLabels)) &&
+          (prompt.skillTargets === undefined || isStringArray(prompt.skillTargets)) &&
+          (prompt.keyboardNotes === undefined || isStringArray(prompt.keyboardNotes)) &&
+           (prompt.audioNotes === undefined || isStringArray(prompt.audioNotes)) &&
+           (prompt.audioMode === undefined ||
+             prompt.audioMode === "sequence" ||
+             prompt.audioMode === "chord" ||
+             prompt.audioMode === "rhythm") &&
+           (prompt.rhythmTokens === undefined || isStringArray(prompt.rhythmTokens))
+        );
+      })
+  );
+}
+
 function normalizeRoutines(
   value: unknown
 ): ProgressState["settings"]["routines"] {
@@ -305,6 +379,41 @@ export function normalizeProgressState(value: unknown): ProgressState {
     return defaultProgressState;
   }
 
+  const placementIds = new Set(generatePlacementPrompts().map((prompt) => prompt.id));
+  const withoutPlacementIds = <T,>(entries: Record<string, T>) =>
+    Object.fromEntries(
+      Object.entries(entries).filter(([promptId]) => !placementIds.has(promptId))
+    );
+  const withoutPlacementQueue = <T extends { reviewQueue: string[] }>(
+    entries: Record<string, T>
+  ) =>
+    Object.fromEntries(
+      Object.entries(entries).map(([id, mastery]) => [
+        id,
+        {
+          ...mastery,
+          reviewQueue: mastery.reviewQueue.filter(
+            (promptId) => !placementIds.has(promptId)
+          )
+        }
+      ])
+    );
+  const normalizedPracticeResults = normalizeResultMap(input.practiceResults);
+  const legacyPlacementResults = Object.fromEntries(
+    Object.entries(normalizedPracticeResults).filter(([promptId]) =>
+      placementIds.has(promptId)
+    )
+  );
+  const storedPlacementResults = Object.fromEntries(
+    Object.entries(normalizeResultMap(input.placementResults)).filter(([promptId]) =>
+      placementIds.has(promptId)
+    )
+  );
+  const placementResults = {
+    ...legacyPlacementResults,
+    ...storedPlacementResults
+  };
+
   return {
     schemaVersion: 1,
     completedLessonSlugs: isStringArray(input.completedLessonSlugs)
@@ -318,14 +427,26 @@ export function normalizeProgressState(value: unknown): ProgressState {
         ? input.lastLessonSlug
         : undefined,
     checkResults: normalizeResultMap(input.checkResults),
-    practiceResults: normalizeResultMap(input.practiceResults),
-    practiceMastery: normalizeMasteryMap(input.practiceMastery),
-    reviewPromptState: normalizeReviewPromptState(input.reviewPromptState),
-    skillMastery: normalizeSkillMasteryMap(input.skillMastery),
+    practiceResults: withoutPlacementIds(normalizedPracticeResults),
+    placementResults,
+    practiceMastery: withoutPlacementQueue(
+      normalizeMasteryMap(input.practiceMastery)
+    ),
+    reviewPromptState: withoutPlacementIds(
+      normalizeReviewPromptState(input.reviewPromptState)
+    ),
+    reviewPrompts: withoutPlacementIds(
+      normalizeReviewPrompts(input.reviewPrompts)
+    ),
+    skillMastery: withoutPlacementQueue(
+      normalizeSkillMasteryMap(input.skillMastery)
+    ),
     generatedSessionHistory: normalizeSessionHistory(
       input.generatedSessionHistory
     ),
-    practiceAttempts: normalizePracticeAttempts(input.practiceAttempts),
+    practiceAttempts: normalizePracticeAttempts(input.practiceAttempts).filter(
+      (attempt) => !placementIds.has(attempt.promptId)
+    ),
     savedSongSketches: normalizeSongSketches(input.savedSongSketches),
     sync: {
       enabled: typeof input.sync?.enabled === "boolean" ? input.sync.enabled : false,

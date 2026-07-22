@@ -26,7 +26,7 @@ export function PracticeResultPanel({
       : undefined;
 
   return (
-    <aside
+    <div
       className={`practice-result-panel is-${feedback.status} pulse-${feedback.pulseState}`}
       aria-label="Practice result"
       role={isIdle ? undefined : "status"}
@@ -104,6 +104,6 @@ export function PracticeResultPanel({
           Next prompt
         </button>
       </div>
-    </aside>
+    </div>
   );
 }

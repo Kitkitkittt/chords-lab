@@ -1,9 +1,11 @@
 import { useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { normalizePitchClassForKeyboard } from "../lib/music";
 import { pianoNotes } from "../lib/pianoPerformance";
 
 type DigitalPianoProps = {
   activeNotes: string[];
   targetNotes?: string[];
+  exactTargetNotes?: boolean;
   nextNote?: string | null;
   mistakeNote?: string | null;
   startOctave: number;
@@ -11,9 +13,9 @@ type DigitalPianoProps = {
   qwertyOctave: number;
   latch: boolean;
   noteLabels: boolean;
-  onNoteOn: (note: string, velocity?: number) => void;
-  onNoteOff: (note: string) => void;
-  onToggle: (note: string) => void;
+  onNoteOn: (note: string, velocity?: number, source?: string) => void;
+  onNoteOff: (note: string, source?: string) => void;
+  onToggle: (note: string, source?: string) => void;
 };
 
 const WHITE_NOTES = new Set(["C", "D", "E", "F", "G", "A", "B"]);
@@ -39,6 +41,7 @@ function keyPosition(note: string) {
 export function DigitalPiano({
   activeNotes,
   targetNotes = [],
+  exactTargetNotes = false,
   nextNote = null,
   mistakeNote = null,
   startOctave,
@@ -52,25 +55,27 @@ export function DigitalPiano({
 }: DigitalPianoProps) {
   const heldPointers = useRef(new Set<string>());
   const activeSet = new Set(activeNotes);
-  const targetSet = new Set(targetNotes.map(pitchClass));
+  const targetSet = new Set(
+    exactTargetNotes ? targetNotes : targetNotes.map(normalizePitchClassForKeyboard)
+  );
   const notes = pianoNotes(startOctave, octaveCount);
 
   function release(note: string, pointerId: number) {
     const pointer = `${note}:${pointerId}`;
     if (heldPointers.current.delete(pointer)) {
-      onNoteOff(note);
+      onNoteOff(note, `pointer:${pointerId}`);
     }
   }
 
   function handlePointerDown(event: PointerEvent<HTMLButtonElement>, note: string) {
     event.preventDefault();
     if (latch) {
-      onToggle(note);
+      onToggle(note, "pointer:latch");
       return;
     }
     heldPointers.current.add(`${note}:${event.pointerId}`);
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    onNoteOn(note, 0.8);
+    onNoteOn(note, 0.8, `pointer:${event.pointerId}`);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, note: string) {
@@ -96,7 +101,7 @@ export function DigitalPiano({
               const pitch = pitchClass(note);
               const isBlack = !WHITE_NOTES.has(pitch);
               const isActive = activeSet.has(note);
-              const isTarget = targetSet.has(pitch);
+              const isTarget = targetSet.has(exactTargetNotes ? note : pitch);
               const isNext = nextNote === note;
               const isMistake = mistakeNote === note;
               const qwertyKey = octave === qwertyOctave ? QWERTY_KEYS[index] : undefined;

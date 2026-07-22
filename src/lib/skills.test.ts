@@ -16,6 +16,7 @@ import {
   trackProgressList
 } from "./learningPath";
 import { createDefaultAdaptiveSkillState } from "./adaptiveReview";
+import { generatePlacementPrompts } from "./placement";
 import type { ProgressState, SkillMastery } from "../types/course";
 
 function mastery(overrides: Partial<SkillMastery> = {}): SkillMastery {
@@ -31,8 +32,10 @@ function progressWith(
     bookmarkedLessonSlugs: [],
     checkResults: {},
     practiceResults: {},
+    placementResults: {},
     practiceMastery: {},
     reviewPromptState: {},
+    reviewPrompts: {},
     skillMastery,
     generatedSessionHistory: [],
     savedSongSketches: [],
@@ -100,6 +103,44 @@ describe("learning path", () => {
     const recommendations = recommendSkills(progress, 3);
 
     expect(recommendations[0]?.skill.id).toBe("rhythm-reading");
+    expect(recommendations[0]?.reason).toBe("review-due");
+  });
+
+  it("feeds completed placement results into suggestions after due review", () => {
+    const progress = progressWith({
+      "rhythm-grid": mastery({ reviewQueue: ["rhythm-1"] })
+    });
+    generatePlacementPrompts().forEach((prompt, index) => {
+      progress.placementResults[prompt.id] = {
+        correct: index === 0 ? 0 : 1,
+        attempted: 1
+      };
+    });
+
+    const recommendations = recommendSkills(progress, 3);
+
+    expect(recommendations[0]?.reason).toBe("review-due");
+    expect(recommendations.some(({ reason }) => reason === "placement-start")).toBe(true);
+  });
+
+  it("keeps due review ahead of active-track placement suggestions", () => {
+    const progress = progressWith({
+      "note-reading": mastery({ reviewQueue: ["pitch-note-c4"] })
+    });
+    generatePlacementPrompts().forEach((prompt, index) => {
+      progress.placementResults[prompt.id] = {
+        correct: index === 4 ? 0 : 1,
+        attempted: 1
+      };
+    });
+
+    const recommendations = recommendSkills(
+      progress,
+      3,
+      new Date(),
+      "harmony-songwriting"
+    );
+
     expect(recommendations[0]?.reason).toBe("review-due");
   });
 

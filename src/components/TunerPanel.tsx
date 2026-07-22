@@ -21,7 +21,7 @@ type TunerReading = {
   frequency: number;
 };
 
-type TunerStatus = "idle" | "listening" | "denied" | "unsupported";
+type TunerStatus = "idle" | "starting" | "listening" | "denied" | "unsupported";
 
 export function TunerPanel() {
   const [status, setStatus] = useState<TunerStatus>("idle");
@@ -29,8 +29,12 @@ export function TunerPanel() {
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
+  const sessionRef = useRef(0);
+  const startingRef = useRef(false);
 
   const stop = useCallback(() => {
+    sessionRef.current += 1;
+    startingRef.current = false;
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -49,6 +53,10 @@ export function TunerPanel() {
   useEffect(() => stop, [stop]);
 
   const start = useCallback(async () => {
+    if (startingRef.current || status === "listening") {
+      return;
+    }
+
     if (
       typeof navigator === "undefined" ||
       !navigator.mediaDevices?.getUserMedia
@@ -57,19 +65,43 @@ export function TunerPanel() {
       return;
     }
 
+    const AudioCtor =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioCtor) {
+      setStatus("unsupported");
+      return;
+    }
+
+    const session = sessionRef.current + 1;
+    sessionRef.current = session;
+    startingRef.current = true;
+    setStatus("starting");
+
+    let stream: MediaStream | null = null;
+    let audioContext: AudioContext | null = null;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (session !== sessionRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      const context = new AudioCtor();
+      audioContext = context;
+      if (session !== sessionRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        void context.close();
+        return;
+      }
+
+      startingRef.current = false;
       streamRef.current = stream;
-
-      const AudioCtor =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext })
-          .webkitAudioContext;
-      const audioContext = new AudioCtor();
-      audioContextRef.current = audioContext;
-
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
+      audioContextRef.current = context;
+      const source = context.createMediaStreamSource(stream);
+      const analyser = context.createAnalyser();
       analyser.fftSize = 2048;
       source.connect(analyser);
 
@@ -77,10 +109,14 @@ export function TunerPanel() {
       setStatus("listening");
 
       const tick = () => {
+        if (session !== sessionRef.current) {
+          return;
+        }
+
         analyser.getFloatTimeDomainData(buffer);
         const frequency = detectPitchAutocorrelation(
           buffer,
-          audioContext.sampleRate
+          context.sampleRate
         );
 
         if (frequency) {
@@ -96,9 +132,20 @@ export function TunerPanel() {
 
       rafRef.current = requestAnimationFrame(tick);
     } catch {
-      setStatus("denied");
+      stream?.getTracks().forEach((track) => track.stop());
+      void audioContext?.close();
+      if (streamRef.current === stream) {
+        streamRef.current = null;
+      }
+      if (audioContextRef.current === audioContext) {
+        audioContextRef.current = null;
+      }
+      if (session === sessionRef.current) {
+        startingRef.current = false;
+        setStatus("denied");
+      }
     }
-  }, []);
+  }, [status]);
 
   const isListening = status === "listening";
   const cents = reading?.cents ?? 0;
@@ -122,9 +169,9 @@ export function TunerPanel() {
             Stop listening
           </button>
         ) : (
-          <button className="button" type="button" onClick={start}>
+          <button className="button" type="button" onClick={start} disabled={status === "starting"}>
             <Mic size={17} aria-hidden="true" />
-            Start tuner
+            {status === "starting" ? "Starting tuner" : "Start tuner"}
           </button>
         )}
       </div>

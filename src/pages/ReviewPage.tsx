@@ -1,5 +1,5 @@
-import { ArrowRight, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, Headphones, Play, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { KeyboardFigure } from "../components/LessonComponents";
 import { DirectPracticeWorkbench } from "../components/PracticeWorkbenches";
@@ -11,18 +11,64 @@ import {
 } from "../data/practice";
 import { reviewModulesForCompletedLessons } from "../data/lessonLinks";
 import { usePracticeSession } from "../hooks/usePracticeSession";
-import { playFeedbackTone } from "../lib/audioEngine";
+import {
+  audioPlaybackLabel,
+  chordPattern,
+  playFeedbackTone,
+  playPattern,
+  rhythmPattern,
+  sequencePattern,
+  stopAudioPlayback
+} from "../lib/audioEngine";
+import type { AudioPlaybackState } from "../lib/audioEngine";
 import { getDueSkillIds } from "../lib/adaptiveReview";
 import { interleaveReviewQueue } from "../lib/learningPath";
-import { skillsForTrack, type SkillTrackId } from "../lib/skills";
+import { type SkillTrackId } from "../lib/skills";
+import { dueSkillsForTrack, isPromptInTrack } from "../lib/reviewScope";
 import type { PracticePrompt } from "../lib/practiceEngine";
 import { useProgress } from "../state/progress";
-import type { ProgressState } from "../types/course";
+import type { ProgressState, StoredReviewPrompt } from "../types/course";
 
 function isPracticePrompt(
   prompt: PracticePrompt | undefined
 ): prompt is PracticePrompt {
   return Boolean(prompt);
+}
+
+function promptFromProgress(
+  progress: ProgressState,
+  promptId: string
+): PracticePrompt | undefined {
+  const stored = progress.reviewPrompts[promptId];
+  const canonical = practicePromptsById.get(promptId);
+  return stored
+    ? practicePromptFromStored(stored)
+    : canonical
+      ? { ...canonical, reviewPromptId: promptId }
+      : undefined;
+}
+
+function practicePromptFromStored(prompt: StoredReviewPrompt): PracticePrompt {
+  if (prompt.audioMode === "rhythm") {
+    return {
+      ...prompt,
+      reviewPromptId: prompt.id,
+      playbackPattern: rhythmPattern(
+        prompt.question,
+        prompt.rhythmTokens ?? prompt.answer
+      )
+    };
+  }
+
+  if (!prompt.audioNotes?.length) {
+    return { ...prompt, reviewPromptId: prompt.id };
+  }
+
+  const playbackPattern = prompt.audioMode === "chord"
+    ? chordPattern(prompt.question, prompt.audioNotes)
+    : sequencePattern(prompt.question, prompt.audioNotes);
+
+  return { ...prompt, reviewPromptId: prompt.id, playbackPattern };
 }
 
 function uniquePrompts(prompts: PracticePrompt[]): PracticePrompt[] {
@@ -38,12 +84,12 @@ function uniquePrompts(prompts: PracticePrompt[]): PracticePrompt[] {
   });
 }
 
-function reviewPromptsFromProgress(progress: ProgressState) {
+function reviewPromptsFromProgress(progress: ProgressState, thisTrack = false) {
   const reviewQueue = Object.values(progress.practiceMastery).flatMap(
     (mastery) => mastery.reviewQueue
   );
   const queuedPrompts = reviewQueue
-    .map((promptId) => practicePromptsById.get(promptId))
+    .map((promptId) => promptFromProgress(progress, promptId))
     .filter(isPracticePrompt);
   const completedModuleIds = reviewModulesForCompletedLessons(
     progress.completedLessonSlugs
@@ -63,52 +109,53 @@ function reviewPromptsFromProgress(progress: ProgressState) {
       "ear"
     ].includes(prompt.moduleId);
   });
-  // When a learning track is active, surface its module prompts first so review
-  // gently follows the learner's chosen focus (still soft, no exclusion).
-  const activeTrackId = progress.settings.activeTrackId;
-  const trackModuleIds = activeTrackId
-    ? new Set(skillsForTrack(activeTrackId as SkillTrackId).map((skill) => skill.moduleId))
-    : undefined;
-  const trackPrompts = trackModuleIds
-    ? fallbackPrompts.filter((prompt) => trackModuleIds.has(prompt.moduleId))
+  const activeTrackId = progress.settings.activeTrackId as SkillTrackId | undefined;
+  const trackPrompts = activeTrackId
+    ? fallbackPrompts.filter((prompt) => isPromptInTrack(prompt, activeTrackId))
     : [];
   // Interleave the due-skill review queue round-robin across skills (better
   // retention than draining one skill at a time), then fill with any remaining
   // missed prompts, then module fallback prompts.
   const interleavedPromptIds = interleaveReviewQueue(progress.skillMastery);
   const interleavedPrompts = interleavedPromptIds
-    .map((promptId) => practicePromptsById.get(promptId))
+    .map((promptId) => promptFromProgress(progress, promptId))
     .filter(isPracticePrompt);
   const dueSkillPrompts = getDueSkillIds(progress.skillMastery).flatMap(
     (skill) =>
       fallbackPrompts.filter((prompt) => prompt.skillTargets?.includes(skill))
   );
 
-  return uniquePrompts([
+  const prompts = uniquePrompts([
     ...interleavedPrompts,
     ...dueSkillPrompts,
     ...queuedPrompts,
     ...trackPrompts,
     ...fallbackPrompts
   ]);
+
+  return thisTrack && activeTrackId
+    ? prompts.filter((prompt) => isPromptInTrack(prompt, activeTrackId))
+    : prompts;
 }
 
 export function ReviewPage() {
   const { progress, recordPracticeResult, recordSkillConfidence } = useProgress();
-  const [sessionPromptIds] = useState(() =>
-    reviewPromptsFromProgress(progress).map((prompt) => prompt.id)
-  );
+  const [scope, setScope] = useState<"mixed" | "track">("mixed");
+  const [prompts, setPrompts] = useState(() => reviewPromptsFromProgress(progress));
+  const [audioStatus, setAudioStatus] = useState<AudioPlaybackState>("idle");
+  const [isAudioRevealed, setIsAudioRevealed] = useState(false);
+
+  function changeScope(nextScope: "mixed" | "track") {
+    setScope(nextScope);
+    setPrompts(reviewPromptsFromProgress(progress, nextScope === "track"));
+  }
   const reviewQueue = Object.values(progress.practiceMastery).flatMap(
     (mastery) => mastery.reviewQueue
   );
   const dueSkillIds = getDueSkillIds(progress.skillMastery);
-  const prompts = useMemo(
-    () =>
-      sessionPromptIds
-        .map((promptId) => practicePromptsById.get(promptId))
-        .filter(isPracticePrompt),
-    [sessionPromptIds]
-  );
+  const activeTrackId = progress.settings.activeTrackId as SkillTrackId | undefined;
+  const scopedDue = dueSkillsForTrack(progress, activeTrackId);
+  const visibleDueSkillIds = scope === "track" ? scopedDue.included : dueSkillIds;
   const session = usePracticeSession({
     prompts,
     onAttempt: recordPracticeResult
@@ -131,15 +178,40 @@ export function ReviewPage() {
     });
   }, [progress.settings.audioEnabled, session.feedback.feedbackTone]);
 
+  useEffect(() => {
+    stopAudioPlayback();
+    setAudioStatus("idle");
+    setIsAudioRevealed(false);
+    return () => stopAudioPlayback();
+  }, [session.prompt?.id]);
+
+  async function playPromptAudio() {
+    if (!session.prompt?.playbackPattern) {
+      return;
+    }
+
+    if (audioStatus === "playing" || audioStatus === "loading") {
+      stopAudioPlayback(setAudioStatus);
+      return;
+    }
+
+    await playPattern(session.prompt.playbackPattern, {
+      audioEnabled: progress.settings.audioEnabled,
+      onStateChange: setAudioStatus
+    });
+  }
+
   return (
     <div className="page-stack">
       <section className="section-heading">
         <span className="eyebrow">Review</span>
         <h1>Mixed practice</h1>
-        <p>
-          Revisit missed prompts first. When the queue is clear, this rotates
-          through staff, scale, chord, rhythm, and ear-training checks.
-        </p>
+        <p>Revisit missed prompts first, then mix practical checks without a timer.</p>
+        <div className="practice-actions" role="group" aria-label="Review scope">
+          <button className="button button--quiet" type="button" aria-pressed={scope === "mixed"} onClick={() => changeScope("mixed")}>Mixed</button>
+          <button className="button button--quiet" type="button" aria-pressed={scope === "track"} disabled={!progress.settings.activeTrackId} onClick={() => changeScope("track")}>This track</button>
+        </div>
+        {scope === "track" && scopedDue.elsewhere.length > 0 ? <p>Also due elsewhere: {scopedDue.elsewhere.length} skill{scopedDue.elsewhere.length === 1 ? "" : "s"}.</p> : null}
       </section>
 
       <section className="practice-workbench" aria-labelledby="review-title">
@@ -147,8 +219,8 @@ export function ReviewPage() {
           <span className="eyebrow">{module?.title ?? "Practice"}</span>
           <h2 id="review-title">Review queue</h2>
           <p>
-            {dueSkillIds.length} due skill
-            {dueSkillIds.length === 1 ? "" : "s"} · {reviewQueue.length} missed
+            {visibleDueSkillIds.length} due skill
+            {visibleDueSkillIds.length === 1 ? "" : "s"} · {reviewQueue.length} missed
             prompt{reviewQueue.length === 1 ? "" : "s"}
             {currentReviewState
               ? ` · current streak ${currentReviewState.consecutiveCorrect}/2`
@@ -165,6 +237,50 @@ export function ReviewPage() {
                 <p>{session.prompt.question}</p>
               </div>
             </div>
+
+            {session.prompt.playbackPattern ? (
+              <div className="practice-audio-card">
+                <Headphones size={18} aria-hidden="true" />
+                <div>
+                  <strong>
+                    {session.prompt.inputMode === "listening"
+                      ? "Listening prompt"
+                      : "Sound check"}
+                  </strong>
+                  <span>
+                    {isAudioRevealed
+                      ? (session.prompt.audioNotes ?? []).join(" ")
+                      : session.prompt.inputMode === "listening" &&
+                          !session.isAnswered
+                        ? "Listen and answer first; notes reveal after."
+                        : "Notes hidden until reveal."}
+                  </span>
+                </div>
+                <button
+                  className="button button--secondary"
+                  type="button"
+                  onClick={playPromptAudio}
+                >
+                  <Play size={17} aria-hidden="true" />
+                  {audioStatus === "playing" || audioStatus === "loading"
+                    ? "Stop prompt"
+                    : "Play prompt"}
+                </button>
+                <button
+                  className="button button--quiet"
+                  type="button"
+                  disabled={
+                    session.prompt.inputMode === "listening" &&
+                    !session.isAnswered &&
+                    !isAudioRevealed
+                  }
+                  onClick={() => setIsAudioRevealed((current) => !current)}
+                >
+                  {isAudioRevealed ? "Hide notes" : "Reveal notes"}
+                </button>
+                <p role="status">{audioPlaybackLabel(audioStatus)}</p>
+              </div>
+            ) : null}
 
             <KeyboardFigure
               label="Review keyboard"

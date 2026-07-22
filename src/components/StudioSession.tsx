@@ -1,5 +1,5 @@
 import { Headphones, Play, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { KeyboardFigure, NotationFigure } from "./LessonComponents";
 import { DirectPracticeWorkbench } from "./PracticeWorkbenches";
@@ -18,10 +18,10 @@ import { useProgress } from "../state/progress";
 
 type StudioSessionProps = {
   prompts: PracticePrompt[];
-  /** Short label shown on figures, e.g. "Dictation". */
   label: string;
-  /** Module id recorded against attempts (an existing practice module id). */
   moduleId: string;
+  progressScope?: "practice" | "placement";
+  onComplete?: (result: { correct: number; attempted: number; missedPromptIds: string[] }) => void;
 };
 
 /**
@@ -33,14 +33,39 @@ type StudioSessionProps = {
  * (dictation, sight-reading) reuse the full interaction model without changing
  * the generated-module machinery. Audio stays user-triggered.
  */
-export function StudioSession({ prompts, label, moduleId }: StudioSessionProps) {
-  const { progress, recordPracticeResult, recordSkillConfidence } = useProgress();
+export function StudioSession({
+  prompts,
+  label,
+  moduleId,
+  progressScope = "practice",
+  onComplete
+}: StudioSessionProps) {
+  const {
+    progress,
+    queuePracticeReview,
+    recordPlacementResult,
+    recordPracticeResult,
+    recordSkillConfidence
+  } = useProgress();
+  const completed = useRef(false);
   const [audioStatus, setAudioStatus] = useState<AudioPlaybackState>("idle");
   const [isAudioRevealed, setIsAudioRevealed] = useState(false);
   const session = usePracticeSession({
     prompts,
-    onAttempt: recordPracticeResult
+    onAttempt: progressScope === "placement"
+      ? (promptId, _moduleId, isCorrect) => recordPlacementResult(promptId, isCorrect)
+      : recordPracticeResult,
+    onSkip: progressScope === "placement" ? undefined : queuePracticeReview
   });
+
+  useEffect(() => {
+    if (!session.isSessionComplete || completed.current || !onComplete) {
+      return;
+    }
+
+    completed.current = true;
+    onComplete(session.sessionResult);
+  }, [onComplete, session.isSessionComplete, session.sessionResult]);
 
   const promptKind = session.prompt?.kind;
   const shouldUseSelectionAsNotes =
@@ -125,13 +150,15 @@ export function StudioSession({ prompts, label, moduleId }: StudioSessionProps) 
               ? ` · best streak ${session.liveStats.bestStreak}`
               : ""}
           </span>
-          <div className="practice-session-summary__actions">
-            {session.sessionResult.missedPromptIds.length > 0 ? (
-              <Link className="button button--quiet" to="/review">
-                Review your misses
-              </Link>
-            ) : null}
-          </div>
+          {progressScope === "practice" ? (
+            <div className="practice-session-summary__actions">
+              {session.sessionResult.missedPromptIds.length > 0 ? (
+                <Link className="button button--quiet" to="/review">
+                  Review your misses
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
         </aside>
       ) : (
         <div className="practice-session-progress" aria-live="polite">
@@ -256,17 +283,37 @@ export function StudioSession({ prompts, label, moduleId }: StudioSessionProps) 
         >
           Check answer
         </button>
+        {progressScope === "practice" ? (
+          <>
+            <button
+              className="button button--quiet"
+              type="button"
+              disabled={session.isAnswered}
+              onClick={session.skip}
+            >
+              Skip
+            </button>
+            <button
+              className="button button--quiet"
+              type="button"
+              onClick={session.end}
+            >
+              End for today
+            </button>
+          </>
+        ) : null}
       </div>
 
       <PracticeResultPanel
         feedback={session.feedback}
         prompt={session.prompt}
-        onRetry={session.retry}
-        onNext={session.next}
-        onRateConfidence={(confidence) =>
-          recordSkillConfidence(session.prompt.skillTargets ?? [], confidence)
-        }
-      />
+         onRetry={session.retry}
+         onNext={session.next}
+         onRateConfidence={progressScope === "placement"
+           ? undefined
+           : (confidence) =>
+               recordSkillConfidence(session.prompt.skillTargets ?? [], confidence)}
+       />
     </div>
   );
 }

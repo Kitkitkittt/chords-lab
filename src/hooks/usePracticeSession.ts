@@ -13,13 +13,16 @@ type UsePracticeSessionOptions = {
     moduleId: string,
     isCorrect: boolean,
     skillTargets?: string[],
-    detail?: Pick<PracticeAttempt, "expected" | "selected" | "question">
+    detail?: Pick<PracticeAttempt, "expected" | "selected" | "question">,
+    prompt?: PracticePrompt
   ) => void;
+  onSkip?: (promptId: string, moduleId: string, prompt?: PracticePrompt) => void;
 };
 
 export function usePracticeSession({
   prompts,
-  onAttempt
+  onAttempt,
+  onSkip
 }: UsePracticeSessionOptions) {
   const [promptIndex, setPromptIndex] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
@@ -30,6 +33,8 @@ export function usePracticeSession({
   >({});
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  const [skippedPromptIds, setSkippedPromptIds] = useState<string[]>([]);
+  const [ended, setEnded] = useState(false);
 
   const prompt = prompts[promptIndex] ?? prompts[0];
 
@@ -40,6 +45,8 @@ export function usePracticeSession({
     setAttempts({});
     setStreak(0);
     setBestStreak(0);
+    setSkippedPromptIds([]);
+    setEnded(false);
   }, [prompts]);
 
   const isAnswered = feedback.status !== "idle";
@@ -139,7 +146,8 @@ export function usePracticeSession({
         expected: result.expected,
         selected: result.selected,
         question: prompt.question
-      }
+      },
+      prompt
     );
   }
 
@@ -148,7 +156,16 @@ export function usePracticeSession({
       return;
     }
 
-    setPromptIndex((current) => (current + 1) % prompts.length);
+    const handled = new Set([...Object.keys(attempts), ...skippedPromptIds]);
+    setPromptIndex((current) => {
+      for (let offset = 1; offset <= prompts.length; offset += 1) {
+        const index = (current + offset) % prompts.length;
+        if (!handled.has(prompts[index].id)) {
+          return index;
+        }
+      }
+      return current;
+    });
     setSelected([]);
     setFeedback(idlePracticeFeedback);
   }
@@ -156,6 +173,36 @@ export function usePracticeSession({
   function retry() {
     setSelected([]);
     setFeedback(idlePracticeFeedback);
+  }
+
+  function skip() {
+    if (!prompt || isAnswered) {
+      return;
+    }
+
+    const skipped = skippedPromptIds.includes(prompt.id)
+      ? skippedPromptIds
+      : [...skippedPromptIds, prompt.id];
+    if (!skippedPromptIds.includes(prompt.id)) {
+      onSkip?.(prompt.id, prompt.moduleId, prompt);
+    }
+    const handled = new Set([...Object.keys(attempts), ...skipped]);
+    setSkippedPromptIds(skipped);
+    setPromptIndex((current) => {
+      for (let offset = 1; offset <= prompts.length; offset += 1) {
+        const index = (current + offset) % prompts.length;
+        if (!handled.has(prompts[index].id)) {
+          return index;
+        }
+      }
+      return current;
+    });
+    setSelected([]);
+    setFeedback(idlePracticeFeedback);
+  }
+
+  function end() {
+    setEnded(true);
   }
 
   return {
@@ -175,16 +222,20 @@ export function usePracticeSession({
       bestStreak
     },
     isSessionComplete:
-      prompts.length > 0 &&
-      Object.keys(attempts).length >= prompts.length &&
-      isAnswered,
+      ended ||
+      (prompts.length > 0 &&
+        Object.keys(attempts).length + skippedPromptIds.length >= prompts.length),
     sessionResult: {
       correct: Object.values(attempts).filter((attempt) => attempt.correct)
         .length,
       attempted: Object.keys(attempts).length,
-      missedPromptIds: Object.entries(attempts)
-        .filter(([, attempt]) => !attempt.correct)
-        .map(([promptId]) => promptId),
+      skippedPromptIds,
+      missedPromptIds: [
+        ...Object.entries(attempts)
+          .filter(([, attempt]) => !attempt.correct)
+          .map(([promptId]) => promptId),
+        ...skippedPromptIds
+      ],
       skillDeltas: prompts.reduce<Record<string, number>>((deltas, item) => {
         const attempt = attempts[item.id];
 
@@ -209,6 +260,8 @@ export function usePracticeSession({
     clearSelected,
     submit,
     next,
-    retry
+    retry,
+    skip,
+    end
   };
 }

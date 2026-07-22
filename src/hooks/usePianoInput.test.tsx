@@ -98,6 +98,40 @@ describe("usePianoInput", () => {
     expect(attack).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps a note held until every input source releases it", () => {
+    render(<Probe />);
+
+    act(() => current.noteOn("C4", 0.8, "pointer:1"));
+    act(() => current.noteOn("C4", 0.7, "midi"));
+    expect(attack).toHaveBeenCalledTimes(1);
+    expect(current.activeNotes).toEqual(["C4"]);
+
+    act(() => current.noteOff("C4", "pointer:1"));
+    expect(release).not.toHaveBeenCalled();
+    expect(current.activeNotes).toEqual(["C4"]);
+
+    act(() => current.noteOff("C4", "midi"));
+    expect(release).toHaveBeenCalledWith("C4", { voiceId: "keys" });
+    expect(current.activeNotes).toEqual([]);
+  });
+
+  it("toggles only the latch source when MIDI holds the same note", () => {
+    render(<Probe />);
+
+    act(() => current.noteOn("C4", 0.7, "midi:keyboard:1:ch:0"));
+    act(() => current.toggleNote("C4", "pointer:latch"));
+    expect(attack).toHaveBeenCalledTimes(1);
+    expect(current.activeNotes).toEqual(["C4"]);
+
+    act(() => current.toggleNote("C4", "pointer:latch"));
+    expect(release).not.toHaveBeenCalled();
+    expect(current.activeNotes).toEqual(["C4"]);
+
+    act(() => current.noteOff("C4", "midi:keyboard:1:ch:0"));
+    expect(release).toHaveBeenCalledWith("C4", { voiceId: "keys" });
+    expect(current.activeNotes).toEqual([]);
+  });
+
   it("forwards MIDI events through piano note paths", async () => {
     const input = { name: "Keyboard", onmidimessage: null as ((event: { data: Uint8Array }) => void) | null };
     const access = {
@@ -115,6 +149,117 @@ describe("usePianoInput", () => {
     expect(attack).toHaveBeenCalledWith("C4", expect.objectContaining({ velocity: 96 / 127 }));
     act(() => input.onmidimessage?.({ data: new Uint8Array([0x80, 60, 0]) }));
     expect(release).toHaveBeenCalledWith("C4", { voiceId: "keys" });
+  });
+
+  it("owns the same MIDI note independently by channel", async () => {
+    const input = { name: "Keyboard", onmidimessage: null as ((event: { data: Uint8Array }) => void) | null };
+    const access = {
+      inputs: { values: () => [input].values() },
+      onstatechange: null as ((event: unknown) => void) | null
+    };
+    Object.defineProperty(navigator, "requestMIDIAccess", {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(access)
+    });
+    render(<Probe />);
+
+    await act(() => current.midi.connect());
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x90, 60, 96]) }));
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x91, 60, 96]) }));
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x80, 60, 0]) }));
+    expect(release).not.toHaveBeenCalled();
+    expect(current.activeNotes).toEqual(["C4"]);
+
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x81, 60, 0]) }));
+    expect(release).toHaveBeenCalledWith("C4", { voiceId: "keys" });
+    expect(current.activeNotes).toEqual([]);
+  });
+
+  it("applies MIDI sustain only to its own channel", async () => {
+    const input = { name: "Keyboard", onmidimessage: null as ((event: { data: Uint8Array }) => void) | null };
+    const access = {
+      inputs: { values: () => [input].values() },
+      onstatechange: null as ((event: unknown) => void) | null
+    };
+    Object.defineProperty(navigator, "requestMIDIAccess", {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(access)
+    });
+    render(<Probe />);
+
+    await act(() => current.midi.connect());
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x90, 60, 96]) }));
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0xb0, 64, 127]) }));
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x80, 60, 0]) }));
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x91, 64, 96]) }));
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x81, 64, 0]) }));
+
+    expect(release).toHaveBeenCalledWith("E4", { voiceId: "keys" });
+    expect(release).not.toHaveBeenCalledWith("C4", { voiceId: "keys" });
+    expect(current.activeNotes).toEqual(["C4"]);
+
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0xb0, 64, 0]) }));
+    expect(release).toHaveBeenCalledWith("C4", { voiceId: "keys" });
+    expect(current.activeNotes).toEqual([]);
+  });
+
+  it("owns MIDI notes per device and releases notes from a removed input", async () => {
+    const first = { name: "First", onmidimessage: null as ((event: { data: Uint8Array }) => void) | null };
+    const second = { name: "Second", onmidimessage: null as ((event: { data: Uint8Array }) => void) | null };
+    let inputs = [first, second];
+    const access = {
+      inputs: { values: () => inputs.values() },
+      onstatechange: null as ((event: unknown) => void) | null
+    };
+    Object.defineProperty(navigator, "requestMIDIAccess", {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(access)
+    });
+    render(<Probe />);
+
+    await act(() => current.midi.connect());
+    act(() => first.onmidimessage?.({ data: new Uint8Array([0x90, 60, 96]) }));
+    act(() => second.onmidimessage?.({ data: new Uint8Array([0x90, 60, 96]) }));
+    act(() => first.onmidimessage?.({ data: new Uint8Array([0x90, 64, 96]) }));
+    expect(attack).toHaveBeenCalledTimes(2);
+
+    inputs = [second];
+    act(() => access.onstatechange?.({}));
+
+    expect(release).toHaveBeenCalledWith("E4", { voiceId: "keys" });
+    expect(release).not.toHaveBeenCalledWith("C4", { voiceId: "keys" });
+    expect(current.activeNotes).toEqual(["C4"]);
+
+    act(() => second.onmidimessage?.({ data: new Uint8Array([0x80, 60, 0]) }));
+    expect(release).toHaveBeenCalledWith("C4", { voiceId: "keys" });
+    expect(current.activeNotes).toEqual([]);
+  });
+
+  it("clears a removed MIDI device's sustained notes", async () => {
+    const input = { name: "Keyboard", onmidimessage: null as ((event: { data: Uint8Array }) => void) | null };
+    let inputs = [input];
+    const access = {
+      inputs: { values: () => inputs.values() },
+      onstatechange: null as ((event: unknown) => void) | null
+    };
+    Object.defineProperty(navigator, "requestMIDIAccess", {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(access)
+    });
+    render(<Probe />);
+
+    await act(() => current.midi.connect());
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x90, 60, 96]) }));
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0xb0, 64, 127]) }));
+    act(() => input.onmidimessage?.({ data: new Uint8Array([0x80, 60, 0]) }));
+    expect(current.activeNotes).toEqual(["C4"]);
+
+    inputs = [];
+    act(() => access.onstatechange?.({}));
+
+    expect(current.sustain).toBe(false);
+    expect(release).toHaveBeenCalledWith("C4", { voiceId: "keys" });
+    expect(current.activeNotes).toEqual([]);
   });
 
   it("releases all notes when the window loses focus", () => {

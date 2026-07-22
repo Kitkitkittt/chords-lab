@@ -27,7 +27,21 @@ function storageWith(progress: unknown): Storage {
 }
 
 describe("progress repository", () => {
-  it("prefers normalized primary state and mirrors it locally", async () => {
+  it("keeps valid non-empty local state when IndexedDB diverges", async () => {
+    const local = progressWithLesson("local");
+    const primary: ProgressStore = {
+      read: vi.fn().mockResolvedValue(progressWithLesson("primary")),
+      write: vi.fn().mockResolvedValue(undefined)
+    };
+    const fallback = storageWith(local);
+
+    await expect(createProgressRepository(primary).hydrate(fallback)).resolves.toEqual(local);
+    expect(primary.read).not.toHaveBeenCalled();
+    await Promise.resolve();
+    expect(primary.write).toHaveBeenCalledWith(local);
+  });
+
+  it("uses normalized IndexedDB state when local storage is absent", async () => {
     const primary: ProgressStore = {
       read: vi.fn().mockResolvedValue({
         schemaVersion: 1,
@@ -36,13 +50,37 @@ describe("progress repository", () => {
       }),
       write: vi.fn()
     };
-    const fallback = storageWith(progressWithLesson("local"));
+    const fallback = storageWith(null);
 
     const progress = await createProgressRepository(primary).hydrate(fallback);
 
     expect(progress.completedLessonSlugs).toEqual(["primary"]);
     expect(progress.settings.reducedMotion).toBe(false);
     expect(JSON.parse(fallback.getItem(PROGRESS_STORAGE_KEY) ?? "{}")).toEqual(progress);
+  });
+
+  it("uses IndexedDB when local storage contains an empty default state", async () => {
+    const primary: ProgressStore = {
+      read: vi.fn().mockResolvedValue(progressWithLesson("primary")),
+      write: vi.fn()
+    };
+
+    await expect(
+      createProgressRepository(primary).hydrate(storageWith(defaultProgressState))
+    ).resolves.toEqual(progressWithLesson("primary"));
+  });
+
+  it("uses IndexedDB when local storage is unusable", async () => {
+    const primary: ProgressStore = {
+      read: vi.fn().mockResolvedValue(progressWithLesson("primary")),
+      write: vi.fn()
+    };
+    const fallback = storageWith(null);
+    fallback.setItem(PROGRESS_STORAGE_KEY, "not JSON");
+
+    await expect(createProgressRepository(primary).hydrate(fallback)).resolves.toEqual(
+      progressWithLesson("primary")
+    );
   });
 
   it("migrates local state when primary is empty", async () => {
