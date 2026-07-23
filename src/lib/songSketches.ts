@@ -1,4 +1,4 @@
-import type { SongSketch } from "../types/course";
+import type { CapturedNote, SongSketch } from "../types/course";
 import { songLabTrackTypes } from "./instruments";
 
 export const songChordChoices = ["I", "vi", "IV", "V", "ii", "V7", "I6", "iii"];
@@ -78,11 +78,96 @@ export function exportSongSketches(sketches: SongSketch[]): string {
   return JSON.stringify({ version: 1, sketches }, null, 2);
 }
 
+/**
+ * Build a persistable SongSketch from a Jam Room take: the vibe's key/mode/tempo
+ * and chord loop become the bar-based tracks, and the freely-timed live melody
+ * is attached as `capturedMelody`. Bass roots are derived from each chord's
+ * pitch class; melody/voice tracks are left as gentle defaults so the sketch is
+ * immediately editable in Song Lab.
+ */
+export function createSketchFromJam(input: {
+  title: string;
+  key: string;
+  mode: "major" | "minor";
+  bpm: number;
+  /** Roman numerals, one per bar (stored in tracks.chords for Song Lab). */
+  numerals: string[];
+  bassRoots: string[];
+  capturedMelody?: CapturedNote[];
+}): SongSketch {
+  const now = new Date().toISOString();
+  const bars = Math.max(1, input.numerals.length);
+  const form = Array.from({ length: bars }, (_, index) =>
+    String.fromCharCode(65 + (index % 8))
+  );
+
+  return {
+    id: `song-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title: input.title,
+    bpm: Math.max(40, Math.round(input.bpm) || 92),
+    meter: "4/4",
+    key: input.key || "C",
+    mode: input.mode === "minor" ? "minor" : "major",
+    form,
+    tracks: {
+      drums: form.map(() => [true, false, true, false]),
+      bass: form.map((_, index) => input.bassRoots[index] ?? "C2"),
+      chords: form.map((_, index) => input.numerals[index] ?? "I"),
+      melody: form.map(() => "rest"),
+      voiceGuide: form.map(() => "rest")
+    },
+    mutedTracks: [],
+    soloTracks: [],
+    ...(input.capturedMelody && input.capturedMelody.length > 0
+      ? { capturedMelody: input.capturedMelody }
+      : {}),
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
+/** Round-trip a captured live melody into a valid CapturedNote list. */
+function normalizeCapturedMelody(raw: unknown): CapturedNote[] | undefined {
+  if (!Array.isArray(raw)) {
+    return undefined;
+  }
+
+  const notes = raw.flatMap((item): CapturedNote[] => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+    const note = (item as { note?: unknown }).note;
+    const startBeat = (item as { startBeat?: unknown }).startBeat;
+    const durationBeats = (item as { durationBeats?: unknown }).durationBeats;
+    if (
+      typeof note !== "string" ||
+      typeof startBeat !== "number" ||
+      typeof durationBeats !== "number"
+    ) {
+      return [];
+    }
+    const velocity = (item as { velocity?: unknown }).velocity;
+    return [
+      {
+        note,
+        startBeat: Math.max(0, startBeat),
+        durationBeats: Math.max(0.05, durationBeats),
+        ...(typeof velocity === "number" ? { velocity } : {})
+      }
+    ];
+  });
+
+  return notes.length > 0 ? notes : undefined;
+}
+
 export function normalizeSongSketch(sketch: SongSketch): SongSketch {
+  const capturedMelody = normalizeCapturedMelody(sketch.capturedMelody);
+
   return {
     ...sketch,
     key: sketch.key ?? "C",
     mode: sketch.mode === "minor" ? "minor" : "major",
+    capturedMelody,
     tracks: {
       drums: sketch.tracks.drums,
       bass: sketch.tracks.bass,

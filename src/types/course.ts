@@ -255,8 +255,23 @@ export type SongSketch = {
   };
   mutedTracks: SongLabTrackType[];
   soloTracks: SongLabTrackType[];
+  /**
+   * Optional free-timed melody captured live in the Jam Room. Each note carries
+   * its own beat position + duration, independent of the bar-based `tracks`.
+   * Additive: sketches without this play exactly as before.
+   */
+  capturedMelody?: CapturedNote[];
   createdAt: string;
   updatedAt: string;
+};
+
+export type CapturedNote = {
+  note: string;
+  /** Start position in beats from the loop origin. */
+  startBeat: number;
+  /** Note length in beats. */
+  durationBeats: number;
+  velocity?: number;
 };
 
 export type PracticeAttempt = Readonly<{

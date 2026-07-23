@@ -72,11 +72,76 @@ export const VIBES: Vibe[] = [
     numerals: ["I", "IV", "V", "IV"],
     bpm: 104,
     scaleTopic: "major pentatonic"
+  },
+  {
+    id: "dorian-groove",
+    label: "Dorian groove",
+    blurb: "Minor with a hopeful lift — funky and modal.",
+    tonic: "D",
+    mode: "minor",
+    numerals: ["i", "IV", "i", "VII"],
+    bpm: 100,
+    scaleTopic: "dorian"
+  },
+  {
+    id: "anthem",
+    label: "Anthem",
+    blurb: "Big, driving pop-rock lift.",
+    tonic: "E",
+    mode: "major",
+    numerals: ["vi", "IV", "I", "V"],
+    bpm: 120,
+    scaleTopic: "major pentatonic"
+  },
+  {
+    id: "midnight-jazz",
+    label: "Midnight jazz",
+    blurb: "A ii–V–I turnaround to lean into.",
+    tonic: "F",
+    mode: "major",
+    numerals: ["ii", "V7", "I", "V7"],
+    bpm: 88,
+    scaleTopic: "major"
   }
 ];
 
 export function vibeById(id: string): Vibe | undefined {
   return VIBES.find((vibe) => vibe.id === id);
+}
+
+/** Scale topic offered per mode when building a custom vibe. */
+export const CUSTOM_SCALE_TOPICS: Record<KeyMode, string[]> = {
+  major: ["major pentatonic", "major"],
+  minor: ["minor pentatonic", "natural minor", "dorian"]
+};
+
+/**
+ * Build an ad-hoc vibe from user-chosen key, mode, numerals, and tempo. Used by
+ * the Jam Room's custom-progression builder so a learner can jam over their own
+ * loop without leaving the page. Falls back to sensible defaults when inputs
+ * are empty so the returned vibe is always playable.
+ */
+export function createCustomVibe(input: {
+  tonic: string;
+  mode: KeyMode;
+  numerals: string[];
+  bpm: number;
+  scaleTopic?: string;
+}): Vibe {
+  const numerals = input.numerals.length > 0 ? input.numerals : ["I"];
+  const scaleTopic =
+    input.scaleTopic ?? CUSTOM_SCALE_TOPICS[input.mode][0] ?? "major pentatonic";
+
+  return {
+    id: "custom",
+    label: "Custom",
+    blurb: "Your own progression.",
+    tonic: input.tonic || "C",
+    mode: input.mode,
+    numerals,
+    bpm: Math.max(40, Math.min(200, Math.round(input.bpm) || 96)),
+    scaleTopic
+  };
 }
 
 /** Concrete chord symbols for a vibe's progression, in order. */

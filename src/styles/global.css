@@ -121,8 +121,8 @@ code {
   justify-content: space-between;
   gap: var(--space-3);
   padding: 1rem clamp(1rem, 5vw, 4rem);
-  background: rgba(248, 249, 250, 0.86);
-  border-block-end: 1px solid rgba(197, 197, 213, 0.6);
+  background: var(--header-surface);
+  border-block-end: 1px solid var(--chrome-border);
   backdrop-filter: blur(20px);
   min-inline-size: 0;
 }
@@ -356,7 +356,7 @@ code {
   padding: 0.8rem 0.9rem;
   border: var(--border-card);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--toast-surface);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(14px);
 }
@@ -1883,8 +1883,8 @@ code {
       to bottom,
       transparent 0,
       transparent 1.45rem,
-      rgba(48, 48, 61, 0.22) 1.48rem,
-      rgba(48, 48, 61, 0.22) 1.55rem
+      var(--staff-line) 1.48rem,
+      var(--staff-line) 1.55rem
     ),
     var(--surface-container-lowest);
 }
@@ -3890,8 +3890,8 @@ html[data-focus-mode="true"] .app-main {
     align-items: stretch;
     gap: 0.15rem;
     padding: 0.35rem 0.4rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
-    background: rgba(248, 249, 250, 0.94);
-    border-block-start: 1px solid rgba(197, 197, 213, 0.6);
+    background: var(--nav-surface);
+    border-block-start: 1px solid var(--chrome-border);
     backdrop-filter: blur(20px);
   }
 
@@ -5104,6 +5104,191 @@ html[data-focus-mode="true"] .app-main {
 
 .jam-key:active {
   transform: translateY(2px);
+}
+
+.jam-key__hint {
+  position: absolute;
+  inset-block-end: 0.35rem;
+  inset-inline: 0;
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  pointer-events: none;
+}
+
+.jam-key--black .jam-key__hint {
+  color: var(--surface);
+}
+
+/* Custom progression builder */
+.jam-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-container);
+}
+
+.jam-custom__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.jam-custom__row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+.jam-custom__mode {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.jam-custom__mode button,
+.jam-custom__numerals button {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--on-surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.jam-custom__mode button.is-active,
+.jam-custom__numerals button.is-active {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.jam-custom__numerals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.jam-custom__preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface-variant);
+}
+
+/* Toggle row + voice picker */
+.jam-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.jam-toggle,
+.jam-voice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+/* Live FX sliders */
+.jam-fx {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.jam-fx__control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+.jam-fx__control input[type="range"] {
+  inline-size: 8rem;
+}
+
+.jam-fx__control span {
+  min-inline-size: 2.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Take recorder strip */
+.button.is-recording {
+  border-color: var(--error, #d33);
+  color: var(--error, #d33);
+}
+
+.jam-take {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-container);
+}
+
+.jam-take__count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.jam-take__saved {
+  color: var(--on-surface-variant);
+}
+
+/* Keyboard caption + cheat sheet */
+.jam-keyboard-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.jam-key {
+  position: relative;
+}
+
+.jam-keyboard__caption {
+  margin: 0;
+  color: var(--on-surface-variant);
+  font-size: 0.85rem;
+}
+
+.jam-cheat {
+  padding: 0.9rem;
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-container);
+}
+
+.jam-cheat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: 0.6rem;
+}
+
+.jam-cheat__list {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--on-surface-variant);
 }
 
 @media (max-width: 720px) {

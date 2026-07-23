@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { beatById } from "./beats";
 import {
+  CUSTOM_SCALE_TOPICS,
   VIBES,
+  createCustomVibe,
   vibeBackingPattern,
   vibeBarCount,
   vibeById,
@@ -71,5 +73,48 @@ describe("jam lib", () => {
     // Without a grid there are no drum events.
     const noDrums = vibeBackingPattern(VIBES[0]);
     expect(noDrums.events.some((event) => event.track === "drums")).toBe(false);
+  });
+
+  it("builds a playable custom vibe from user input", () => {
+    const custom = createCustomVibe({
+      tonic: "E",
+      mode: "minor",
+      numerals: ["i", "iv", "VII"],
+      bpm: 118
+    });
+
+    expect(custom.id).toBe("custom");
+    expect(custom.tonic).toBe("E");
+    expect(custom.mode).toBe("minor");
+    expect(custom.bpm).toBe(118);
+    expect(custom.scaleTopic).toBe(CUSTOM_SCALE_TOPICS.minor[0]);
+
+    const chords = vibeChords(custom);
+    expect(chords).toHaveLength(3);
+    expect(chords.every((chord) => chord.length > 0)).toBe(true);
+    expect(vibeSoloNotes(custom).length).toBeGreaterThan(0);
+  });
+
+  it("falls back to safe defaults for empty custom input", () => {
+    const custom = createCustomVibe({
+      tonic: "",
+      mode: "major",
+      numerals: [],
+      bpm: 0
+    });
+
+    expect(custom.tonic).toBe("C");
+    expect(custom.numerals).toEqual(["I"]);
+    expect(custom.bpm).toBe(96);
+    expect(vibeChords(custom).length).toBeGreaterThan(0);
+  });
+
+  it("clamps custom tempo into a playable range", () => {
+    expect(
+      createCustomVibe({ tonic: "C", mode: "major", numerals: ["I"], bpm: 999 }).bpm
+    ).toBe(200);
+    expect(
+      createCustomVibe({ tonic: "C", mode: "major", numerals: ["I"], bpm: 10 }).bpm
+    ).toBe(40);
   });
 });

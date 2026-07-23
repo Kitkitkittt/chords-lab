@@ -178,6 +178,57 @@ Future curriculum:
 - Pop/rock harmony.
 - Post-tonal basics.
 
+## Musical Playground Release Plan
+
+The `/play` route becomes the flagship performance workspace instead of a group
+of disconnected demos. The release reuses the existing Tone.js and Tonal layers,
+stays local-first, and adds no dependencies.
+
+### Night practice polish
+
+- Theme-aware translucent surfaces replace hardcoded light header, mobile nav,
+  and toast colors.
+- Staff guides and semantic text colors keep sufficient contrast in both themes.
+
+### Mounted-instrument keyboard controls
+
+- Computer-keyboard input works globally while a playable instrument is mounted,
+  except when focus is inside an input, select, textarea, or editable region.
+- Piano uses `A W S E D F T G Y H U J`, `Z/X` for octave, and Space for sustain.
+- Drums use `Z X C V` for kick, snare, hat, and clap.
+- Voice uses `1–8` for scale degrees. Fretboard instruments expose a labeled
+  note row through their existing live voices.
+- Modifier shortcuts, key repeat, blur, hidden-document changes, unmount, and
+  competing mounted instruments are handled without stuck or duplicate notes.
+
+### Jam Room performance workspace
+
+- Live keyboard timbres include keys, pluck, bass, pad, arpeggiator, and voice.
+- Room and echo sends affect the live instrument while the backing remains dry.
+- Backing choices expand with modal-color and turnaround presets.
+- A custom progression builder supports key, major/minor mode, and one to eight
+  validated Roman-numeral bars, then seeds Song Lab through the existing route.
+- Count-in, optional scale snap, octave, sustain, and a keyboard cheat sheet make
+  free play discoverable without adding scoring or pressure.
+
+### Local take recorder
+
+- Record captures generated note events, not microphone audio.
+- A take is quantized to the eighth-note grid for one backing-loop pass and can
+  be previewed, cleared, undone, or sent to Song Lab.
+- Captured note timing persists additively in song sketches and participates in
+  loop playback, JSON sharing, MIDI, and synthesized WAV export.
+- Explicit loop length keeps backing and recorded takes aligned at bar boundaries.
+
+### Acceptance
+
+- No autoplay, accounts, analytics, uploads, background microphone permission,
+  or new package dependencies.
+- Pointer, touch, computer keyboard, optional MIDI, reduced motion, and mobile
+  layouts keep usable fallbacks and visible state.
+- Dark and light themes, lint, typecheck, unit/component tests, production build,
+  desktop/mobile Playwright, and axe checks pass.
+
 ## Digital Piano Studio Plan
 
 The piano instrument route becomes one shared three-mode studio instead of three

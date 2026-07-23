@@ -81,6 +81,21 @@ describe("sketchShare codec", () => {
     );
   });
 
+  it("carries a captured live melody through the token", () => {
+    const sketch = {
+      ...createDefaultSongSketch("Recorded jam"),
+      capturedMelody: [
+        { note: "C4", startBeat: 0, durationBeats: 1 },
+        { note: "E4", startBeat: 1.5, durationBeats: 0.5, velocity: 0.7 }
+      ]
+    };
+    const decoded = decodeTokenToSketch(encodeSketchToToken(sketch));
+
+    expect(decoded?.capturedMelody).toHaveLength(2);
+    expect(decoded?.capturedMelody?.[0].note).toBe("C4");
+    expect(decoded?.capturedMelody?.[1].startBeat).toBe(1.5);
+  });
+
   it("round-trips a sketch carried through a built share URL", () => {
     const sketch = createDefaultSongSketch("Via URL");
     const url = buildShareUrl(sketch, "https://example.test");

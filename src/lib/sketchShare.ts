@@ -11,7 +11,7 @@
  * without relying on Buffer.
  */
 
-import type { SongLabTrackType, SongSketch } from "../types/course";
+import type { CapturedNote, SongLabTrackType, SongSketch } from "../types/course";
 import { createDefaultSongSketch, normalizeSongSketch } from "./songSketches";
 
 const BASE64_ALPHABET =
@@ -37,6 +37,7 @@ type PortableSketch = {
   tracks: SongSketch["tracks"];
   mutedTracks: SongLabTrackType[];
   soloTracks: SongLabTrackType[];
+  capturedMelody?: CapturedNote[];
 };
 
 /** Encode raw bytes to a URL-safe base64 string (no padding, `-`/`_`). */
@@ -98,7 +99,10 @@ function toPortable(sketch: SongSketch): PortableSketch {
     form: sketch.form,
     tracks: sketch.tracks,
     mutedTracks: sketch.mutedTracks,
-    soloTracks: sketch.soloTracks
+    soloTracks: sketch.soloTracks,
+    ...(sketch.capturedMelody && sketch.capturedMelody.length > 0
+      ? { capturedMelody: sketch.capturedMelody }
+      : {})
   };
 }
 
@@ -152,6 +156,9 @@ export function decodeTokenToSketch(token: string): SongSketch | null {
       tracks: parsed.tracks as SongSketch["tracks"],
       mutedTracks: Array.isArray(parsed.mutedTracks) ? parsed.mutedTracks : [],
       soloTracks: Array.isArray(parsed.soloTracks) ? parsed.soloTracks : [],
+      ...(Array.isArray(parsed.capturedMelody)
+        ? { capturedMelody: parsed.capturedMelody }
+        : {}),
       id: freshImportId(),
       createdAt: now,
       updatedAt: now

@@ -20,6 +20,12 @@ import {
   triggerNoteRelease,
   type LiveVoiceId
 } from "../lib/audioEngine";
+import {
+  useInstrumentHotkeys,
+  type InstrumentHotkeyMap
+} from "../hooks/useInstrumentHotkeys";
+
+const FRETBOARD_HOTKEYS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
 
 const OCTAVE_RANGES: Record<string, number[]> = {
   low: [2, 3],
@@ -171,6 +177,37 @@ export function FretboardWorkbench({
     [activeNotes, chordShape?.root, tuning]
   );
   const voiceId: LiveVoiceId = liveVoiceForInstrument(instrumentId);
+  const hotkeyOctave = instrumentId === "bass" ? 2 : 3;
+  const hotkeyNotes = useMemo(() => {
+    const seen = new Set<string>();
+    const notes: string[] = [];
+    for (const note of activeNotes) {
+      const pc = pitchClass(note);
+      if (seen.has(pc)) {
+        continue;
+      }
+      seen.add(pc);
+      notes.push(`${pc}${hotkeyOctave}`);
+    }
+    return notes.slice(0, FRETBOARD_HOTKEYS.length);
+  }, [activeNotes, hotkeyOctave]);
+  const hotkeyMap = useMemo<InstrumentHotkeyMap>(() => {
+    const map: InstrumentHotkeyMap = {};
+    hotkeyNotes.forEach((note, index) => {
+      const key = FRETBOARD_HOTKEYS[index];
+      map[key] = {
+        label: `${key.toUpperCase()} ${pitchClass(note)}`,
+        onDown: () => void triggerNoteAttack(note, { voiceId, audioEnabled }),
+        onUp: () => triggerNoteRelease(note, { voiceId })
+      };
+    });
+    return map;
+  }, [hotkeyNotes, voiceId, audioEnabled]);
+  useInstrumentHotkeys({
+    map: hotkeyMap,
+    onReleaseAll: () =>
+      hotkeyNotes.forEach((note) => triggerNoteRelease(note, { voiceId }))
+  });
 
   function playFret(openNote: string, fret: number) {
     // The displayed pitch class lacks an octave; derive a sounding note from
@@ -189,6 +226,14 @@ export function FretboardWorkbench({
           <p>Press a fret to hear it. Roots, chord tones, and open strings share one map.</p>
         </div>
       </div>
+      {hotkeyNotes.length > 0 ? (
+        <p className="workbench-hotkey-hint">
+          Keys{" "}
+          {hotkeyNotes
+            .map((note, index) => `${FRETBOARD_HOTKEYS[index].toUpperCase()}=${pitchClass(note)}`)
+            .join("  ")}
+        </p>
+      ) : null}
       {chordShape ? (
         <>
           <div className="workbench-readout">
@@ -304,6 +349,12 @@ type DrumPadWorkbenchProps = {
 
 const drumRows = ["kick", "snare", "hat", "clap"];
 const drumVoices: LiveVoiceId[] = ["kick", "snare", "hat", "clap"];
+const DRUM_HOTKEYS: { key: string; voice: LiveVoiceId }[] = [
+  { key: "z", voice: "kick" },
+  { key: "x", voice: "snare" },
+  { key: "c", voice: "hat" },
+  { key: "v", voice: "clap" }
+];
 
 export function DrumPadWorkbench({
   pattern,
@@ -311,6 +362,18 @@ export function DrumPadWorkbench({
   playbackCursor = -1,
   audioEnabled = true
 }: DrumPadWorkbenchProps) {
+  const hotkeyMap = useMemo<InstrumentHotkeyMap>(() => {
+    const map: InstrumentHotkeyMap = {};
+    DRUM_HOTKEYS.forEach(({ key, voice }) => {
+      map[key] = {
+        label: `${key.toUpperCase()} ${voice}`,
+        onDown: () => void triggerNote("C2", { voiceId: voice, audioEnabled })
+      };
+    });
+    return map;
+  }, [audioEnabled]);
+  useInstrumentHotkeys({ map: hotkeyMap });
+
   return (
     <section className="instrument-board" aria-labelledby="drum-pad-title">
       <div className="instrument-board__header">
@@ -320,6 +383,7 @@ export function DrumPadWorkbench({
           <p>Tap a pad to hear it and toggle it across four beat slots.</p>
         </div>
       </div>
+      <p className="workbench-hotkey-hint">Keys Z=kick  X=snare  C=hat  V=clap</p>
       <div className="drum-pad-grid" aria-label="Drum groove editor">
         {pattern.map((row, rowIndex) => (
           <div key={drumRows[rowIndex]} className="drum-pad-grid__row">
@@ -371,6 +435,26 @@ export function VoiceRangeWorkbench({
     [tonic, mode]
   );
   const [selected, setSelected] = useState(ladder[0]?.note ?? "C4");
+  const hotkeyMap = useMemo<InstrumentHotkeyMap>(() => {
+    const map: InstrumentHotkeyMap = {};
+    ladder.slice(0, 8).forEach((item, index) => {
+      const key = `${index + 1}`;
+      map[key] = {
+        label: `${key} ${item.solfege}`,
+        onDown: () => {
+          setSelected(item.note);
+          void triggerNoteAttack(item.note, { voiceId: "voice", audioEnabled });
+        },
+        onUp: () => triggerNoteRelease(item.note, { voiceId: "voice" })
+      };
+    });
+    return map;
+  }, [ladder, audioEnabled]);
+  useInstrumentHotkeys({
+    map: hotkeyMap,
+    onReleaseAll: () =>
+      ladder.forEach((item) => triggerNoteRelease(item.note, { voiceId: "voice" }))
+  });
 
   return (
     <section className="instrument-board" aria-labelledby="voice-range-title">
@@ -381,6 +465,7 @@ export function VoiceRangeWorkbench({
           <p>Tap a step to hear its reference tone and solfege. No microphone is used.</p>
         </div>
       </div>
+      <p className="workbench-hotkey-hint">Keys 1-8 sing the solfege ladder.</p>
       <div className="voice-degree-ladder" aria-label="Voice solfege ladder">
         {ladder.map((item) => (
           <button

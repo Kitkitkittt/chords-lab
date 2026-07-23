@@ -846,7 +846,23 @@ type LiveVoice = {
 
 type ToneModule = typeof import("tone");
 
+export type LiveEffectsSettings = { reverb: number; delay: number };
+
+type EffectNode = {
+  wet: { value: number };
+  connect: (to: unknown) => unknown;
+  toDestination: () => unknown;
+  dispose: () => void;
+};
+
+type LiveEffectsBus = {
+  reverb: EffectNode;
+  delay: EffectNode;
+};
+
 let liveTone: ToneModule | undefined;
+let liveEffects: LiveEffectsBus | undefined;
+let liveEffectsSettings: LiveEffectsSettings = { reverb: 0, delay: 0 };
 const liveVoices = new Map<LiveVoiceId, LiveVoice>();
 /** Tracks which notes are currently held per voice for clean release. */
 const heldNotes = new Map<LiveVoiceId, Set<string>>();
@@ -868,44 +884,104 @@ export function liveVoiceForInstrument(instrumentId?: InstrumentId): LiveVoiceId
   }
 }
 
-function createVoice(Tone: ToneModule, voiceId: LiveVoiceId): LiveVoice {
+type RoutableNode = {
+  connect: (destination: unknown) => RoutableNode;
+  toDestination: () => RoutableNode;
+};
+
+function clampUnit(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(1, value));
+}
+
+function ensureLiveEffects(Tone: ToneModule): LiveEffectsBus {
+  if (liveEffects) {
+    return liveEffects;
+  }
+
+  const reverb = new Tone.Reverb({ decay: 2.4, wet: 0 }) as unknown as EffectNode;
+  const delay = new Tone.FeedbackDelay({
+    delayTime: "8n",
+    feedback: 0.28,
+    wet: 0
+  }) as unknown as EffectNode;
+
+  reverb.connect(delay);
+  delay.toDestination();
+
+  liveEffects = { reverb, delay };
+  applyLiveEffectsSettings();
+  return liveEffects;
+}
+
+function applyLiveEffectsSettings(): void {
+  if (!liveEffects) {
+    return;
+  }
+
+  liveEffects.reverb.wet.value = liveEffectsSettings.reverb;
+  liveEffects.delay.wet.value = liveEffectsSettings.delay;
+}
+
+export function setLiveEffects(settings: LiveEffectsSettings): void {
+  liveEffectsSettings = {
+    reverb: clampUnit(settings.reverb),
+    delay: clampUnit(settings.delay)
+  };
+  applyLiveEffectsSettings();
+}
+
+function buildVoiceNode(Tone: ToneModule, voiceId: LiveVoiceId): RoutableNode {
   switch (voiceId) {
     case "pluck":
-      return new Tone.PluckSynth().toDestination() as unknown as LiveVoice;
+      return new Tone.PluckSynth() as unknown as RoutableNode;
     case "bass":
       return new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: "triangle" },
         envelope: { attack: 0.02, decay: 0.2, sustain: 0.6, release: 0.6 }
-      }).toDestination() as unknown as LiveVoice;
+      }) as unknown as RoutableNode;
     case "voice":
-      return new Tone.PolySynth(Tone.AMSynth).toDestination() as unknown as LiveVoice;
+      return new Tone.PolySynth(Tone.AMSynth) as unknown as RoutableNode;
     case "pad":
       return new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: "sine" },
         envelope: { attack: 0.6, decay: 0.3, sustain: 0.8, release: 1.4 }
-      }).toDestination() as unknown as LiveVoice;
+      }) as unknown as RoutableNode;
     case "arp":
       return new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: "triangle" },
         envelope: { attack: 0.005, decay: 0.18, sustain: 0.1, release: 0.2 }
-      }).toDestination() as unknown as LiveVoice;
+      }) as unknown as RoutableNode;
     case "kick":
-      return new Tone.MembraneSynth().toDestination() as unknown as LiveVoice;
+      return new Tone.MembraneSynth() as unknown as RoutableNode;
     case "snare":
     case "clap":
       return new Tone.NoiseSynth({
         noise: { type: voiceId === "snare" ? "white" : "pink" },
         envelope: { attack: 0.001, decay: 0.18, sustain: 0 }
-      }).toDestination() as unknown as LiveVoice;
+      }) as unknown as RoutableNode;
     case "hat":
       return new Tone.NoiseSynth({
         noise: { type: "white" },
         envelope: { attack: 0.001, decay: 0.05, sustain: 0 }
-      }).toDestination() as unknown as LiveVoice;
+      }) as unknown as RoutableNode;
     case "keys":
     default:
-      return new Tone.PolySynth(Tone.Synth).toDestination() as unknown as LiveVoice;
+      return new Tone.PolySynth(Tone.Synth) as unknown as RoutableNode;
   }
+}
+
+function createVoice(
+  Tone: ToneModule,
+  voiceId: LiveVoiceId,
+  connectTo?: unknown
+): LiveVoice {
+  const node = buildVoiceNode(Tone, voiceId);
+  const routed = connectTo ? node.connect(connectTo) : node.toDestination();
+  return routed as unknown as LiveVoice;
 }
 
 const PERCUSSION_VOICES: LiveVoiceId[] = ["kick", "snare", "hat", "clap"];
@@ -937,7 +1013,8 @@ async function ensureVoice(
     let voice = liveVoices.get(voiceId);
 
     if (!voice) {
-      voice = createVoice(liveTone, voiceId);
+      const bus = ensureLiveEffects(liveTone);
+      voice = createVoice(liveTone, voiceId, bus.reverb);
       liveVoices.set(voiceId, voice);
       heldNotes.set(voiceId, new Set());
     }
@@ -1074,6 +1151,12 @@ export function disposeLiveVoices(): void {
 
   liveVoices.clear();
   heldNotes.clear();
+
+  if (liveEffects) {
+    liveEffects.reverb.dispose();
+    liveEffects.delay.dispose();
+    liveEffects = undefined;
+  }
 }
 
 /**

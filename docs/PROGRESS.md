@@ -1,6 +1,52 @@
 # Chords Lab Progress
 
-Last updated: 2026-07-22
+Last updated: 2026-07-24
+
+## Playground Grand Improvement (2026-07-24)
+
+### Dark mode chrome
+
+- Added the missing chrome/staff/tertiary tokens to both themes and wired the
+  app header, bottom nav, toast, and staff grid lines to them, removing the last
+  hardcoded light-chrome values so dark mode is consistent throughout.
+
+### Global instrument hotkeys
+
+- New `useInstrumentHotkeys` window-level hook drives every mounted instrument
+  from the computer keyboard. A module-level owner stack means the last-mounted
+  instrument wins, and guards ignore key repeats, modifier combos, and events
+  from form controls, buttons, links, and other interactive targets so
+  Enter/Space/Tab/arrows are never intercepted.
+- Guitar, ukulele, and bass map A–J to their active pitch classes; drums map
+  Z/X/C/V to one-shots; voice maps 1–8 to solfege, each with a visible hint.
+
+### Live effects bus
+
+- The audio engine gained a lazy reverb -> delay -> destination effects bus with
+  built-in `wet` defaulting to 0. Live played voices route through the bus while
+  looped backing voices stay dry, so recorded/rendered output is unchanged.
+  `setLiveEffects` clamps to 0–1; teardown disposes the bus.
+
+### Jam Room rebuild
+
+- Play with mouse, touch, or QWERTY (octave shift on Z/X, `?` toggles a key-map
+  cheat sheet). A voice/timbre picker chooses the soloing instrument.
+- Reverb and delay sliders feed the live effects bus. An opt-in count-in and
+  metronome ride the loop clock, and Fit to scale snaps stray notes into the
+  vibe.
+- Added modal/extended vibes (Dorian groove, Anthem, Midnight jazz) plus a
+  custom-progression builder (key, mode, tempo, numeral picker) that jams over
+  your own loop without leaving the page.
+- An event-based take recorder captures a freely-timed melody (quantized to a
+  quarter-beat grid, realigned to each loop origin) and saves it to Song Lab as
+  a `SongSketch.capturedMelody` — an additive field that also survives share
+  URLs and normalization round-trips.
+
+### Quality gates
+
+- lint, typecheck, and production build clean; 500 unit tests and 35 Playwright
+  e2e (1 skipped) pass. Fixed an incidental `normalizeSongSketch` bug that leaked
+  a malformed captured melody through the object spread.
 
 ## V8 Follow-on Quality and Practice Pass (2026-07-22)
 
