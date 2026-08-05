@@ -31,4 +31,47 @@ describe("audioEngine pattern timing", () => {
     expect(pattern.events.some((event) => event.track === "chords")).toBe(true);
     expect(getPlaybackDurationMs(pattern)).toBeGreaterThan(15000);
   });
+
+  it("schedules a recorded jam take alongside the grid tracks", () => {
+    const sketch = {
+      ...createDefaultSongSketch("Take loop"),
+      capturedMelody: [
+        { note: "C4", startBeat: 0.5, durationBeats: 0.25, velocity: 0.9 },
+        { note: "E4", startBeat: 1.75, durationBeats: 0.5 }
+      ]
+    };
+    const take = songSketchPattern(sketch).events.filter(
+      (event) => event.track === "take"
+    );
+
+    expect(take).toHaveLength(2);
+    expect(take[0].note).toBe("C4");
+    expect(take[0].startBeat).toBe(0.5);
+    expect(take[1].startBeat).toBe(1.75);
+  });
+
+  it("preserves fractional take timing rather than snapping to bars", () => {
+    const sketch = {
+      ...createDefaultSongSketch(),
+      capturedMelody: [{ note: "G4", startBeat: 2.25, durationBeats: 0.3 }]
+    };
+    const take = songSketchPattern(sketch).events.find(
+      (event) => event.track === "take"
+    );
+
+    expect(take?.startBeat).toBe(2.25);
+    expect(take?.durationBeats).toBe(0.3);
+  });
+
+  it("honours mute and solo for the take track", () => {
+    const base = {
+      ...createDefaultSongSketch(),
+      capturedMelody: [{ note: "C4", startBeat: 0, durationBeats: 1 }]
+    };
+    const muted = songSketchPattern({ ...base, mutedTracks: ["take"] });
+    const soloed = songSketchPattern({ ...base, soloTracks: ["take"] });
+
+    expect(muted.events.some((event) => event.track === "take")).toBe(false);
+    expect(soloed.events.every((event) => event.track === "take")).toBe(true);
+  });
 });

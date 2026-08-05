@@ -24,7 +24,8 @@ export const songLabTrackTypes: SongLabTrackType[] = [
   "bass",
   "chords",
   "melody",
-  "voiceGuide"
+  "voiceGuide",
+  "take"
 ];
 
 const chromatic = [

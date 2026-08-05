@@ -4,7 +4,8 @@ import {
   midiNoteNumber,
   sketchToMidi,
   writeVarLen,
-  downloadMidiBlob
+  downloadMidiBlob,
+  TICKS_PER_QUARTER
 } from "./midiFile";
 
 /** Find the first index of a byte subsequence in a Uint8Array. */
@@ -18,6 +19,18 @@ function indexOfBytes(haystack: Uint8Array, needle: number[]): number {
     return i;
   }
   return -1;
+}
+
+/** Count non-overlapping occurrences of a chunk type identifier. */
+function countChunks(bytes: Uint8Array, type: string): number {
+  const needle = Array.from(type, (char) => char.charCodeAt(0));
+  let count = 0;
+  for (let i = 0; i <= bytes.length - needle.length; i += 1) {
+    if (needle.every((byte, j) => bytes[i + j] === byte)) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 describe("midiNoteNumber", () => {
@@ -58,6 +71,63 @@ describe("sketchToMidi", () => {
   it("includes a tempo meta event (FF 51 03)", () => {
     const bytes = sketchToMidi(createDefaultSongSketch());
     expect(indexOfBytes(bytes, [0xff, 0x51, 0x03])).toBeGreaterThan(-1);
+  });
+});
+
+describe("sketchToMidi captured melody", () => {
+  it("emits an extra track when a captured take is present", () => {
+    const base = createDefaultSongSketch();
+    const withTake = {
+      ...base,
+      capturedMelody: [{ note: "C4", startBeat: 0, durationBeats: 1 }]
+    };
+
+    expect(countChunks(sketchToMidi(withTake), "MTrk")).toBe(
+      countChunks(sketchToMidi(base), "MTrk") + 1
+    );
+  });
+
+  it("declares the emitted track count in the header", () => {
+    const sketch = {
+      ...createDefaultSongSketch(),
+      capturedMelody: [{ note: "C4", startBeat: 0, durationBeats: 1 }]
+    };
+    const bytes = sketchToMidi(sketch);
+
+    // MThd body: format (2 bytes), ntracks (2 bytes) at offset 10.
+    const declared = (bytes[10] << 8) | bytes[11];
+    expect(declared).toBe(countChunks(bytes, "MTrk"));
+  });
+
+  it("places a note-on at the take's beat offset", () => {
+    const sketch = {
+      ...createDefaultSongSketch(),
+      capturedMelody: [{ note: "C4", startBeat: 2, durationBeats: 1 }]
+    };
+    const bytes = sketchToMidi(sketch);
+
+    // Delta of 2 beats = 960 ticks -> VLQ [0x87, 0x40], then note-on ch 3, C4.
+    const expected = [...writeVarLen(2 * TICKS_PER_QUARTER), 0x93, 60];
+    expect(indexOfBytes(bytes, expected)).toBeGreaterThan(-1);
+  });
+
+  it("honours per-note velocity", () => {
+    const sketch = {
+      ...createDefaultSongSketch(),
+      capturedMelody: [
+        { note: "C4", startBeat: 0, durationBeats: 1, velocity: 100 }
+      ]
+    };
+    expect(indexOfBytes(sketchToMidi(sketch), [0x93, 60, 100])).toBeGreaterThan(
+      -1
+    );
+  });
+
+  it("skips the take track when the melody is absent", () => {
+    const base = createDefaultSongSketch();
+    expect(countChunks(sketchToMidi(base), "MTrk")).toBe(
+      countChunks(sketchToMidi({ ...base, capturedMelody: [] }), "MTrk")
+    );
   });
 });
 

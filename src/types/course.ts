@@ -125,7 +125,8 @@ export type SongLabTrackType =
   | "bass"
   | "chords"
   | "melody"
-  | "voiceGuide";
+  | "voiceGuide"
+  | "take";
 
 export type MidiAdapterStatus = "planned" | "unavailable" | "connected";
 

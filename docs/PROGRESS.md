@@ -1,6 +1,6 @@
 # Chords Lab Progress
 
-Last updated: 2026-07-24
+Last updated: 2026-08-06
 
 ## Playground Grand Improvement (2026-07-24)
 
@@ -47,6 +47,46 @@ Last updated: 2026-07-24
 - lint, typecheck, and production build clean; 500 unit tests and 35 Playwright
   e2e (1 skipped) pass. Fixed an incidental `normalizeSongSketch` bug that leaked
   a malformed captured melody through the object spread.
+
+## Jam Take Playback and Export (2026-08-06)
+
+Closed the loop on the Jam Room take recorder: a captured take was written to
+storage and share URLs but was silent everywhere else — it never played back and
+exported as an empty MIDI track.
+
+### Take playback
+
+- `songSketchPattern` now schedules `capturedMelody` as its own `take` track,
+  preserving each note's fractional beat position and duration instead of
+  snapping to one entry per bar. Takes route to the `arp` voice so they read
+  clearly against the chord bed, and they honour mute/solo like any other track.
+- `SongLabTrackType` gained `take`, so the mixer, storage filters, and share
+  payloads treat it as a first-class track.
+
+### Take export
+
+- `sketchToMidi` appends a fifth music track on channel 3 when a take exists,
+  deriving ticks from each note's own beat offset and duration and carrying
+  per-note velocity. `pushNote` takes an optional velocity, defaulting to the
+  previous constant, so the grid tracks are byte-for-byte unchanged.
+
+### Song Lab mixer
+
+- The track mix grid uses human-readable labels ("Voice guide", "Jam take")
+  instead of raw field names, and the Jam take row only appears once a sketch
+  actually carries a take.
+
+### Bug fixes
+
+- Storage rehydration validated `tracks` and mute/solo lists but never
+  `capturedMelody`, so a malformed persisted take (e.g. a bare string) flowed
+  straight into the MIDI encoder as `NaN` ticks. `normalizeCapturedMelody` is now
+  exported and applied on read, dropping junk entries and clamping the rest.
+
+### Quality gates
+
+- lint, typecheck, and production build clean; 512 unit tests (12 new) and 35
+  Playwright e2e (1 skipped) pass.
 
 ## V8 Follow-on Quality and Practice Pass (2026-07-22)
 

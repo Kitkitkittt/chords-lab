@@ -20,7 +20,7 @@
  */
 
 import { Note } from "tonal";
-import type { SongSketch } from "../types/course";
+import type { SongSketch, CapturedNote } from "../types/course";
 import { romanChordNotes } from "./audioEngine";
 
 /** Ticks per quarter note (SMF division). */
@@ -111,13 +111,14 @@ function pushNote(
   channel: number,
   noteNumber: number,
   startTick: number,
-  durationTicks: number
+  durationTicks: number,
+  velocity: number = NOTE_VELOCITY
 ): void {
   const ch = channel & 0x0f;
   events.push({
     tick: startTick,
     order: 1,
-    bytes: [0x90 | ch, noteNumber & 0x7f, NOTE_VELOCITY]
+    bytes: [0x90 | ch, noteNumber & 0x7f, velocity & 0x7f]
   });
   events.push({
     tick: startTick + durationTicks,
@@ -243,9 +244,41 @@ function buildDrumTrack(rows: boolean[][], channel: number): number[] {
 }
 
 /**
+ * Build the captured-take track from a live Jam Room performance.
+ *
+ * Unlike the grid tracks, captured notes carry fractional beat positions and
+ * their own durations, so ticks are derived from each note rather than from the
+ * array index. Notes may overlap; each gets its own note-on / note-off pair.
+ */
+function buildCapturedTrack(notes: CapturedNote[], channel: number): number[] {
+  const events: TrackEvent[] = [];
+  for (const note of notes) {
+    const noteNumber = midiNoteNumber(note.note);
+    if (noteNumber === null) {
+      continue;
+    }
+
+    const startTick = Math.max(0, Math.round(note.startBeat * TICKS_PER_QUARTER));
+    const durationTicks = Math.max(
+      1,
+      Math.round(note.durationBeats * TICKS_PER_QUARTER)
+    );
+    const velocity =
+      typeof note.velocity === "number"
+        ? Math.max(1, Math.min(127, Math.round(note.velocity)))
+        : NOTE_VELOCITY;
+
+    pushNote(events, channel, noteNumber, startTick, durationTicks, velocity);
+  }
+  return eventsToTrackChunk(events);
+}
+
+/**
  * Encode a {@link SongSketch} into a valid SMF format 1 byte stream.
  *
  * Emits the meta track plus one track each for melody, bass, chords, and drums.
+ * A recorded Jam Room take, when present, is appended as a fifth music track on
+ * channel 3 so the performance survives export alongside the grid.
  */
 export function sketchToMidi(sketch: SongSketch): Uint8Array {
   const trackChunks: number[][] = [];
@@ -255,6 +288,10 @@ export function sketchToMidi(sketch: SongSketch): Uint8Array {
   trackChunks.push(buildNoteTrack(sketch.tracks.bass, 1));
   trackChunks.push(buildChordTrack(sketch.tracks.chords, 2));
   trackChunks.push(buildDrumTrack(sketch.tracks.drums, 9));
+
+  if (sketch.capturedMelody && sketch.capturedMelody.length > 0) {
+    trackChunks.push(buildCapturedTrack(sketch.capturedMelody, 3));
+  }
 
   // Header chunk: format 1, ntracks, division (ticks per quarter note).
   const headerBody = [

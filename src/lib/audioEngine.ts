@@ -1,5 +1,9 @@
 import { normalizeNoteForPlayback } from "./music";
-import type { InstrumentId, SongSketch } from "../types/course";
+import type {
+  InstrumentId,
+  SongLabTrackType,
+  SongSketch
+} from "../types/course";
 
 export type AudioPlaybackState =
   | "idle"
@@ -176,7 +180,7 @@ export function songSketchPattern(sketch: SongSketch): PlaybackPattern {
   const beatsPerBar = Number(sketch.meter.split("/")[0]) || 4;
   const beatStep = 0.5;
   const events: AudioEvent[] = [];
-  const activeTrack = (track: keyof SongSketch["tracks"]) =>
+  const activeTrack = (track: SongLabTrackType) =>
     sketch.soloTracks.length > 0
       ? sketch.soloTracks.includes(track)
       : !sketch.mutedTracks.includes(track);
@@ -243,6 +247,20 @@ export function songSketchPattern(sketch: SongSketch): PlaybackPattern {
       }
     }
   });
+
+  // A recorded Jam Room take keeps its own fractional timing: its notes are
+  // absolute beat offsets across the whole loop, not one entry per bar.
+  if (activeTrack("take") && sketch.capturedMelody) {
+    for (const note of sketch.capturedMelody) {
+      events.push({
+        note: note.note,
+        startBeat: Math.max(0, note.startBeat),
+        durationBeats: Math.max(0.05, note.durationBeats),
+        velocity: typeof note.velocity === "number" ? note.velocity : 0.75,
+        track: "take"
+      });
+    }
+  }
 
   return {
     label: sketch.title,
@@ -607,6 +625,7 @@ function loopVoiceForTrack(track: string | undefined): LiveVoiceId {
       return "kick"; // overridden per-event by AudioEvent.voice for snare/hat/clap
     case "melody":
     case "arp":
+    case "take":
       return "arp";
     case "pad":
       return "pad";

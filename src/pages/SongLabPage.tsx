@@ -64,6 +64,16 @@ function isSeedProgression(value: unknown): value is SeedProgression {
   );
 }
 
+/** Human-readable mixer labels for each Song Lab track. */
+const songLabTrackLabels: Record<SongLabTrackType, string> = {
+  drums: "Drums",
+  bass: "Bass",
+  chords: "Chords",
+  melody: "Melody",
+  voiceGuide: "Voice guide",
+  take: "Jam take"
+};
+
 /** Build a fresh sketch whose 8 chord bars are filled from a seeded progression. */
 function sketchFromSeed(seed: SeedProgression): SongSketch {
   const base = createDefaultSongSketch("Playground loop");
@@ -131,6 +141,15 @@ export function SongLabPage() {
     [sketch.key, sketch.mode, sketch.tracks.chords, sketch.tracks.melody]
   );
   const focusedBarIndex = playbackBar >= 0 ? playbackBar : 0;
+  const takeNoteCount = sketch.capturedMelody?.length ?? 0;
+  // The recorded take only earns a mixer row once a jam take exists.
+  const mixTracks = useMemo(
+    () =>
+      songLabTrackTypes.filter(
+        (track) => track !== "take" || takeNoteCount > 0
+      ),
+    [takeNoteCount]
+  );
   const focusedNumeral = sketch.tracks.chords[focusedBarIndex] ?? "I";
   const reharmonizeOptions = useMemo(
     () =>
@@ -380,9 +399,9 @@ export function SongLabPage() {
           <section aria-labelledby="song-track-mix-title">
             <h2 id="song-track-mix-title">Track mix</h2>
             <div className="track-mix-grid">
-              {songLabTrackTypes.map((track) => (
+              {mixTracks.map((track) => (
                 <div key={track}>
-                  <strong>{track}</strong>
+                  <strong>{songLabTrackLabels[track]}</strong>
                   <button
                     type="button"
                     aria-pressed={sketch.mutedTracks.includes(track)}

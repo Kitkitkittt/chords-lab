@@ -4,6 +4,7 @@ import type {
   StoredReviewPrompt
 } from "../types/course";
 import { songLabTrackTypes } from "./instruments";
+import { normalizeCapturedMelody } from "./songSketches";
 import { generatePlacementPrompts } from "./placement";
 import { skillTrackIds } from "./skills";
 import { validateRoutine } from "./routines";
@@ -225,6 +226,7 @@ function normalizeSongSketches(
         })
         .map((sketch) => ({
           ...sketch,
+          capturedMelody: normalizeCapturedMelody(sketch.capturedMelody),
           tracks: {
             drums: sketch.tracks.drums,
             bass: sketch.tracks.bass,

@@ -127,7 +127,7 @@ export function createSketchFromJam(input: {
 }
 
 /** Round-trip a captured live melody into a valid CapturedNote list. */
-function normalizeCapturedMelody(raw: unknown): CapturedNote[] | undefined {
+export function normalizeCapturedMelody(raw: unknown): CapturedNote[] | undefined {
   if (!Array.isArray(raw)) {
     return undefined;
   }

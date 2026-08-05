@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { ProgressProvider } from "../state/progress";
+import { createDefaultSongSketch } from "../lib/songSketches";
+import { defaultProgressState } from "../lib/progressStorage";
 import { SongLabPage } from "./SongLabPage";
 
 function renderSongLabPage() {
@@ -93,5 +95,38 @@ describe("SongLabPage", () => {
     expect(screen.getByText("Chord start I")).toBeInTheDocument();
     // The theory panel resolves I in G to the G chord.
     expect(screen.getByText(/G in G/)).toBeInTheDocument();
+  });
+
+  it("hides the jam take mixer row until a take is recorded", () => {
+    renderSongLabPage();
+
+    const mix = screen.getByRole("region", { name: /track mix/i });
+    expect(mix).toHaveTextContent("Drums");
+    expect(mix).not.toHaveTextContent("Jam take");
+  });
+
+  it("shows the jam take mixer row for a sketch carrying a take", () => {
+    localStorage.clear();
+    const sketch = {
+      ...createDefaultSongSketch("Recorded loop"),
+      capturedMelody: [{ note: "C4", startBeat: 0, durationBeats: 0.5 }]
+    };
+    localStorage.setItem(
+      "chordslab.progress.v1",
+      JSON.stringify({
+        ...defaultProgressState,
+        savedSongSketches: [sketch]
+      })
+    );
+
+    render(
+      <MemoryRouter>
+        <ProgressProvider>
+          <SongLabPage />
+        </ProgressProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Jam take")).toBeInTheDocument();
   });
 });

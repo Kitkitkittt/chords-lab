@@ -336,4 +336,65 @@ describe("progress storage", () => {
 
     expect(normalized.settings.activeTrackId).toBeUndefined();
   });
+
+  it("keeps a valid captured jam take on a stored sketch", () => {
+    const normalized = normalizeProgressState({
+      schemaVersion: 1,
+      savedSongSketches: [
+        {
+          id: "song-take",
+          title: "Take",
+          bpm: 92,
+          meter: "4/4",
+          form: ["A"],
+          tracks: {
+            drums: [[true, false, true, true]],
+            bass: ["C2"],
+            chords: ["I"],
+            melody: ["E4"]
+          },
+          capturedMelody: [
+            { note: "C4", startBeat: 0.5, durationBeats: 0.25 },
+            { note: "nope", startBeat: "x" },
+            { note: "E4", startBeat: -2, durationBeats: 0 }
+          ],
+          createdAt: "2026-05-31T00:00:00.000Z",
+          updatedAt: "2026-05-31T00:00:00.000Z"
+        }
+      ]
+    });
+
+    const take = normalized.savedSongSketches[0].capturedMelody;
+    // The malformed middle entry is dropped, and the clamped one is repaired.
+    expect(take).toHaveLength(2);
+    expect(take?.[0]).toMatchObject({ note: "C4", startBeat: 0.5 });
+    expect(take?.[1].startBeat).toBe(0);
+    expect(take?.[1].durationBeats).toBeGreaterThan(0);
+  });
+
+  it("drops a malformed captured melody entirely", () => {
+    const normalized = normalizeProgressState({
+      schemaVersion: 1,
+      savedSongSketches: [
+        {
+          id: "song-bad",
+          title: "Bad take",
+          bpm: 92,
+          meter: "4/4",
+          form: ["A"],
+          tracks: {
+            drums: [[true]],
+            bass: ["C2"],
+            chords: ["I"],
+            melody: ["E4"]
+          },
+          capturedMelody: "not-an-array",
+          createdAt: "2026-05-31T00:00:00.000Z",
+          updatedAt: "2026-05-31T00:00:00.000Z"
+        }
+      ]
+    });
+
+    expect(normalized.savedSongSketches[0].capturedMelody).toBeUndefined();
+  });
 });
