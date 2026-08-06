@@ -105,6 +105,35 @@ dropped on the floor.
 - lint, typecheck, and production build clean; 516 unit tests (4 new) and 35
   Playwright e2e (1 skipped) pass.
 
+## Dark-Mode Piano Keys and Deploy Correction (2026-08-06)
+
+Chased a report that the Jam Room keyboard was invisible, and found two
+unrelated faults behind it.
+
+- **Dark-mode contrast.** `.jam-keyboard` and `.hero-piano` drew their felt bed
+  from `--inverse-surface`, which by design flips to near-white under
+  `[data-theme="dark"]`, while the white keys stayed a hardcoded `#ffffff`.
+  Key-to-bed contrast collapsed from 13.11:1 to 1.29:1, so the keyboard read as
+  a blank slab. Piano keys are physical objects rather than themed surfaces, so
+  they now use dedicated `--key-white` / `--key-black` / `--key-bed` tokens that
+  are deliberately *not* overridden in the dark block. The in-scale gradient
+  hints layer over those tokens instead of repeating the literals. Measured
+  13.11:1 in both themes on the live site after deploy.
+- **Stale production bundle.** The Netlify project has no Git integration
+  (`build_settings` is empty and there are no build hooks), so pushing to
+  `master` never triggered a deploy — the site had been serving a July bundle
+  while CI went green on every push. A previous "deploy verified" note in this
+  log was wrong: it only checked for HTTP 200, not bundle contents. Deploys must
+  be made explicitly with `npx netlify deploy --prod --dir=dist` until the site
+  is linked to the repo.
+- Verification now compares the live asset hashes against `dist/` and greps the
+  served JS/CSS for expected markers, rather than trusting a 200.
+
+### Quality gates
+
+- lint, typecheck, and production build clean; 524 unit tests (8 new) and 35
+  Playwright e2e (1 skipped) pass. CI run 31066165776 green.
+
 ## V8 Follow-on Quality and Practice Pass (2026-07-22)
 
 ### Wave A: Piano input reliability
