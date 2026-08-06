@@ -1,6 +1,40 @@
 # Chords Lab Progress
 
-Last updated: 2026-08-06
+Last updated: 2026-08-07
+
+## Song Sketch Round Trips (2026-08-07)
+
+`SongSketch` is rebuilt in nine places. Six spread the source and are safe.
+Three enumerate its fields one at a time — `toPortable` (share encode), the
+merged literal in `decodeTokenToSketch`, and `flattenArrangement` — so an
+optional field nobody adds to the list is dropped silently, and because the
+field is optional the result still typechecks. The Jam Room take
+(`capturedMelody`) was lost this way and fixed four separate times, once per
+pipeline, without anything stopping the fifth.
+
+`src/lib/songSketchRoundTrip.test.ts` closes the class rather than the
+instance. A maximally-populated fixture defines what a complete sketch is, and
+the checks read *its own keys at runtime* instead of a hand-written list of
+field names — a hand-written list would reproduce the exact failure mode it
+guards against. Each pipeline declares only the keys it may legitimately
+change; failures name both the field and the pipeline.
+
+Covered: share encode/decode, normalize, save/reload through real browser
+storage (`writeProgressState`/`readProgressState`, not a simulated
+`JSON.stringify`), section duplication, arrangement flatten, the flatten beat
+offset, and the full chained journey a learner's sketch actually takes.
+
+Validated by negative control: a throwaway optional field added to `SongSketch`
+and the fixture failed in share encode/decode, flatten, and the chained
+journey, each naming the field; the spreading pipelines carried it. Then
+reverted.
+
+Known limit, recorded in the file: nothing forces the fixture itself to stay
+complete. TypeScript cannot require an optional field, so a new optional field
+that nobody adds to `completeSketch` is invisible. The fixture is the one place
+still needing a human to keep it honest.
+
+Test-only change; no production code touched. Closed issue #1.
 
 ## Roadmap Gap Closure (2026-08-06)
 
