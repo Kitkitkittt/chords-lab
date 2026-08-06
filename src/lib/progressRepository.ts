@@ -124,37 +124,26 @@ function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
-    request.onblocked = () => reject(new Error("IndexedDB open blocked"));
+    // `blocked` is not terminal: the request stays pending and still succeeds
+    // once the blocking connection closes. Rejecting here without waiting would
+    // strand that connection open, which then blocks the retry as well.
+    request.onblocked = () => undefined;
   });
 }
 
 function completeTransaction<T>(
-  database: IDBDatabase,
   transaction: IDBTransaction,
   request: IDBRequest<T>
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     let result: T;
-    const close = () => database.close();
-    transaction.oncomplete = () => {
-      close();
-      resolve(result);
-    };
-    transaction.onerror = () => {
-      close();
-      reject(transaction.error);
-    };
-    transaction.onabort = () => {
-      close();
-      reject(transaction.error);
-    };
+    transaction.oncomplete = () => resolve(result);
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
     request.onsuccess = () => {
       result = request.result;
     };
-    request.onerror = () => {
-      close();
-      reject(request.error);
-    };
+    request.onerror = () => reject(request.error);
   });
 }
 
@@ -166,34 +155,98 @@ export function createIndexedDbProgressStore(
     return null;
   }
 
-  return {
-    async read() {
-      const database = await openDatabase(factory);
+  // Progress is persisted on every interaction, so opening and closing the
+  // database per call meant a connection cycle per answer a learner submits.
+  // The connection is cached instead, and reopened only if it is lost.
+  let connection: Promise<IDBDatabase> | null = null;
+
+  const forget = (expected: Promise<IDBDatabase>): void => {
+    // Only clear the cache if it still holds the connection that failed.
+    // A concurrent call may already have replaced it, and dropping that one
+    // would strand it open with nothing able to close it.
+    if (connection === expected) {
+      connection = null;
+    }
+  };
+
+  const connect = (): Promise<IDBDatabase> => {
+    if (!connection) {
+      const pending: Promise<IDBDatabase> = openDatabase(factory).then(
+        (database) => {
+          // Another tab cannot upgrade the database while this connection is
+          // open. Holding it open indefinitely would block that tab until this
+          // one is closed, so release it as soon as the browser asks.
+          database.onversionchange = () => {
+            forget(pending);
+            database.close();
+          };
+          // The browser can also close the connection on its own, for example
+          // when evicting storage.
+          database.onclose = () => forget(pending);
+          return database;
+        },
+        (error) => {
+          // A failed open must not be cached, or every later call inherits it.
+          forget(pending);
+          throw error;
+        }
+      );
+
+      connection = pending;
+    }
+
+    return connection;
+  };
+
+  /**
+   * A connection closed underneath us surfaces as a synchronous InvalidStateError
+   * when the transaction is opened, so that is the only failure worth retrying.
+   * Retrying anything else — a quota failure, an aborted transaction — would
+   * discard a healthy connection and reissue a write that failed for a reason
+   * reopening cannot fix.
+   */
+  const isClosedConnection = (error: unknown): boolean =>
+    error instanceof DOMException && error.name === "InvalidStateError";
+
+  const withStore = async <T>(
+    mode: IDBTransactionMode,
+    run: (store: IDBObjectStore) => IDBRequest<T>
+  ): Promise<T> => {
+    const attempt = async (): Promise<T> => {
+      const active = connect();
+      const database = await active;
+
       try {
-        const transaction = database.transaction("progress", "readonly");
+        const transaction = database.transaction("progress", mode);
         return await completeTransaction(
-          database,
           transaction,
-          transaction.objectStore("progress").get("current")
+          run(transaction.objectStore("progress"))
         );
       } catch (error) {
-        database.close();
+        if (isClosedConnection(error)) {
+          forget(active);
+        }
         throw error;
       }
+    };
+
+    try {
+      return await attempt();
+    } catch (error) {
+      if (!isClosedConnection(error)) {
+        throw error;
+      }
+
+      return attempt();
+    }
+  };
+
+  return {
+    read() {
+      return withStore("readonly", (store) => store.get("current"));
     },
     async write(progress) {
-      const database = await openDatabase(factory);
-      try {
-        const transaction = database.transaction("progress", "readwrite");
-        await completeTransaction(
-          database,
-          transaction,
-          transaction.objectStore("progress").put(progress, "current")
-        );
-      } catch (error) {
-        database.close();
-        throw error;
-      }
+      await withStore("readwrite", (store) => store.put(progress, "current"));
     }
   };
 }
