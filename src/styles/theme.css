@@ -32,6 +32,16 @@
   --toast-surface: rgba(255, 255, 255, 0.94);
   --chrome-border: rgba(197, 197, 213, 0.6);
   --staff-line: rgba(48, 48, 61, 0.22);
+  /*
+   * Piano keys are physical objects, not surfaces. They keep the same colour in
+   * every theme, and so does the felt bed behind them. Using an inverting token
+   * here (--inverse-surface) made the bed turn near-white in dark mode, so the
+   * white keys vanished into it. These three are deliberately not overridden by
+   * [data-theme="dark"].
+   */
+  --key-white: #ffffff;
+  --key-black: #20242a;
+  --key-bed: #2e3132;
   --radius-sm: 0.25rem;
   --radius: 0.5rem;
   --radius-md: 0.75rem;
