@@ -88,6 +88,23 @@ exported as an empty MIDI track.
 - lint, typecheck, and production build clean; 512 unit tests (12 new) and 35
   Playwright e2e (1 skipped) pass.
 
+## Arranger Take Continuity (2026-08-06)
+
+Followed the take through the multi-section arranger, where it was still being
+dropped on the floor.
+
+- `flattenArrangement` now carries each section's `capturedMelody` into the
+  flattened sketch, shifting every note by the beats consumed by earlier
+  sections (derived from the arrangement meter, not a hardcoded 4/4). A take
+  recorded in the Chorus previously vanished on playback and export.
+- `cloneSketch` deep-copies the take, so duplicating a section no longer shares
+  note objects between the original and the copy.
+
+### Quality gates
+
+- lint, typecheck, and production build clean; 516 unit tests (4 new) and 35
+  Playwright e2e (1 skipped) pass.
+
 ## V8 Follow-on Quality and Practice Pass (2026-07-22)
 
 ### Wave A: Piano input reliability

@@ -104,4 +104,79 @@ describe("songArranger", () => {
 
     expect(totalBars(arr)).toBe(16);
   });
+
+  it("duplicateSection deep-copies the take so edits stay independent", () => {
+    const base = createArrangement();
+    const arr = {
+      ...base,
+      sections: [
+        {
+          ...base.sections[0],
+          sketch: {
+            ...base.sections[0].sketch,
+            capturedMelody: [{ note: "C4", startBeat: 0, durationBeats: 1 }]
+          }
+        }
+      ]
+    };
+
+    const result = duplicateSection(arr, arr.sections[0].id);
+    const original = result.sections[0].sketch.capturedMelody;
+    const copy = result.sections[1].sketch.capturedMelody;
+
+    expect(copy).toEqual(original);
+    expect(copy?.[0]).not.toBe(original?.[0]);
+  });
+
+  it("flattenArrangement keeps section takes and offsets them by bar position", () => {
+    const base = addSection(createArrangement(), "Chorus");
+    const arr = {
+      ...base,
+      sections: base.sections.map((section, index) => ({
+        ...section,
+        sketch: {
+          ...section.sketch,
+          capturedMelody: [
+            { note: index === 0 ? "C4" : "G4", startBeat: 1.5, durationBeats: 0.5 }
+          ]
+        }
+      }))
+    };
+
+    const take = flattenArrangement(arr).capturedMelody;
+
+    expect(take).toHaveLength(2);
+    // Section 1 keeps its original offset.
+    expect(take?.[0]).toMatchObject({ note: "C4", startBeat: 1.5 });
+    // Section 2 starts 8 bars * 4 beats later, so 32 + 1.5.
+    expect(take?.[1]).toMatchObject({ note: "G4", startBeat: 33.5 });
+  });
+
+  it("flattenArrangement omits the take when no section recorded one", () => {
+    const flat = flattenArrangement(addSection(createArrangement(), "Chorus"));
+
+    expect(flat.capturedMelody).toBeUndefined();
+  });
+
+  it("flattenArrangement offsets takes using the arrangement meter", () => {
+    const base = createArrangement();
+    const arr = {
+      ...base,
+      meter: "3/4",
+      sections: [
+        base.sections[0],
+        {
+          ...base.sections[0],
+          id: "second",
+          sketch: {
+            ...base.sections[0].sketch,
+            capturedMelody: [{ note: "E4", startBeat: 0, durationBeats: 1 }]
+          }
+        }
+      ]
+    };
+
+    // 8 bars of 3/4 = 24 beats before the second section begins.
+    expect(flattenArrangement(arr).capturedMelody?.[0].startBeat).toBe(24);
+  });
 });

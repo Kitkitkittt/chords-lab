@@ -10,7 +10,7 @@
  * is a pure function of the section sketches' musical content (ids/timestamps
  * aside); only id/timestamp generation uses `Date.now()`/`Math.random()`.
  */
-import type { SongSketch } from "../types/course";
+import type { CapturedNote, SongSketch } from "../types/course";
 import {
   createDefaultSongSketch,
   normalizeSongSketch,
@@ -52,6 +52,9 @@ function cloneSketch(sketch: SongSketch): SongSketch {
       melody: [...sketch.tracks.melody],
       voiceGuide: [...sketch.tracks.voiceGuide]
     },
+    ...(sketch.capturedMelody
+      ? { capturedMelody: sketch.capturedMelody.map((note) => ({ ...note })) }
+      : {}),
     mutedTracks: [...sketch.mutedTracks],
     soloTracks: [...sketch.soloTracks]
   };
@@ -192,6 +195,12 @@ export function flattenArrangement(arrangement: Arrangement): SongSketch {
   const chords: string[] = [];
   const melody: string[] = [];
   const voiceGuide: string[] = [];
+  const capturedMelody: CapturedNote[] = [];
+
+  // Section takes carry beat offsets relative to their own section, so each is
+  // shifted by the number of beats already consumed by earlier sections.
+  const beatsPerBar = Number(arrangement.meter.split("/")[0]) || 4;
+  let beatOffset = 0;
 
   for (const section of arrangement.sections) {
     const { sketch } = section;
@@ -201,6 +210,12 @@ export function flattenArrangement(arrangement: Arrangement): SongSketch {
     chords.push(...sketch.tracks.chords);
     melody.push(...sketch.tracks.melody);
     voiceGuide.push(...sketch.tracks.voiceGuide);
+
+    for (const note of sketch.capturedMelody ?? []) {
+      capturedMelody.push({ ...note, startBeat: note.startBeat + beatOffset });
+    }
+
+    beatOffset += sketch.form.length * beatsPerBar;
   }
 
   return normalizeSongSketch({
@@ -218,6 +233,7 @@ export function flattenArrangement(arrangement: Arrangement): SongSketch {
       melody,
       voiceGuide
     },
+    ...(capturedMelody.length > 0 ? { capturedMelody } : {}),
     mutedTracks: [],
     soloTracks: [],
     createdAt: now,
