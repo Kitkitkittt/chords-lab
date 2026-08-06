@@ -2,6 +2,69 @@
 
 Last updated: 2026-08-06
 
+## Roadmap Gap Closure (2026-08-06)
+
+An audit compared every roadmap claim against the source. Four gaps were real
+and are now closed.
+
+### The note-naming setting was inert
+
+`/progress` offered English / Solfège / German and persisted the choice
+correctly, but `settings.noteNaming` was read only by its own `<select>`.
+`toNamingSystem` and `describePitchClasses` were imported nowhere except their
+own test, so the setting changed nothing a learner could see.
+
+Added `src/hooks/useNoteName.ts` and wired it into the surfaces that print note
+names: the lesson `KeyboardFigure`, the `DigitalPiano` keybed, the Song Lab
+theory panel, and the Circle of Fifths scale readout. Visible labels localize;
+`aria-label` values stay canonical English so assistive tech and the ~59
+label-based test selectors keep working.
+
+`ProgressContext` moved to `src/state/progressContext.ts` so non-component files
+can consume it without tripping `react-refresh/only-export-components`.
+
+### Stored progress without a version stamp was being destroyed
+
+`normalizeProgressState` and `readFallback` both gated on
+`schemaVersion === 1`. That equality also rejects state written *before* the
+field existed, so any such profile was silently replaced with defaults on load,
+losing completed lessons, sketches, and skill mastery.
+
+Added `src/lib/progressMigrations.ts` with an ordered migration ladder. A
+missing stamp is now treated as v1 and migrated forward to
+`CURRENT_SCHEMA_VERSION` (2). Defaults are used only when the data came from a
+*newer* build this one cannot reason about. `ProgressState.schemaVersion` widened
+from the literal `1` to `number`, and the IndexedDB version is pinned to the
+schema version so future bumps get an `onupgradeneeded` hook.
+
+This also fixed a latent export bug: the import gate hard-coded
+`schemaVersion === 1`, so bumping the schema would have made the app reject its
+own backups. Covered by a round-trip test.
+
+### Three drillable topics had no lessons
+
+`/practice/advanced-harmony` generated prompts for secondary dominants, borrowed
+chords, and modulation, but the course taught none of them — learners were
+quizzed on material that was never presented.
+
+Added three intermediate lessons matching what the generators ask, registered as
+modules with practice routes pointing back at the drill.
+`curriculumCoverage.test.ts` now requires a lesson per drillable category, and
+`course.test.ts` asserts every lesson is reachable from a module instead of
+checking a bare count, so content cannot ship orphaned.
+
+### Docs claimed features that do not exist
+
+Corrected: the mic tuner is shipped (was listed "Not built yet"); versioned
+migrations, note-naming, placement check, and Share Target are shipped; focus
+mode is partial (chrome is hidden, not dimmed, and there is no dedicated
+one-prompt layout); per-track certificates, left-handed fretboard, PWA File
+Handling, and full UI i18n are **not** built and are now labelled as such.
+
+### Gates
+
+Lint clean, `tsc -b` clean, 548 unit tests across 95 files pass.
+
 ## Playground Grand Improvement (2026-07-24)
 
 ### Dark mode chrome

@@ -591,9 +591,9 @@ Near-term priorities:
 Later possibilities:
 
 - Deeper fretboard scale boxes and instrument-specific etudes.
-- Optional MIDI input.
-- More advanced harmony, form, modulation, counterpoint, and pop/rock harmony
-  lessons.
+- Optional MIDI input. *(Shipped: Web MIDI input is available.)*
+- More advanced harmony and form lessons. *(Shipped: modulation, secondary
+  dominants, borrowed chords, pop/rock harmony. Counterpoint is still pending.)*
 - Explicit sync only if a future release adds accounts and privacy controls.
 
 See:

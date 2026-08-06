@@ -101,7 +101,7 @@ export const projectMilestones: ProjectMilestone[] = [
     title: "Intermediate theory expansion",
     status: "in-progress",
     summary:
-      "Seventh chords, Roman numerals, diatonic harmony, rhythm builders, and song construction are now started; cadences and modulation remain future work."
+      "Seventh chords, Roman numerals, diatonic harmony, rhythm builders, song construction, cadences, and modulation are shipped; counterpoint, figured bass, and melody writing remain future work."
   },
   {
     title: "Adaptive practice expansion",

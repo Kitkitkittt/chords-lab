@@ -199,10 +199,13 @@ Done:
 
 Next:
 
-1. Add track-scoped review sessions and per-track milestones.
+1. Add per-track milestones. (Track-scoped review sessions are shipped.)
 2. Add educator-reviewed lesson/example revisions.
-3. Optional opt-in microphone tuner (pitch match with cents feedback) using the
-   engine's `nearestNoteFromFrequency`. This would change the current
-   no-microphone stance, so it is deferred behind explicit consent, an
-   off-by-default setting, and local-only processing. Not built yet.
-4. Add optional cloud sync only after account/privacy design is explicit.
+3. Add optional cloud sync only after account/privacy design is explicit.
+
+Shipped since this list was written:
+
+- Optional opt-in microphone tuner (`src/components/TunerPanel.tsx`, route
+  `/tools/tuner`) using the engine's `nearestNoteFromFrequency`. It keeps the
+  original conditions: explicit consent, off by default, local-only processing,
+  no recording.

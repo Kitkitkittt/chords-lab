@@ -102,10 +102,11 @@ Not included:
 - Teacher dashboards.
 - Payments.
 - Analytics.
-- Fretboard view.
+- Fretboard view. *(Superseded: a fretboard explorer has since shipped.)*
 - Full Teoria-style exercise clone.
-- Advanced curriculum beyond the current counterpoint lab, such as modulation,
-  figured bass, and post-tonal analysis.
+- Advanced curriculum beyond the current counterpoint lab. *(Superseded:
+  modulation, secondary dominants and borrowed chords have since shipped;
+  figured bass and post-tonal analysis remain out of scope.)*
 
 ## Interactive Expansion Goals
 

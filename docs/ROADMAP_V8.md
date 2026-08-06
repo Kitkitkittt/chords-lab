@@ -48,18 +48,25 @@ accounts, and cloud sync remain out of scope.
 - **5.2 Skill constellation v2.**
 - **5.3 Routines & tiny-wins ledger** (no streak loss states).
 - **5.4 FSRS-style scheduler** + daily review-load smoothing. *(Wave 1: pure lib)*
-- **5.5 Focus mode** — one-prompt-per-screen, dimmed chrome.
+- **5.5 Focus mode** — partially shipped: chrome is hidden via `display: none`
+  rather than dimmed, and there is no dedicated one-prompt-per-screen layout.
 
 ### Phase 6 — Curriculum Expansion (toward intermediate)
-- Modulation, secondary dominants/borrowed chords, counterpoint basics, figured
-  bass primer, melody writing, jazz/extended harmony, transposition, blues.
-- Optional placement quick-check; per-track milestone certificates.
+- Shipped: modulation, secondary dominants, borrowed chords, blues, extensions.
+- Remaining: counterpoint basics, figured bass primer, melody writing,
+  jazz/extended harmony, transposition.
+- Shipped: optional placement quick-check.
+- Not built: per-track milestone certificates.
 
 ### Phase 7 — Platform & Polish
-- **7.1 Dark mode ("Night practice")** from existing tokens. *(Wave 1)*
-- IndexedDB migration behind the repository interface; versioned migrations.
-- i18n + alternate note-naming systems (fixed-do, German H/B).
-- Color-blind-safe palette; left-handed fretboard; File Handling + Share Target.
+- **7.1 Dark mode ("Night practice")** from existing tokens. *(Wave 1)* — shipped.
+- Shipped: IndexedDB behind the repository interface, with versioned migrations
+  in `src/lib/progressMigrations.ts`.
+- Shipped: alternate note-naming systems (fixed-do, German H/B), wired into the
+  keyboard, piano, Song Lab and Circle of Fifths readouts. Full i18n of UI copy
+  is **not** built.
+- Shipped: color-blind-safe palette; Share Target.
+- Not built: left-handed fretboard; PWA File Handling.
 
 ## Interaction Rules (unchanged, enforced for every new feature)
 - Every action has visible text labels and keyboard access.
