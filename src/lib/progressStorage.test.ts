@@ -11,7 +11,8 @@ import {
 describe("progress storage", () => {
   it("normalizes invalid data to defaults", () => {
     expect(normalizeProgressState(null)).toEqual(defaultProgressState);
-    expect(normalizeProgressState({ schemaVersion: 2 })).toEqual(
+    // A version this build knows nothing about; refuse it rather than guess.
+    expect(normalizeProgressState({ schemaVersion: 999 })).toEqual(
       defaultProgressState
     );
   });

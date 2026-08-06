@@ -4,6 +4,11 @@ import type {
   StoredReviewPrompt
 } from "../types/course";
 import { songLabTrackTypes } from "./instruments";
+import {
+  CURRENT_SCHEMA_VERSION,
+  isFutureSchema,
+  migrateProgressState
+} from "./progressMigrations";
 import { normalizeCapturedMelody } from "./songSketches";
 import { generatePlacementPrompts } from "./placement";
 import { skillTrackIds } from "./skills";
@@ -14,7 +19,7 @@ export const PROGRESS_STORAGE_KEY = "chordslab.progress.v1";
 const KNOWN_TRACK_IDS: string[] = skillTrackIds;
 
 export const defaultProgressState: ProgressState = {
-  schemaVersion: 1,
+  schemaVersion: CURRENT_SCHEMA_VERSION,
   completedLessonSlugs: [],
   bookmarkedLessonSlugs: [],
   checkResults: {},
@@ -375,11 +380,11 @@ export function normalizeProgressState(value: unknown): ProgressState {
     return defaultProgressState;
   }
 
-  const input = value as Partial<ProgressState>;
-
-  if (input.schemaVersion !== 1) {
+  if (isFutureSchema(value)) {
     return defaultProgressState;
   }
+
+  const input = migrateProgressState(value) as Partial<ProgressState>;
 
   const placementIds = new Set(generatePlacementPrompts().map((prompt) => prompt.id));
   const withoutPlacementIds = <T,>(entries: Record<string, T>) =>
@@ -417,7 +422,7 @@ export function normalizeProgressState(value: unknown): ProgressState {
   };
 
   return {
-    schemaVersion: 1,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     completedLessonSlugs: isStringArray(input.completedLessonSlugs)
       ? input.completedLessonSlugs
       : [],
@@ -517,3 +522,4 @@ export function writeProgressState(
 ): void {
   storage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
 }
+

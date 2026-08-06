@@ -64,7 +64,7 @@ export type SkillMastery = {
 export type AdaptiveSkillState = SkillMastery;
 
 export type ProgressExportBundle = {
-  schemaVersion: 1;
+  schemaVersion: number;
   exportedAt: string;
   appVersion: string;
   progress: ProgressState;
@@ -287,7 +287,12 @@ export type PracticeAttempt = Readonly<{
 }>;
 
 export type ProgressState = {
-  schemaVersion: 1;
+  /**
+   * Bumped whenever stored progress needs a migration. See
+   * src/lib/progressMigrations.ts — not pinned to a literal because state read
+   * off disk may be any older version until it has been migrated.
+   */
+  schemaVersion: number;
   completedLessonSlugs: string[];
   bookmarkedLessonSlugs: string[];
   lastLessonSlug?: string;

@@ -5,6 +5,14 @@ import {
   PROGRESS_STORAGE_KEY,
   writeProgressState
 } from "./progressStorage";
+import { CURRENT_SCHEMA_VERSION, isFutureSchema } from "./progressMigrations";
+
+/**
+ * The IndexedDB version tracks the progress schema so that a schema bump fires
+ * onupgradeneeded, giving future migrations a place to add or reshape stores.
+ */
+const IDB_VERSION = CURRENT_SCHEMA_VERSION;
+
 
 export type ProgressStore = {
   read(): Promise<unknown | null>;
@@ -28,7 +36,7 @@ function readFallback(storage: Storage): { progress: ProgressState; isAuthoritat
     }
 
     const stored = JSON.parse(raw);
-    if (!stored || typeof stored !== "object" || stored.schemaVersion !== 1) {
+    if (!stored || typeof stored !== "object" || isFutureSchema(stored)) {
       return { progress: fallbackProgress(), isAuthoritative: false };
     }
 
@@ -104,7 +112,10 @@ export function createProgressRepository(
 
 function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = factory.open("chordslab", 1);
+    const request = factory.open("chordslab", IDB_VERSION);
+    // Runs for a fresh database and for every upgrade. Creating the store when
+    // absent keeps old installs working without dropping their data; stored
+    // records are migrated on read by normalizeProgressState.
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains("progress")) {

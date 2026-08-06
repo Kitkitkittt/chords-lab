@@ -4,9 +4,30 @@ import type {
   ProgressState
 } from "../types/course";
 import { normalizeProgressState } from "./progressStorage";
+import { CURRENT_SCHEMA_VERSION, isFutureSchema } from "./progressMigrations";
 
-export const PROGRESS_EXPORT_SCHEMA_VERSION = 1;
+export const PROGRESS_EXPORT_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION;
 export const APP_VERSION = "0.1.0-v4";
+
+/**
+ * A backup is importable when neither the envelope nor the payload was written
+ * by a build newer than this one. Older and unversioned backups are fine —
+ * normalizeProgressState migrates them forward.
+ */
+function isImportable(
+  parsed: Partial<ProgressExportBundle> | ProgressState,
+  progressInput: unknown
+): boolean {
+  if (!progressInput || typeof progressInput !== "object") {
+    return false;
+  }
+
+  if ("progress" in parsed && isFutureSchema(parsed)) {
+    return false;
+  }
+
+  return !isFutureSchema(progressInput);
+}
 
 export function createProgressExportBundle(
   progress: ProgressState,
@@ -29,12 +50,7 @@ export function previewProgressImport(raw: string): ImportPreview {
     const parsed = JSON.parse(raw) as Partial<ProgressExportBundle> | ProgressState;
     const progressInput = "progress" in parsed ? parsed.progress : parsed;
 
-    if (
-      ("progress" in parsed && parsed.schemaVersion !== 1) ||
-      !progressInput ||
-      typeof progressInput !== "object" ||
-      (progressInput as Partial<ProgressState>).schemaVersion !== 1
-    ) {
+    if (!isImportable(parsed, progressInput)) {
       return {
         valid: false,
         warnings: ["Progress schema is missing or unsupported."],
@@ -77,12 +93,7 @@ export function parseProgressImport(raw: string): ProgressState | undefined {
     const parsed = JSON.parse(raw) as Partial<ProgressExportBundle> | ProgressState;
     const progressInput = "progress" in parsed ? parsed.progress : parsed;
 
-    if (
-      ("progress" in parsed && parsed.schemaVersion !== 1) ||
-      !progressInput ||
-      typeof progressInput !== "object" ||
-      (progressInput as Partial<ProgressState>).schemaVersion !== 1
-    ) {
+    if (!isImportable(parsed, progressInput)) {
       return undefined;
     }
 
@@ -91,3 +102,4 @@ export function parseProgressImport(raw: string): ProgressState | undefined {
     return undefined;
   }
 }
+

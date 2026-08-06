@@ -36,4 +36,42 @@ describe("progress export", () => {
     expect(previewProgressImport("{").valid).toBe(false);
     expect(parseProgressImport("{")).toBeUndefined();
   });
+
+  it("accepts a backup exported by the current build", () => {
+    const exported = serializeProgressExport({
+      ...defaultProgressState,
+      completedLessonSlugs: ["sound-pitch"]
+    });
+
+    // Regression: the gate hard-coded schemaVersion === 1, so bumping the
+    // schema made the app reject its own exports.
+    expect(previewProgressImport(exported).valid).toBe(true);
+    expect(parseProgressImport(exported)?.completedLessonSlugs).toEqual([
+      "sound-pitch"
+    ]);
+  });
+
+  it("accepts an older unversioned backup instead of discarding it", () => {
+    const legacy = JSON.stringify({
+      completedLessonSlugs: ["sound-pitch"],
+      bookmarkedLessonSlugs: []
+    });
+
+    expect(previewProgressImport(legacy).valid).toBe(true);
+    expect(parseProgressImport(legacy)?.completedLessonSlugs).toEqual([
+      "sound-pitch"
+    ]);
+  });
+
+  it("rejects a backup from a newer build rather than mangling it", () => {
+    const fromFuture = JSON.stringify({
+      schemaVersion: 999,
+      exportedAt: "2026-08-06T00:00:00.000Z",
+      appVersion: "99.0.0",
+      progress: { ...defaultProgressState, schemaVersion: 999 }
+    });
+
+    expect(previewProgressImport(fromFuture).valid).toBe(false);
+    expect(parseProgressImport(fromFuture)).toBeUndefined();
+  });
 });
