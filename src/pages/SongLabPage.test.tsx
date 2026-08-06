@@ -63,7 +63,7 @@ describe("SongLabPage", () => {
     expect(localStorage.getItem("chordslab.progress.v1")).toContain(
       "savedSongSketches"
     );
-  }, 10000);
+  }, 20_000);
 
   it("supports Song Lab 3.0 mute solo regenerate duplicate and explain controls", async () => {
     const user = userEvent.setup();
@@ -84,7 +84,7 @@ describe("SongLabPage", () => {
 
     await user.click(screen.getByRole("button", { name: /Explain loop/i }));
     expect(screen.getByText(/The loop starts/)).toBeInTheDocument();
-  }, 10000);
+  }, 20_000);
 
   it("seeds a sketch from a progression passed via router state", () => {
     renderSongLabWithSeed();
@@ -130,3 +130,4 @@ describe("SongLabPage", () => {
     expect(screen.getByText("Jam take")).toBeInTheDocument();
   });
 });
+

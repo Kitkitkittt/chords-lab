@@ -75,7 +75,9 @@ describe("PlacementPage", () => {
     expect(stored.reviewPrompts).toEqual({});
     expect(stored.skillMastery).toEqual({});
     expect(stored.practiceAttempts).toEqual([]);
-  }, 10_000);
+    // Thirty-plus interactions, each re-rendering the whole session tree.
+    // Measured ~4.4s alone, ~9.4s with the machine saturated.
+  }, 20_000);
 
   it("shows persisted results and resets only when a retake starts", async () => {
     localStorage.clear();

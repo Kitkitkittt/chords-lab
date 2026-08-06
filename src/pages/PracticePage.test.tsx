@@ -71,7 +71,7 @@ describe("PracticePage", () => {
     expect(localStorage.getItem("chordslab.progress.v1")).toContain(
       "practiceMastery"
     );
-  }, 10000);
+  }, 20_000);
 
   it("shows an in-session progress indicator with prompt count", () => {
     renderPracticePage();
@@ -113,7 +113,7 @@ describe("PracticePage", () => {
     expect(screen.getByLabelText("Practice result")).toHaveTextContent(
       "C major keeps the letter order visible"
     );
-  }, 10000);
+  }, 20_000);
 
   it("supports rhythm builder remove, undo, clear, and overfill feedback", async () => {
     const user = userEvent.setup();
@@ -157,5 +157,6 @@ describe("PracticePage", () => {
     expect(screen.getByLabelText("Selected rhythm tokens")).toHaveTextContent(
       "Select rhythm tokens."
     );
-  }, 10000);
+  }, 20_000);
 });
+

@@ -132,7 +132,8 @@ describe("ReviewPage", () => {
     expect(localStorage.getItem("chordslab.progress.v1")).toContain(
       "staff-click-1"
     );
-  });
+    // Sits right on the 5s default under load — measured 3.7s to 5.5s.
+  }, 20_000);
 
   it("offers an Easy/Hard confidence rating after a correct answer", async () => {
     const user = userEvent.setup();
