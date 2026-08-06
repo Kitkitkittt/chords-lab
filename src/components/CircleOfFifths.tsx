@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNoteName } from "../hooks/useNoteName";
 import { keyContext, type KeyMode } from "../lib/theory";
 
 /**
@@ -63,6 +64,7 @@ export function CircleOfFifths({
 }: CircleOfFifthsProps) {
   const [tonic, setTonic] = useState(initialTonic);
   const [mode, setMode] = useState<KeyMode>(initialMode);
+  const { pitchList } = useNoteName();
 
   const context = useMemo(() => keyContext(tonic, mode), [tonic, mode]);
   const signatureCount = Math.abs(context.alteration);
@@ -141,7 +143,7 @@ export function CircleOfFifths({
         </div>
         <div>
           <dt>Scale</dt>
-          <dd>{context.scale.join(" ")}</dd>
+          <dd>{pitchList(context.scale)}</dd>
         </div>
         <div>
           <dt>Diatonic chords</dt>

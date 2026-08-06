@@ -31,6 +31,7 @@ import {
   updateSongSketch
 } from "../lib/songSketches";
 import { explainSongSketch, songLabTrackTypes } from "../lib/instruments";
+import { useNoteName } from "../hooks/useNoteName";
 import { useProgress } from "../state/progress";
 import type { SongLabTrackType, SongSketch } from "../types/course";
 import { theoryContextForSongSketch } from "../lib/theoryContext";
@@ -95,6 +96,7 @@ export function SongLabPage() {
     progress,
     saveSongSketch
   } = useProgress();
+  const { pitchList } = useNoteName();
   const location = useLocation();
   const seed = isSeedProgression(
     (location.state as { seedProgression?: unknown } | null)?.seedProgression
@@ -563,15 +565,15 @@ export function SongLabPage() {
             <dl>
               <div>
                 <dt>Scale</dt>
-                <dd>{theoryContext.scaleNotes.join(" ")}</dd>
+                <dd>{pitchList(theoryContext.scaleNotes)}</dd>
               </div>
               <div>
                 <dt>Chord tones</dt>
-                <dd>{theoryContext.chordTones.join(" ")}</dd>
+                <dd>{pitchList(theoryContext.chordTones)}</dd>
               </div>
               <div>
                 <dt>Safe melody notes</dt>
-                <dd>{theoryContext.safeMelodyNotes.join(" ")}</dd>
+                <dd>{pitchList(theoryContext.safeMelodyNotes)}</dd>
               </div>
             </dl>
             <p className="theory-context-panel__summary">{progressionSummary}</p>

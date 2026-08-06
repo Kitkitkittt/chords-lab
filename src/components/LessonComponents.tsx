@@ -10,6 +10,7 @@ import {
 } from "../lib/audioEngine";
 import type { AudioPlaybackState } from "../lib/audioEngine";
 import { keyboardPitchClasses, normalizePitchClassForKeyboard } from "../lib/music";
+import { useNoteName } from "../hooks/useNoteName";
 import { useProgress } from "../state/progress";
 
 type CalloutProps = {
@@ -279,6 +280,7 @@ export function NotationFigure({
 
 export function KeyboardFigure({ label, active, playable }: KeyboardFigureProps) {
   const activeSet = new Set(active.map(normalizePitchClassForKeyboard));
+  const { noteName } = useNoteName();
 
   return (
     <figure className="keyboard-figure">
@@ -293,6 +295,7 @@ export function KeyboardFigure({ label, active, playable }: KeyboardFigureProps)
         {keyboardPitchClasses().map((pitchClass) => {
           const isBlack = pitchClass.includes("#");
           const isActive = activeSet.has(pitchClass);
+          const shown = noteName(pitchClass);
           const className = [
             "keyboard-figure__key",
             isBlack ? "is-black" : "is-white",
@@ -307,19 +310,19 @@ export function KeyboardFigure({ label, active, playable }: KeyboardFigureProps)
                 key={pitchClass}
                 type="button"
                 className={className}
-                aria-label={pitchClass}
+                aria-label={shown}
                 onClick={() =>
                   void triggerNote(`${pitchClass}4`, { voiceId: "keys" })
                 }
               >
-                {pitchClass}
+                {shown}
               </button>
             );
           }
 
           return (
             <span key={pitchClass} className={className}>
-              {pitchClass}
+              {shown}
             </span>
           );
         })}

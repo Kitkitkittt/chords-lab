@@ -1,4 +1,5 @@
 import { useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useNoteName } from "../hooks/useNoteName";
 import { normalizePitchClassForKeyboard } from "../lib/music";
 import { pianoNotes } from "../lib/pianoPerformance";
 
@@ -54,6 +55,7 @@ export function DigitalPiano({
   onToggle
 }: DigitalPianoProps) {
   const heldPointers = useRef(new Set<string>());
+  const { noteName } = useNoteName();
   const activeSet = new Set(activeNotes);
   const targetSet = new Set(
     exactTargetNotes ? targetNotes : targetNotes.map(normalizePitchClassForKeyboard)
@@ -142,7 +144,7 @@ export function DigitalPiano({
                   onKeyDown={(event) => handleKeyDown(event, note)}
                   onKeyUp={handleKeyUp}
                 >
-                  {noteLabels ? <span>{pitch}</span> : null}
+                  {noteLabels ? <span>{noteName(pitch)}</span> : null}
                   {qwertyKey ? <kbd>{qwertyKey.toUpperCase()}</kbd> : null}
                 </button>
               );
