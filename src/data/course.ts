@@ -1,6 +1,15 @@
 import AccidentalsSteps, {
   meta as accidentalsStepsMeta
 } from "../content/lessons/accidentals-steps.mdx";
+import BorrowedChords, {
+  meta as borrowedChordsMeta
+} from "../content/lessons/borrowed-chords.mdx";
+import Modulation, {
+  meta as modulationMeta
+} from "../content/lessons/modulation.mdx";
+import SecondaryDominants, {
+  meta as secondaryDominantsMeta
+} from "../content/lessons/secondary-dominants.mdx";
 import AnalysisLab, {
   meta as analysisLabMeta
 } from "../content/lessons/analysis-lab.mdx";
@@ -204,6 +213,30 @@ export const courseModules: CourseModule[] = [
     lessonSlugs: ["voice-leading-basics"]
   },
   {
+    slug: "secondary-dominants",
+    title: "Secondary Dominants",
+    colorRole: "harmony",
+    description:
+      "Tonicize a non-tonic chord by borrowing the pull of V.",
+    lessonSlugs: ["secondary-dominants"]
+  },
+  {
+    slug: "borrowed-chords",
+    title: "Borrowed Chords",
+    colorRole: "harmony",
+    description:
+      "Recolor a major key with chords from its parallel minor.",
+    lessonSlugs: ["borrowed-chords"]
+  },
+  {
+    slug: "modulation",
+    title: "Modulation",
+    colorRole: "harmony",
+    description:
+      "Move the sense of home to a new key using pivot chords.",
+    lessonSlugs: ["modulation"]
+  },
+  {
     slug: "pop-rock",
     title: "Pop/Rock Harmony",
     colorRole: "harmony",
@@ -279,7 +312,10 @@ export const lessons: Lesson[] = [
   { ...analysisLabMeta, Component: AnalysisLab },
   { ...chordExtensionsMeta, Component: ChordExtensions },
   { ...syncopationGrooveMeta, Component: SyncopationGroove },
-  { ...twelveBarBluesMeta, Component: TwelveBarBlues }
+  { ...twelveBarBluesMeta, Component: TwelveBarBlues },
+  { ...secondaryDominantsMeta, Component: SecondaryDominants },
+  { ...borrowedChordsMeta, Component: BorrowedChords },
+  { ...modulationMeta, Component: Modulation }
 ];
 
 export const lessonsBySlug = new Map(
@@ -310,3 +346,5 @@ export function getAdjacentLessons(lessonSlug: string): {
     next: index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : undefined
   };
 }
+
+

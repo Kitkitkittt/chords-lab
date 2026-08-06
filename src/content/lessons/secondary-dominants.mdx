@@ -1,0 +1,84 @@
+export const meta = {
+  slug: "secondary-dominants",
+  title: "Secondary Dominants",
+  moduleSlug: "secondary-dominants",
+  level: "intermediate",
+  estimatedMinutes: 12,
+  outcomes: [
+    "Explain how a secondary dominant tonicizes a non-tonic chord",
+    "Spell V/V, V/vi, V/ii, V/IV, and V/iii in C major",
+    "Hear a secondary dominant resolve to its target"
+  ],
+  prerequisites: ["diatonic-harmony", "cadences-phrases"],
+  citations: [
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    },
+    {
+      label: "Teoria chords",
+      url: "https://www.teoria.com/en/tutorials/chords/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    }
+  ]
+};
+
+## Any chord can borrow a dominant of its own
+
+In a key, V is the chord that pulls hardest toward I. A secondary dominant lends that same pull to some *other* chord. For one moment, the music treats a non-tonic chord as if it were the tonic. That move is called tonicizing.
+
+The notation says exactly what it does: `V/V` is "the five of five" — the dominant of the chord that is normally V.
+
+<Callout title="How to spell one" tone="harmony">
+  Find the target. Go up a perfect fifth from it. Build a dominant seventh there.
+  In C major the target V is G, a fifth above G is D, so V/V is D7.
+</Callout>
+
+## The chromatic note is the giveaway
+
+A secondary dominant usually needs an accidental that the key signature does not have. That raised note is the leading tone of the target, and it is what makes your ear briefly accept a new home.
+
+<AudioExample label="V/V then V in C (D7 to G)" notes={["D4", "F#4", "A4", "C5"]} mode="chord" />
+
+D7 contains F#, which is not in C major. That F# leans up into G.
+
+## The common ones in C major
+
+| Numeral | Target | Spelling |
+| --- | --- | --- |
+| V/ii | ii (D minor) | A7 |
+| V/iii | iii (E minor) | B7 |
+| V/IV | IV (F major) | C7 |
+| V/V | V (G major) | D7 |
+| V/vi | vi (A minor) | E7 |
+
+Notice V/IV is C7. The tonic chord itself, with a flat seventh added, becomes a dominant aiming at IV.
+
+## Hear it inside a progression
+
+A secondary dominant most often appears right before its target, delaying an expected arrival and making it feel earned.
+
+<PlayableProgression numerals={["I", "V7/V", "V", "I"]} tonic="C" mode="major" label="Tonicizing V in C" />
+
+<p><a href="/practice/advanced-harmony">Drill secondary dominants</a></p>
+
+<MicroCheck
+  id="secondary-dominants-spell"
+  prompt="In C major, which chord is V/V?"
+  options={["D7", "G7", "A7"]}
+  answer="D7"
+  explanation="V is G, a perfect fifth above G is D, and a secondary dominant is a dominant seventh, so V/V is D7."
+/>
+
+<MicroCheck
+  id="secondary-dominants-purpose"
+  prompt="What does a secondary dominant do?"
+  options={[
+    "Briefly treats a non-tonic chord as a temporary tonic",
+    "Changes the time signature",
+    "Removes the third from the chord"
+  ]}
+  answer="Briefly treats a non-tonic chord as a temporary tonic"
+  explanation="Tonicizing borrows the dominant pull of V and aims it at another chord."
+/>

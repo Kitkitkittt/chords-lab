@@ -1,0 +1,87 @@
+export const meta = {
+  slug: "modulation",
+  title: "Modulation and Pivot Chords",
+  moduleSlug: "modulation",
+  level: "intermediate",
+  estimatedMinutes: 12,
+  outcomes: [
+    "Tell modulation apart from a passing chromatic chord",
+    "Find a common chord shared by two keys",
+    "Use a pivot chord to move to a closely related key"
+  ],
+  prerequisites: ["scales-keys", "cadences-phrases", "borrowed-chords"],
+  citations: [
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    },
+    {
+      label: "Teoria scales and keys",
+      url: "https://www.teoria.com/en/tutorials/scales/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    }
+  ]
+};
+
+## Modulation moves the sense of home
+
+A modulation is a change of key that sticks. It is not one surprising chord — it is a new tonic that your ear starts measuring everything against, usually confirmed by a cadence in the new key.
+
+<Callout title="The test" tone="harmony">
+  Ask which note now feels like rest. If the resting note moved and stayed
+  moved, the music modulated. If it snapped back, you heard a borrowed chord.
+</Callout>
+
+## Closely related keys are the easy trip
+
+Keys one step apart on the circle of fifths differ by a single accidental, so they share most of their chords. C major and G major share six of seven notes. That overlap is what makes a smooth modulation possible.
+
+Relative major and minor pairs, like C major and A minor, share a key signature outright.
+
+## A pivot chord belongs to both keys
+
+The standard technique is the pivot, or common chord: pick a chord that is diatonic in the old key *and* the new one. Approach it as a member of the old key, then leave it as a member of the new key. Nothing sounds jarring because the chord itself never contradicts either key.
+
+Moving from C major to G major, these chords are diatonic in both, so any of them can serve as the pivot:
+
+| Chord | In C major | In G major |
+| --- | --- | --- |
+| C major | I | IV |
+| E minor | iii | vi |
+| A minor | vi | ii |
+| G major | V | I |
+
+A chord like Ab major cannot pivot here: it is in neither key.
+
+## Confirm the new key with a cadence
+
+After the pivot, land a cadence in the target key. Without that confirmation the passage sounds like it merely wandered.
+
+<PlayableProgression numerals={["I", "vi", "V", "I"]} tonic="G" mode="major" label="Confirming G major after the pivot" />
+
+<p><a href="/practice/advanced-harmony">Drill modulation and pivots</a></p>
+
+<MicroCheck
+  id="modulation-pivot"
+  prompt="What makes a chord usable as a pivot chord?"
+  options={[
+    "It is diatonic to both the old key and the new key",
+    "It contains an accidental from neither key",
+    "It is always a diminished chord"
+  ]}
+  answer="It is diatonic to both the old key and the new key"
+  explanation="A common chord belongs to both keys, so it can be reinterpreted mid-phrase."
+/>
+
+<MicroCheck
+  id="modulation-vs-borrowing"
+  prompt="How is modulation different from using a borrowed chord?"
+  options={[
+    "Modulation establishes a new tonic, while a borrowed chord is passing color",
+    "Modulation only happens in minor keys",
+    "A borrowed chord always requires a key signature change"
+  ]}
+  answer="Modulation establishes a new tonic, while a borrowed chord is passing color"
+  explanation="Borrowing recolors the current key; modulation replaces the sense of home."
+/>

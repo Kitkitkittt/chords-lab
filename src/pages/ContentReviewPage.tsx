@@ -24,6 +24,9 @@ const lessonPracticeLinks: Record<string, string[]> = {
   "cadences-phrases": ["harmony", "ear"],
   "common-progressions": ["harmony", "song"],
   "voice-leading-basics": ["harmony"],
+  "secondary-dominants": ["harmony"],
+  "borrowed-chords": ["harmony"],
+  modulation: ["harmony", "scales"],
   "pop-rock-harmony": ["harmony", "song"],
   "form-song-sections": ["song", "harmony"],
   "analysis-lab": ["harmony", "review"]

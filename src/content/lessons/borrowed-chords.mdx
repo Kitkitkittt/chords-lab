@@ -1,0 +1,80 @@
+export const meta = {
+  slug: "borrowed-chords",
+  title: "Borrowed Chords and Modal Mixture",
+  moduleSlug: "borrowed-chords",
+  level: "intermediate",
+  estimatedMinutes: 11,
+  outcomes: [
+    "Explain modal mixture as borrowing from the parallel minor",
+    "Spell the minor iv, bVII, bVI, and bIII in a major key",
+    "Choose a borrowed chord for a specific mood"
+  ],
+  prerequisites: ["diatonic-harmony", "minor-scales-modes"],
+  citations: [
+    {
+      label: "Open Music Theory contents",
+      url: "https://openmusictheory.github.io/contents.html",
+      licenseNote: "CC BY-SA 4.0 reference; original wording here."
+    },
+    {
+      label: "Teoria chords",
+      url: "https://www.teoria.com/en/tutorials/chords/",
+      licenseNote: "CC BY-NC-ND 4.0 reference only; original wording here."
+    }
+  ]
+};
+
+## Two keys share a tonic
+
+C major and C minor start on the same note. They are parallel keys. Because the tonic is shared, you can pull a chord out of C minor, drop it into C major, and still sound like you are home — just recolored.
+
+That trade is called modal mixture, and the imported chord is a borrowed chord.
+
+<Callout title="Why it works" tone="harmony">
+  The borrowed chord keeps the same root as a chord you already expected. Only
+  the quality or an inner note changes, so the progression's direction survives
+  while its mood shifts.
+</Callout>
+
+## The useful ones in C major
+
+| Borrowed chord | Spelling | Flavor |
+| --- | --- | --- |
+| minor iv | F minor | bittersweet, tender |
+| bVII | Bb major | open, rock-flavored |
+| bVI | Ab major | broad, cinematic |
+| bIII | Eb major | unexpected lift |
+
+Each comes straight from C minor. The minor iv is the clearest case: F major and F minor differ by one note, so swapping them is a single-note change with a large emotional effect.
+
+<AudioExample label="IV in C (F major)" notes={["F4", "A4", "C5"]} mode="chord" />
+
+<AudioExample label="Borrowed minor iv (F minor)" notes={["F4", "Ab4", "C5"]} mode="chord" />
+
+## Borrowing is not modulating
+
+A borrowed chord is a passing color. The key does not change; you never re-hear the tonic as somewhere else. If the music stays away long enough that a new tonic takes over, that is modulation instead.
+
+## Hear it resolve home
+
+The minor iv voice-leads beautifully back to I, because its Ab slides down a half step to G.
+
+<PlayableProgression numerals={["I", "IV", "iv", "I"]} tonic="C" mode="major" label="Major IV then borrowed iv in C" />
+
+<p><a href="/practice/advanced-harmony">Drill borrowed chords</a></p>
+
+<MicroCheck
+  id="borrowed-chords-source"
+  prompt="Where does a borrowed chord come from?"
+  options={["The parallel minor or major key", "The relative key a third away", "A different time signature"]}
+  answer="The parallel minor or major key"
+  explanation="Modal mixture borrows from the key that shares the same tonic."
+/>
+
+<MicroCheck
+  id="borrowed-chords-spell"
+  prompt="In C major, which chord is the borrowed bVII?"
+  options={["Bb major", "B diminished", "Bb minor"]}
+  answer="Bb major"
+  explanation="bVII lowers the seventh degree to Bb and builds a major triad: Bb, D, F."
+/>

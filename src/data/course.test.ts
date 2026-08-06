@@ -3,7 +3,18 @@ import { courseModules, lessons, lessonsBySlug, modulesBySlug } from "./course";
 
 describe("course metadata", () => {
   it("has valid module and lesson references", () => {
-    expect(lessons.length).toBe(26);
+    expect(lessons.length).toBe(29);
+
+    // Every lesson must be reachable from some module, otherwise it ships as
+    // dead content no learner can navigate to.
+    const linkedSlugs = new Set(
+      courseModules.flatMap((module) => module.lessonSlugs)
+    );
+    for (const lesson of lessons) {
+      expect(linkedSlugs.has(lesson.slug), `${lesson.slug} is unreachable`).toBe(
+        true
+      );
+    }
 
     for (const module of courseModules) {
       expect(module.lessonSlugs.length).toBeGreaterThan(0);

@@ -121,6 +121,21 @@ export const lessonLinks: Record<string, LessonLink> = {
     checkpointModule: "harmony",
     reviewModules: ["harmony"]
   },
+  "secondary-dominants": {
+    practiceRoute: "/practice/advanced-harmony",
+    checkpointModule: "harmony",
+    reviewModules: ["harmony"]
+  },
+  "borrowed-chords": {
+    practiceRoute: "/practice/advanced-harmony",
+    checkpointModule: "harmony",
+    reviewModules: ["harmony"]
+  },
+  modulation: {
+    practiceRoute: "/practice/advanced-harmony",
+    checkpointModule: "harmony",
+    reviewModules: ["harmony"]
+  },
   "pop-rock-harmony": {
     practiceRoute: "/lab/song",
     checkpointModule: "harmony",
@@ -177,3 +192,4 @@ export function reviewModulesForCompletedLessons(
 
   return Array.from(moduleIds);
 }
+

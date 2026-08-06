@@ -208,6 +208,9 @@ const lessonSkillMap: Record<string, SkillId[]> = {
   "cadences-phrases": ["roman-numerals"],
   "common-progressions": ["roman-numerals"],
   "voice-leading-basics": ["voice-leading"],
+  "secondary-dominants": ["roman-numerals"],
+  "borrowed-chords": ["roman-numerals"],
+  modulation: ["scale-spelling", "roman-numerals"],
   "pop-rock-harmony": ["roman-numerals"],
   "form-song-sections": ["instrument-application"],
   "analysis-lab": ["roman-numerals"],
@@ -232,4 +235,6 @@ export function skillsForLesson(
 
   return lessonSkillMap[slug] ?? [];
 }
+
+
 
