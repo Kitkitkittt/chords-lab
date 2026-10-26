@@ -494,6 +494,9 @@ Test coverage currently includes:
 Playwright starts a preview server at `http://127.0.0.1:42731` using the
 configuration in `playwright.config.ts`.
 
+CI pins Ubuntu 24.04 because the locked Playwright release does not support
+Ubuntu 26.04; lint, types, tests, build, and browser checks remain unchanged.
+
 ## PWA And Offline Behavior
 
 The app uses `vite-plugin-pwa` with an auto-updating service worker. The PWA
