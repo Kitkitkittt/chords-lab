@@ -1,16 +1,16 @@
 import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
-import { ProgressContext } from "../state/progressContext";
+import { ProgressSettingsContext } from "../state/progressContext";
 import { useNoteName } from "./useNoteName";
 
 function withNaming(naming: unknown) {
   return function Wrapper({ children }: { children: ReactNode }) {
     const value = {
-      progress: { settings: { noteNaming: naming } }
-    } as unknown as React.ContextType<typeof ProgressContext>;
+      noteNaming: naming
+    } as unknown as React.ContextType<typeof ProgressSettingsContext>;
     return (
-      <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>
+      <ProgressSettingsContext.Provider value={value}>{children}</ProgressSettingsContext.Provider>
     );
   };
 }

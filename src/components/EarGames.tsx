@@ -11,7 +11,7 @@ import {
   type EarGameId,
   type EarGameRound
 } from "../lib/earGames";
-import { useProgress } from "../state/progress";
+import { useProgressSettings } from "../state/progress";
 
 /**
  * Casual ear games for the Play hub. Pick a game, hear a round, tap a guess,
@@ -19,8 +19,8 @@ import { useProgress } from "../state/progress";
  * graded ear-training drill still lives in Practice for learners who want it.
  */
 export function EarGames() {
-  const { progress } = useProgress();
-  const audioEnabled = progress.settings.audioEnabled;
+  const settings = useProgressSettings();
+  const audioEnabled = settings.audioEnabled;
 
   const [game, setGame] = useState<EarGameId>("interval");
   const [round, setRound] = useState<EarGameRound>(() =>

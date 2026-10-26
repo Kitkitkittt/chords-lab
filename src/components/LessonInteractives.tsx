@@ -14,7 +14,7 @@ import {
   progressionChords,
   type KeyMode
 } from "../lib/theory";
-import { useProgress } from "../state/progress";
+import { useProgressSettings } from "../state/progress";
 
 /**
  * Extra interactive blocks available to lessons via MDX. These reuse the
@@ -56,8 +56,8 @@ export function PlayableProgression({
   mode = "major",
   label
 }: PlayableProgressionProps) {
-  const { progress } = useProgress();
-  const audioEnabled = progress.settings.audioEnabled;
+  const settings = useProgressSettings();
+  const audioEnabled = settings.audioEnabled;
   const [status, setStatus] = useState<AudioPlaybackState>("idle");
   const [activeIndex, setActiveIndex] = useState(-1);
 
@@ -153,8 +153,8 @@ type IntervalExplorerProps = {
  * "hear the distance" tool.
  */
 export function IntervalExplorer({ root = "C4" }: IntervalExplorerProps) {
-  const { progress } = useProgress();
-  const audioEnabled = progress.settings.audioEnabled;
+  const settings = useProgressSettings();
+  const audioEnabled = settings.audioEnabled;
   const [target, setTarget] = useState<string | null>(null);
 
   const targets = useMemo(() => {

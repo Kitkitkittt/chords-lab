@@ -423,6 +423,10 @@ Key files:
 
 Chords Lab stores learner data only in browser `localStorage`.
 
+Settings and stable progress actions use separate React subscriptions, so ordinary
+practice-state writes do not rerender settings-only practice surfaces. Audio and
+note-name changes still update the active session; persistence behavior is unchanged.
+
 Storage key:
 
 ```text

@@ -10,7 +10,7 @@ import {
   type AudioPlaybackState,
   type PlaybackPattern
 } from "../lib/audioEngine";
-import { useProgress } from "../state/progress";
+import { useProgressSettings } from "../state/progress";
 
 const DEFAULT_CANTUS = "C4 D4 E4 D4 C4";
 const DEFAULT_COUNTER = "E4 A4 G4 F4 E4";
@@ -63,7 +63,7 @@ function counterpointPattern(
  * `src/lib/counterpoint.ts`; this page only collects input and shows findings.
  */
 export function CounterpointPage() {
-  const { progress } = useProgress();
+  const settings = useProgressSettings();
   const [cantus, setCantus] = useState(DEFAULT_CANTUS);
   const [counter, setCounter] = useState(DEFAULT_COUNTER);
   const [status, setStatus] = useState<AudioPlaybackState>("idle");
@@ -80,7 +80,7 @@ export function CounterpointPage() {
     }
 
     await playPattern(counterpointPattern(parseLine(cantus), parseLine(counter)), {
-      audioEnabled: progress.settings.audioEnabled,
+      audioEnabled: settings.audioEnabled,
       onStateChange: setStatus
     });
   }

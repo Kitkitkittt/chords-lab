@@ -1,7 +1,7 @@
 import { useContext, useMemo } from "react";
 import type { NoteNamingSystem } from "../lib/noteNaming";
 import { describePitchClasses, toNamingSystem } from "../lib/noteNaming";
-import { ProgressContext } from "../state/progressContext";
+import { ProgressSettingsContext } from "../state/progressContext";
 
 const SYSTEMS: NoteNamingSystem[] = ["english", "fixed-do", "german"];
 
@@ -25,13 +25,13 @@ export type NoteNameHelpers = {
  * converters in `lib/noteNaming`. Audio, storage, and answer checking keep using
  * English names — only what the learner reads changes.
  *
- * This reads the context directly rather than via `useProgress` so that a
+ * This reads the settings context directly so that a
  * keyboard rendered outside a ProgressProvider (isolated component tests,
  * future embeds) falls back to English instead of throwing.
  */
 export function useNoteName(): NoteNameHelpers {
-  const context = useContext(ProgressContext);
-  const system = activeSystem(context?.progress.settings.noteNaming);
+  const settings = useContext(ProgressSettingsContext);
+  const system = activeSystem(settings?.noteNaming);
 
   return useMemo(
     () => ({

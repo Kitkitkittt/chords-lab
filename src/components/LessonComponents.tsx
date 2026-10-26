@@ -11,7 +11,7 @@ import {
 import type { AudioPlaybackState } from "../lib/audioEngine";
 import { keyboardPitchClasses, normalizePitchClassForKeyboard } from "../lib/music";
 import { useNoteName } from "../hooks/useNoteName";
-import { useProgress } from "../state/progress";
+import { useProgressActions, useProgressSettings } from "../state/progress";
 
 type CalloutProps = {
   title?: string;
@@ -70,7 +70,7 @@ export function MicroCheck({
   const [result, setResult] = useState<"idle" | "correct" | "incorrect">(
     "idle"
   );
-  const { recordCheckResult } = useProgress();
+  const { recordCheckResult } = useProgressActions();
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -136,7 +136,7 @@ export function AudioExample({
   );
   const [playbackState, setPlaybackState] =
     useState<AudioPlaybackState>("idle");
-  const { progress } = useProgress();
+  const settings = useProgressSettings();
 
   useEffect(() => {
     return () => stopAudioPlayback();
@@ -150,7 +150,7 @@ export function AudioExample({
 
     const playFn = mode === "chord" ? playChord : playSequence;
     const nextState = await playFn(label, notes, {
-      audioEnabled: progress.settings.audioEnabled,
+      audioEnabled: settings.audioEnabled,
       onStateChange: setPlaybackState
     });
     setStatus(

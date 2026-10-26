@@ -15,7 +15,7 @@ import {
 } from "../lib/progressionSpotter";
 import { explainProgression } from "../lib/chordSuggest";
 import { skillsById } from "../lib/skills";
-import { useProgress } from "../state/progress";
+import { useProgressSettings } from "../state/progress";
 
 /** Build a playable chord-loop pattern from a song's Roman numerals. */
 function songPattern(song: RepertoireSong): PlaybackPattern {
@@ -37,7 +37,7 @@ function songPattern(song: RepertoireSong): PlaybackPattern {
 }
 
 export function RepertoirePage() {
-  const { progress } = useProgress();
+  const settings = useProgressSettings();
   const [activeId, setActiveId] = useState<string>("");
   const [status, setStatus] = useState<AudioPlaybackState>("idle");
   const [progressionName, setProgressionName] = useState<string>("");
@@ -60,7 +60,7 @@ export function RepertoirePage() {
 
     setActiveId(song.id);
     await playPattern(songPattern(song), {
-      audioEnabled: progress.settings.audioEnabled,
+      audioEnabled: settings.audioEnabled,
       onStateChange: setStatus
     });
   }
