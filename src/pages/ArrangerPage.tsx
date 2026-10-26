@@ -28,7 +28,7 @@ import {
   type SectionLabel
 } from "../lib/songArranger";
 import { explainProgression } from "../lib/chordSuggest";
-import { useProgress } from "../state/progress";
+import { useProgressActions, useProgressSettings } from "../state/progress";
 
 const SECTION_LABELS: SectionLabel[] = [
   "Intro",
@@ -45,7 +45,8 @@ const SECTION_LABELS: SectionLabel[] = [
  * structure and order. Detailed per-bar editing stays in Song Lab.
  */
 export function ArrangerPage() {
-  const { progress, saveSongSketch } = useProgress();
+  const settings = useProgressSettings();
+  const { saveSongSketch } = useProgressActions();
   const [arrangement, setArrangement] = useState(() =>
     createArrangement("My song")
   );
@@ -70,7 +71,7 @@ export function ArrangerPage() {
     }
 
     await playSongSketch(flattened, {
-      audioEnabled: progress.settings.audioEnabled,
+      audioEnabled: settings.audioEnabled,
       onStateChange: (state) => setStatus(state)
     });
   }
@@ -84,7 +85,7 @@ export function ArrangerPage() {
   async function exportWav() {
     setStatus("loading");
     const blob = await renderSongSketchToWav(flattened, {
-      audioEnabled: progress.settings.audioEnabled
+      audioEnabled: settings.audioEnabled
     });
     setStatus("idle");
 

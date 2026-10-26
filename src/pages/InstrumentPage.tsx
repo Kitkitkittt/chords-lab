@@ -24,7 +24,7 @@ import {
   instrumentsById,
   isInstrumentId
 } from "../lib/instruments";
-import { useProgress } from "../state/progress";
+import { useProgressActions, useProgressSettings } from "../state/progress";
 import type { InstrumentId } from "../types/course";
 
 const chordChoices = ["C", "G", "Am", "F", "G7"];
@@ -38,8 +38,9 @@ function notesWithOctave(notes: string[], octave = 4) {
 export function InstrumentPage() {
   const { instrumentId } = useParams();
   const navigate = useNavigate();
-  const { progress, recordPracticeResult } = useProgress();
-  const audioEnabled = progress.settings.audioEnabled;
+  const settings = useProgressSettings();
+  const { recordPracticeResult } = useProgressActions();
+  const audioEnabled = settings.audioEnabled;
   const [symbol, setSymbol] = useState("C");
   const [tonic, setTonic] = useState("C");
   const [scaleType, setScaleType] = useState("major");
@@ -126,7 +127,7 @@ export function InstrumentPage() {
       return (
         <PianoStudio
           audioEnabled={audioEnabled}
-          reducedMotion={progress.settings.reducedMotion}
+          reducedMotion={settings.reducedMotion}
           onComplete={(mode, detail) =>
             recordPracticeResult(
                `piano-${mode}:${detail.id}`,

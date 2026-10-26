@@ -9,7 +9,7 @@ import {
 } from "../lib/audioEngine";
 import { describeChordStack } from "../lib/interactionTools";
 import { ChordFlourish } from "./ChordFlourish";
-import { useProgress } from "../state/progress";
+import { useProgressSettings } from "../state/progress";
 
 /**
  * Landing-page hook: a compact, playable two-octave keyboard. Pressing keys
@@ -47,8 +47,8 @@ function pitchClassOf(note: string): string {
 }
 
 export function HeroChordPlay() {
-  const { progress } = useProgress();
-  const audioEnabled = progress.settings.audioEnabled;
+  const settings = useProgressSettings();
+  const audioEnabled = settings.audioEnabled;
   const [held, setHeld] = useState<string[]>([]);
   const pressedNotes = useRef(new Set<string>());
   const presetTimers = useRef<number[]>([]);

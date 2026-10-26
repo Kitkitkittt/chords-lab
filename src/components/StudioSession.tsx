@@ -1,5 +1,5 @@
 import { Headphones, Play, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { KeyboardFigure, NotationFigure } from "./LessonComponents";
 import { DirectPracticeWorkbench } from "./PracticeWorkbenches";
@@ -14,7 +14,7 @@ import {
 } from "../lib/audioEngine";
 import type { AudioPlaybackState } from "../lib/audioEngine";
 import type { PracticePrompt } from "../lib/practiceEngine";
-import { useProgress } from "../state/progress";
+import { useProgressActions, useProgressSettings } from "../state/progress";
 
 type StudioSessionProps = {
   prompts: PracticePrompt[];
@@ -33,7 +33,7 @@ type StudioSessionProps = {
  * (dictation, sight-reading) reuse the full interaction model without changing
  * the generated-module machinery. Audio stays user-triggered.
  */
-export function StudioSession({
+export const StudioSession = memo(function StudioSession({
   prompts,
   label,
   moduleId,
@@ -41,12 +41,12 @@ export function StudioSession({
   onComplete
 }: StudioSessionProps) {
   const {
-    progress,
     queuePracticeReview,
     recordPlacementResult,
     recordPracticeResult,
     recordSkillConfidence
-  } = useProgress();
+  } = useProgressActions();
+  const { audioEnabled } = useProgressSettings();
   const completed = useRef(false);
   const [audioStatus, setAudioStatus] = useState<AudioPlaybackState>("idle");
   const [isAudioRevealed, setIsAudioRevealed] = useState(false);
@@ -94,9 +94,9 @@ export function StudioSession({
     }
 
     void playFeedbackTone(session.feedback.feedbackTone, {
-      audioEnabled: progress.settings.audioEnabled
+      audioEnabled
     });
-  }, [progress.settings.audioEnabled, session.feedback.feedbackTone]);
+  }, [audioEnabled, session.feedback.feedbackTone]);
 
   async function playPromptAudio() {
     if (!session.prompt?.playbackPattern && !session.prompt?.audioNotes?.length) {
@@ -110,14 +110,14 @@ export function StudioSession({
 
     if (session.prompt.playbackPattern) {
       await playPattern(session.prompt.playbackPattern, {
-        audioEnabled: progress.settings.audioEnabled,
+        audioEnabled,
         onStateChange: setAudioStatus
       });
       return;
     }
 
     await playSequence(session.prompt.question, session.prompt.audioNotes ?? [], {
-      audioEnabled: progress.settings.audioEnabled,
+      audioEnabled,
       onStateChange: setAudioStatus
     });
   }
@@ -197,7 +197,7 @@ export function StudioSession({
         undoSelected={session.undoSelected}
         clearSelected={session.clearSelected}
         disabled={session.isAnswered}
-        audioEnabled={progress.settings.audioEnabled}
+        audioEnabled={audioEnabled}
       />
 
       <div className="practice-visuals">
@@ -316,4 +316,4 @@ export function StudioSession({
        />
     </div>
   );
-}
+});

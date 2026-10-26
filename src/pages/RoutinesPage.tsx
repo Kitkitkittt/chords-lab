@@ -9,7 +9,7 @@ import {
   routeForStep
 } from "../lib/routines";
 import type { Routine, RoutineStep } from "../lib/routines";
-import { useProgress } from "../state/progress";
+import { useProgressActions, useProgressSettings } from "../state/progress";
 
 const stepOptions: RoutineStep[] = [
   { kind: "review", label: "Review" },
@@ -19,13 +19,14 @@ const stepOptions: RoutineStep[] = [
 ];
 
 export function RoutinesPage() {
-  const { progress, saveRoutine, deleteRoutine } = useProgress();
+  const settings = useProgressSettings();
+  const { saveRoutine, deleteRoutine } = useProgressActions();
   const [status, setStatus] = useState("");
   const [name, setName] = useState("");
   const [steps, setSteps] = useState<RoutineStep[]>([]);
   const [running, setRunning] = useState<{ routine: Routine; index: number }>();
   const [presets] = useState(defaultRoutines);
-  const saved = progress.settings.routines ?? [];
+  const saved = settings.routines ?? [];
 
   function addStep(step: RoutineStep) {
     setSteps((current) => current.length < MAX_ROUTINE_STEPS ? [...current, step] : current);

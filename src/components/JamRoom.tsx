@@ -49,7 +49,7 @@ import { createSketchFromJam } from "../lib/songSketches";
 import { useInstrumentHotkeys } from "../hooks/useInstrumentHotkeys";
 import type { CapturedNote } from "../types/course";
 import { ChordFlourish } from "./ChordFlourish";
-import { useProgress } from "../state/progress";
+import { useProgressActions, useProgressSettings } from "../state/progress";
 
 /**
  * Jam Room: pick a vibe (or build your own progression), shape the mix and FX,
@@ -176,9 +176,9 @@ function bassRootFor(symbol: string): string {
 const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 
 export function JamRoom() {
-  const { progress, saveSongSketch } = useProgress();
+  const { saveSongSketch } = useProgressActions();
   const navigate = useNavigate();
-  const audioEnabled = progress.settings.audioEnabled;
+  const { audioEnabled } = useProgressSettings();
 
   const [vibe, setVibe] = useState<Vibe>(VIBES[0]);
   const [beatId, setBeatId] = useState<string>("backbeat");

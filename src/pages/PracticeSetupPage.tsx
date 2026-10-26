@@ -8,7 +8,7 @@ import {
   practiceTopicsForModule
 } from "../lib/practiceGenerators";
 import type { PracticeDifficulty } from "../lib/practiceEngine";
-import { useProgress } from "../state/progress";
+import { useProgressSettings } from "../state/progress";
 
 function isPracticeModuleId(value: string | undefined): value is PracticeModuleId {
   return practiceModules.some((module) => module.id === value);
@@ -17,7 +17,7 @@ function isPracticeModuleId(value: string | undefined): value is PracticeModuleI
 export function PracticeSetupPage() {
   const params = useParams();
   const navigate = useNavigate();
-  const { progress } = useProgress();
+  const settings = useProgressSettings();
   const moduleId = isPracticeModuleId(params.moduleId) ? params.moduleId : "pitch";
   const module = practiceModules.find((item) => item.id === moduleId);
   const [difficulty, setDifficulty] =
@@ -27,7 +27,7 @@ export function PracticeSetupPage() {
   const [key, setKey] = useState("C");
   const [topic, setTopic] = useState("mixed");
   const [audioEnabled, setAudioEnabled] = useState(
-    progress.settings.audioEnabled
+    settings.audioEnabled
   );
   const topics = useMemo(() => practiceTopicsForModule(moduleId), [moduleId]);
   const keys = useMemo(() => practiceKeysForDifficulty(difficulty), [difficulty]);

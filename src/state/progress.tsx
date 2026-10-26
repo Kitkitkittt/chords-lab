@@ -29,8 +29,8 @@ import type {
 } from "../types/course";
 import type { NoteNamingPreference } from "../types/course";
 
-import { ProgressContext } from "./progressContext";
-import type { ProgressContextValue } from "./progressContext";
+import { ProgressActionsContext, ProgressContext, ProgressSettingsContext } from "./progressContext";
+import type { ProgressActions, ProgressContextValue } from "./progressContext";
 
 export { ProgressContext } from "./progressContext";
 export type { ProgressContextValue } from "./progressContext";
@@ -563,22 +563,18 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     setProgress(fallbackProgress());
   }, [setProgress]);
 
-  const value = useMemo<ProgressContextValue>(
+  const actions = useMemo<ProgressActions>(
     () => ({
-       progress,
-       completedCount: progress.completedLessonSlugs.length,
-      isLessonComplete,
-      isLessonBookmarked,
       markLessonComplete,
       toggleBookmark,
       setLastLesson,
       recordCheckResult,
-       recordPracticeResult,
-       recordPracticeSession,
-       queuePracticeReview,
-       recordPlacementResult,
-       resetPlacementResults,
-       recordSkillConfidence,
+      recordPracticeResult,
+      recordPracticeSession,
+      queuePracticeReview,
+      recordPlacementResult,
+      resetPlacementResults,
+      recordSkillConfidence,
       saveSongSketch,
       deleteSongSketch,
       importSongSketches,
@@ -594,20 +590,17 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       deleteRoutine,
       resetProgress
     }),
-     [
-       progress,
-       isLessonComplete,
-      isLessonBookmarked,
+    [
       markLessonComplete,
       toggleBookmark,
       setLastLesson,
       recordCheckResult,
-       recordPracticeResult,
-       recordPracticeSession,
-       queuePracticeReview,
-       recordPlacementResult,
-       resetPlacementResults,
-       recordSkillConfidence,
+      recordPracticeResult,
+      recordPracticeSession,
+      queuePracticeReview,
+      recordPlacementResult,
+      resetPlacementResults,
+      recordSkillConfidence,
       saveSongSketch,
       deleteSongSketch,
       importSongSketches,
@@ -624,15 +617,29 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       resetProgress
     ]
   );
+  const value = useMemo<ProgressContextValue>(
+    () => ({
+      ...actions,
+      progress,
+      completedCount: progress.completedLessonSlugs.length,
+      isLessonComplete,
+      isLessonBookmarked
+    }),
+    [actions, progress, isLessonComplete, isLessonBookmarked]
+  );
 
   if (!isHydrated) {
     return <p role="status">Loading local progress…</p>;
   }
 
   return (
-    <ProgressContext.Provider value={value}>
-      {children}
-    </ProgressContext.Provider>
+    <ProgressActionsContext.Provider value={actions}>
+      <ProgressSettingsContext.Provider value={progress.settings}>
+        <ProgressContext.Provider value={value}>
+          {children}
+        </ProgressContext.Provider>
+      </ProgressSettingsContext.Provider>
+    </ProgressActionsContext.Provider>
   );
 }
 
@@ -643,5 +650,21 @@ export function useProgress(): ProgressContextValue {
     throw new Error("useProgress must be used within ProgressProvider");
   }
 
+  return value;
+}
+
+export function useProgressSettings(): ProgressState["settings"] {
+  const value = useContext(ProgressSettingsContext);
+  if (!value) {
+    throw new Error("useProgressSettings must be used within ProgressProvider");
+  }
+  return value;
+}
+
+export function useProgressActions(): ProgressActions {
+  const value = useContext(ProgressActionsContext);
+  if (!value) {
+    throw new Error("useProgressActions must be used within ProgressProvider");
+  }
   return value;
 }

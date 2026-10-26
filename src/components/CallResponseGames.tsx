@@ -9,7 +9,7 @@ import {
   type SingBackScore
 } from "../lib/callResponse";
 import { detectPitchAutocorrelation } from "../lib/pitchDetect";
-import { useProgress } from "../state/progress";
+import { useProgressSettings } from "../state/progress";
 type Mode = "sing" | "clap";
 type ListenStatus = "idle" | "listening" | "denied" | "unsupported";
 const SING_TARGETS = ["C4", "D4", "E4", "G4", "A4"];
@@ -21,8 +21,8 @@ const CLAP_PATTERNS: readonly (readonly ("hit" | "rest")[])[] = [
 ];
 const CLAP_BPM = 120;
 export function CallResponseGames() {
-  const { progress } = useProgress();
-  const audioEnabled = progress.settings.audioEnabled;
+  const settings = useProgressSettings();
+  const audioEnabled = settings.audioEnabled;
   const [mode, setMode] = useState<Mode>("sing");
   const [singIndex, setSingIndex] = useState(0);
   const [clapIndex, setClapIndex] = useState(0);

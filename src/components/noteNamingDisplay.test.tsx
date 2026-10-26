@@ -3,15 +3,15 @@ import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 import { DigitalPiano } from "./DigitalPiano";
 import { KeyboardFigure } from "./LessonComponents";
-import { ProgressContext } from "../state/progressContext";
+import { ProgressSettingsContext } from "../state/progressContext";
 
 function withNaming(naming: string, children: ReactNode) {
   const value = {
-    progress: { settings: { noteNaming: naming } }
-  } as unknown as React.ContextType<typeof ProgressContext>;
+    noteNaming: naming
+  } as unknown as React.ContextType<typeof ProgressSettingsContext>;
 
   return render(
-    <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>
+    <ProgressSettingsContext.Provider value={value}>{children}</ProgressSettingsContext.Provider>
   );
 }
 

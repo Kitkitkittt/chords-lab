@@ -56,3 +56,11 @@ export type ProgressContextValue = {
 };
 
 export const ProgressContext = createContext<ProgressContextValue | null>(null);
+
+export type ProgressActions = Omit<
+  ProgressContextValue,
+  "progress" | "completedCount" | "isLessonComplete" | "isLessonBookmarked"
+>;
+
+export const ProgressActionsContext = createContext<ProgressActions | null>(null);
+export const ProgressSettingsContext = createContext<ProgressState["settings"] | null>(null);

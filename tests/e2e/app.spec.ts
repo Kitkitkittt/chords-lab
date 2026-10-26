@@ -360,13 +360,8 @@ test("PWA auto-update lifecycle serves the offline app shell", async ({ page, co
   test.setTimeout(60000);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Chords Lab" })).toBeVisible();
-  await page.waitForFunction(async () => {
-    const registrations = await navigator.serviceWorker.getRegistrations();
-
-    return registrations.some(
-      (registration) =>
-        registration.active || registration.waiting || registration.installing
-    );
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
   });
   await page.reload();
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);

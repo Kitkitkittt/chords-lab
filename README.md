@@ -423,6 +423,10 @@ Key files:
 
 Chords Lab stores learner data only in browser `localStorage`.
 
+Settings and stable progress actions use separate React subscriptions, so ordinary
+practice-state writes do not rerender settings-only practice surfaces. Audio and
+note-name changes still update the active session; persistence behavior is unchanged.
+
 Storage key:
 
 ```text
@@ -489,6 +493,9 @@ Test coverage currently includes:
 
 Playwright starts a preview server at `http://127.0.0.1:42731` using the
 configuration in `playwright.config.ts`.
+
+CI pins Ubuntu 24.04 because the locked Playwright release does not support
+Ubuntu 26.04; lint, types, tests, build, and browser checks remain unchanged.
 
 ## PWA And Offline Behavior
 

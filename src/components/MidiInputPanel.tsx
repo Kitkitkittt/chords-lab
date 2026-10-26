@@ -2,7 +2,7 @@ import { Music4, Plug, PlugZap } from "lucide-react";
 import { useState } from "react";
 import { useMidiInput } from "../hooks/useMidiInput";
 import { triggerNote } from "../lib/audioEngine";
-import { useProgress } from "../state/progress";
+import { useProgressSettings } from "../state/progress";
 
 /**
  * Opt-in Web MIDI keyboard panel.
@@ -14,7 +14,7 @@ import { useProgress } from "../state/progress";
  * a calm note instead.
  */
 export function MidiInputPanel() {
-  const { progress } = useProgress();
+  const settings = useProgressSettings();
   const [lastNote, setLastNote] = useState("");
   const { status, deviceNames, isSupported, connect, disconnect } = useMidiInput({
     onNoteOn: (note, velocity) => {
@@ -22,7 +22,7 @@ export function MidiInputPanel() {
       void triggerNote(note, {
         voiceId: "keys",
         velocity,
-        audioEnabled: progress.settings.audioEnabled
+        audioEnabled: settings.audioEnabled
       });
     }
   });

@@ -15,7 +15,7 @@ import {
   type KeyMode
 } from "../lib/theory";
 import { Note } from "tonal";
-import { useProgress } from "../state/progress";
+import { useProgressSettings } from "../state/progress";
 
 /**
  * Chord progression playground: pick a key, build a Roman-numeral progression,
@@ -44,9 +44,9 @@ function withOctave(notes: string[], octave = 4): string[] {
 }
 
 export function ChordProgressionPlayground() {
-  const { progress } = useProgress();
+  const settings = useProgressSettings();
   const navigate = useNavigate();
-  const audioEnabled = progress.settings.audioEnabled;
+  const audioEnabled = settings.audioEnabled;
   const [tonic, setTonic] = useState("C");
   const [mode, setMode] = useState<KeyMode>("major");
   const [numerals, setNumerals] = useState<string[]>(["I", "V", "vi", "IV"]);
